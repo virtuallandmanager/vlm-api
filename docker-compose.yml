@@ -1,0 +1,28 @@
+
+version: '3.9'
+services:
+  vlm-api:
+    # Other configuration
+    container_name: vlm-api
+    build:
+      context: ./
+      dockerfile: Dockerfile.prod
+    env_file: ./.env
+    ports:
+      - "3000:3000"
+    restart: on-failure
+    healthcheck:
+      test: curl --fail -s http://localhost:3000/_health || exit 1
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+networks:
+  default:
+    external:
+      name: proxy

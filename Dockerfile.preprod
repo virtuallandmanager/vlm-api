@@ -1,0 +1,14 @@
+FROM node:14-alpine
+
+WORKDIR /usr/src/app
+
+ENV NODE_OPTIONS=--max_old_space_size=16384
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3200
+CMD [ "npm", "start" ]
