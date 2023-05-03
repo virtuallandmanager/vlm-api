@@ -34,7 +34,6 @@ export namespace BaseUser {
     clientIp?: string;
     lastIp?: string;
     createdAt?: number;
-    registeredAt?: number;
     ts?: number;
   };
 
@@ -160,6 +159,7 @@ export namespace User {
   export type Config = BaseUser.Config & {
     smsPhoneNumber?: SMSPhoneNumber;
     emailAddress?: string;
+    registeredAt?: number;
     avatar?: string;
     roles?: Roles[];
   };
