@@ -5,22 +5,9 @@ import { OrganizationManager } from "../../logic/Organization.logic";
 import { User } from "../../models/User.model";
 import { Organization } from "../../models/Organization.model";
 import { DateTime } from "luxon";
+import { AdminLogManager } from "../../logic/ErrorLogging.logic";
+
 const router = express.Router();
-
-router.get("/roles/create", async (req: Request, res: Response) => {
-  try {
-    UserManager.createUserRoles();
-
-    return res.status(200).json({
-      text: "Successfully created roles.",
-    });
-  } catch (error: any) {
-    return res.status(error?.status || 500).json({
-      text: error.text || "Something went wrong on the server. Please try again.",
-      error,
-    });
-  }
-});
 
 router.post("/vlm/update", authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -32,9 +19,12 @@ router.post("/vlm/update", authMiddleware, async (req: Request, res: Response) =
       text: "Successfully updated user.",
       userInfo,
     });
-  } catch (error: any) {
-    return res.status(error?.status || 500).json({
-      text: error.text || "Something went wrong on the server. Please try again.",
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "User.controller/vlm/update",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
       error,
     });
   }
@@ -82,9 +72,12 @@ router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
       userInfo,
       userOrgs,
     });
-  } catch (error: any) {
-    return res.status(error?.status || 500).json({
-      text: error.text || "Something went wrong on the server. Please try again.",
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "User.controller/setup",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
       error,
     });
   }
