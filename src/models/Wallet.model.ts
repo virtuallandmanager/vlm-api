@@ -5,7 +5,6 @@ export type BaseWallet = {
   userId?: string;
   orgId?: string;
   type?: WalletType;
-  ttl?: number;
 };
 
 export type SupportedCurrencies = "BTC" | "ETH" | "MANA" | "MATIC" | "LTC" | "SOL" | "DOGE";

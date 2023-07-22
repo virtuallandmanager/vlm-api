@@ -5,7 +5,7 @@ export namespace Metaverse {
     static pk: string = "metaverse:config";
     pk?: string = Config.pk;
     sk?: string = uuidv4();
-    displayName?: string = "The Metaverse";
+    name?: string = "The Metaverse";
     worlds: World[] = [];
 
     constructor(config: Config) {
@@ -17,15 +17,10 @@ export namespace Metaverse {
     static pk: string = "metaverse:world";
     pk?: string = World.pk;
     sk?: string = uuidv4();
-    displayName?: string = "New World";
+    name?: string = "New World";
   }
 
-  export enum Worlds {
-    DECENTRALAND,
-    HYPERFY,
-    SANDBOX,
-    MONAVERSE,
-    SPATIAL,
-    READYPLAYERME,
-  }
+  export type Location = { world: Metaverse.Worlds; location: string; coordinates: number[] | string[]; url?: string };
+
+  export type Worlds = "decentraland" | "hyperfy";
 }

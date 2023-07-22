@@ -1,6 +1,6 @@
 import fetch from "cross-fetch";
 import { Ipv4Address } from "aws-sdk/clients/inspector";
-import { logError } from "../dal/ErrorLogging.data";
+import { AdminLogManager } from "../logic/ErrorLogging.logic";
 
 export default {
   addIpData: async function (clientIp: Ipv4Address) {
@@ -8,13 +8,11 @@ export default {
       return null;
     }
     try {
-      const data = await fetch(
-        `https://vpnapi.io/api/${clientIp}?key=${process.env.VPN_API_KEY}`
-      );
+      const data = await fetch(`https://vpnapi.io/api/${clientIp}?key=${process.env.VPN_API_KEY}`);
       const ipData = await data.json();
       return ipData;
     } catch (error) {
-      AdminLogManager.logError("addIpData", error);
+      AdminLogManager.logError(error, { from: "ip.ts/addIpData" });
       return null;
     }
   },

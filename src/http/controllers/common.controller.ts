@@ -4,6 +4,8 @@ import { Session } from "../../models/Session.model";
 declare module "express-serve-static-core" {
   interface Request {
     session: Session.Config;
+    uploadedImage: ImageBitmap;
+    imageKeys: { original: string; texture: string; thumbnail: string };
   }
   interface Response {
     session: Session.Config;

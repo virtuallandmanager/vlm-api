@@ -2,6 +2,7 @@ import { Ipv4Address } from "aws-sdk/clients/inspector";
 import { v4 as uuidv4 } from "uuid";
 import { IPData } from "./IPData.model";
 import { Metaverse } from "./Metaverse.model";
+import { DateTime } from "luxon";
 
 export namespace Session {
   export class Config {
@@ -11,7 +12,7 @@ export namespace Session {
     userId?: string; // LSI
     connectedWallet?: string; // LSI
     clientIp?: Ipv4Address; // LSI
-    sessionStart?: EpochTimeStamp = Date.now();
+    sessionStart?: EpochTimeStamp;
     sessionEnd?: EpochTimeStamp;
     ipData?: IPData;
     signatureToken?: string; // Granted for 3 minutes to allow for cryptographically signed login
@@ -19,6 +20,7 @@ export namespace Session {
     expires?: EpochTimeStamp;
     sceneId?: string;
     world?: Metaverse.Worlds;
+    worldLocation?: Metaverse.Location;
     ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Config) {
@@ -33,15 +35,78 @@ export namespace Session {
       this.sessionToken = config.sessionToken;
       this.expires = config.expires;
       this.sceneId = config.sceneId;
+      this.world = config.world;
+      this.worldLocation = config.worldLocation;
       this.ts = config.ts || this.ts;
     }
+  }
 
-    start?: CallableFunction = () => {
-      this.sessionStart = Date.now();
+  export class AggregateDate {
+    static pk: string = "vlm:session:aggregate:date"; // Partition Key
+    pk?: string; // Partition Key
+    sk?: string = DateTime.utc().toFormat("yyyy-MM-dd"); // Sort Key
+    totals?: {
+      sessionCount?: number;
+      userCount?: number;
+      ipCount?: number;
+      userIds?: number;
+    };
+    averages?: {
+      sessionLength?: number;
+      timeActive?: number;
+      timeInactive?: number;
     };
 
-    end?: CallableFunction = () => {
-      this.sessionEnd = Date.now();
+    constructor(config: AggregateDate) {
+      this.sk = config.sk || this.sk;
+      this.totals = config.totals;
+      this.averages = config.averages;
+    }
+  }
+
+  export class AggregateMonth {
+    static pk: string = "vlm:session:aggregate:month"; // Partition Key
+    pk?: string; // Partition Key
+    sk?: string = DateTime.utc().toFormat("yyyy-MM"); // Sort Key
+    totals?: {
+      sessionCount?: number;
+      userCount?: number;
+      ipCount?: number;
+      userIds?: number;
     };
+    averages?: {
+      sessionLength?: number;
+      timeActive?: number;
+      timeInactive?: number;
+    };
+
+    constructor(config: AggregateDate) {
+      this.sk = config.sk || this.sk;
+      this.totals = config.totals;
+      this.averages = config.averages;
+    }
+  }
+
+  export class AggregateYear {
+    static pk: string = "vlm:session:aggregate:year"; // Partition Key
+    pk?: string; // Partition Key
+    sk?: string = DateTime.utc().toFormat("yyyy"); // Sort Key
+    totals?: {
+      sessionCount?: number;
+      userCount?: number;
+      ipCount?: number;
+      userIds?: number;
+    };
+    averages?: {
+      sessionLength?: number;
+      timeActive?: number;
+      timeInactive?: number;
+    };
+
+    constructor(config: AggregateDate) {
+      this.sk = config.sk || this.sk;
+      this.totals = config.totals;
+      this.averages = config.averages;
+    }
   }
 }

@@ -4,7 +4,7 @@ import { monitor } from "@colyseus/monitor";
 /**
  * Import your Room files
  */
-import { VLMScene } from "./rooms/DCLScene";
+import { VLMScene } from "./ws/rooms/VLMScene";
 
 export default Arena({
     getId: () => "Your Colyseus App",

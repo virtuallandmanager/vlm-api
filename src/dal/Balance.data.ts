@@ -1,6 +1,5 @@
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { largeQuery } from "../helpers/data";
 import { User } from "../models/User.model";
 import { BaseWallet } from "../models/Wallet.model";
 import { GenericDbManager } from "./Generic.data";
@@ -18,6 +17,7 @@ export abstract class BalanceDbManager {
         from: "Balance.data/getById",
         userId,
       });
+      return;
     }
   };
 
@@ -32,6 +32,7 @@ export abstract class BalanceDbManager {
         from: "Balance.data/getById",
         orgId,
       });
+      return;
     }
   };
 
@@ -52,6 +53,7 @@ export abstract class BalanceDbManager {
         from: "Balance.data/put",
         wallet,
       });
+      return;
     }
   };
 }

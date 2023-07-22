@@ -7,6 +7,7 @@ import { AdminLogManager } from "./ErrorLogging.logic";
 import { Analytics } from "../models/Analytics.model";
 import { User } from "../models/User.model";
 import { Session as BaseSession } from "../models/Session.model";
+import { UserManager } from "./User.logic";
 
 export abstract class SessionManager {
   static initAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
@@ -15,8 +16,7 @@ export abstract class SessionManager {
   };
 
   static startAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
-    const session = new Analytics.Session.Config(config);
-    return await SessionDbManager.start(session);
+    return await SessionDbManager.start(new Analytics.Session.Config(config));
   };
 
   static getAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
@@ -24,12 +24,24 @@ export abstract class SessionManager {
     await SessionDbManager.get(session);
   };
 
-  static endAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
-    const dbSession = await SessionDbManager.get(config);
-    if (dbSession) {
-      dbSession.end();
-      await SessionDbManager.end(dbSession);
+  static endAnalyticsSession: CallableFunction = async (session: Analytics.Session.Config) => {
+    try {
+      if (session && session.pk && session.sk && !session.sessionEnd) {
+        await SessionDbManager.end(session);
+      } else if (session.sessionEnd) {
+        AdminLogManager.logError("Tried to end a session that is already over", session);
+      } else {
+        AdminLogManager.logError("Session failed to end", session);
+      }
+    } catch (error) {
+      AdminLogManager.logError("Session failed to end", session);
     }
+    return;
+  };
+
+  static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
+    const action = new Analytics.Session.Action(config);
+    return await SessionDbManager.logAnalyticsAction(action);
   };
 
   static storePreSession: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config) => {
@@ -38,7 +50,11 @@ export abstract class SessionManager {
 
   static startVLMSession: CallableFunction = async (config: User.Session.Config) => {
     const session = new User.Session.Config(config);
+    const user = await UserManager.getById(session.userId);
+    const updatedUser = new User.Account({ ...user, lastIp: session.clientIp });
+    await UserManager.updateIp(updatedUser);
     await SessionDbManager.start(session);
+    return session;
   };
 
   static getVLMSession: CallableFunction = async (config: User.Session.Config) => {
@@ -63,25 +79,29 @@ export abstract class SessionManager {
   };
 
   static endVLMSession: CallableFunction = async (config: User.Session.Config) => {
-    const dbSession = await SessionDbManager.get(config),
-      session = dbSession && new User.Session.Config(dbSession);
-    if (session) {
-      session.end();
-      await SessionDbManager.end(session);
-    }
+    try {
+      const session = await SessionDbManager.get(config);
+      if (session && !session.sessionEnd) {
+        return await SessionDbManager.end(session);
+      } else {
+        return;
+      }
+    } catch (error) {}
   };
 
-  static renew: CallableFunction = async (session: BaseSession.Config) => {
+  static renew: CallableFunction = async (session: User.Session.Config) => {
     SessionManager.issueSessionToken(session);
     SessionManager.issueSignatureToken(session);
-    await SessionDbManager.renew(session);
+    return await SessionDbManager.renew(session);
   };
 
-  static issueSessionToken: CallableFunction = (session: BaseSession.Config) => {
+  static issueSessionToken: CallableFunction = (session: User.Session.Config | Analytics.Session.Config) => {
     session.expires = DateTime.now().plus({ hours: 12 }).toUnixInteger();
     session.sessionToken = jwt.sign(
       {
-        ...session,
+        pk: session.pk,
+        sk: session.sk,
+        userId: session.userId,
         iat: Math.floor(Date.now() / 1000) - 30,
         nonce: Date.now(),
       },
@@ -93,17 +113,18 @@ export abstract class SessionManager {
     return session.sessionToken;
   };
 
-  static issueSignatureToken: CallableFunction = (session: BaseSession.Config) => {
+  static issueSignatureToken: CallableFunction = (session: Analytics.Session.Config | User.Session.Config) => {
     session.signatureToken = jwt.sign(
       {
         pk: session.pk,
         sk: session.sk,
-        iat: Math.floor(Date.now() / 1000),
+        userId: session.userId,
+        iat: DateTime.now().toUnixInteger(),
         nonce: Date.now(),
       },
       process.env.JWT_ACCESS_SECRET,
       {
-        expiresIn: "1h",
+        expiresIn: "90s",
       }
     );
     return session.signatureToken;
@@ -129,13 +150,13 @@ export abstract class SessionManager {
     }
 
     if (dbSession.sessionToken !== sessionToken) {
-      AdminLogManager.logError("Session Token Mismatch", {
+      AdminLogManager.logWarning("Session Token Mismatch", {
         from: "Session Validation Middleware",
         decodedSession,
       });
       return;
     } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
-      AdminLogManager.logError("Session Has Ended", {
+      AdminLogManager.logInfo("Session Has Ended", {
         from: "Session Validation Middleware",
         decodedSession,
       });
@@ -215,31 +236,22 @@ export abstract class SessionManager {
     session.ipData = await ipHelper.addIpData(session.clientIp);
   };
 
-  static createSessionPath: CallableFunction = async (sessionConfig: Analytics.Session.Config, sessionPathConfig?: Analytics.Session.Path) => {
-    const sessionPath = new Analytics.Session.Path(sessionPathConfig);
+  static createSessionPath: CallableFunction = async (sessionConfig: Analytics.Session.Config, sessionPathConfig?: Analytics.Path) => {
+    const sessionPath = new Analytics.Path(sessionPathConfig);
     await SessionDbManager.createPath(sessionConfig, sessionPath);
     return sessionPath;
   };
 
-  static extendSessionPath: CallableFunction = async (pathId: string, path: Analytics.Session.PathPoint[]) => {
-    const dbPath = await SessionDbManager.getPathById(pathId),
-      newPathPoints = !path
-        ? []
-        : path.filter((pathPoint: Analytics.Session.PathPoint) => {
-            return pathPoint[0] > dbPath[dbPath.length - 1][0];
-          });
-    const userSessionPath = new Analytics.Session.Path({
-      sk: pathId,
-      path: newPathPoints,
-    });
-    return await SessionDbManager.extendPath(userSessionPath);
+  static extendPath: CallableFunction = async (pathId: string, pathSegments: Analytics.PathSegment[]) => {
+    const segments = pathSegments.map((segment:Analytics.PathSegment) => new Analytics.PathSegment({ ...segment, pathId }));
+    return await SessionDbManager.addPathSegments(pathId, segments);
   };
 
-  static addSessionPath: CallableFunction = async (userSessionPath: Analytics.Session.Path) => {
+  static addPath: CallableFunction = async (userSessionPath: Analytics.Path) => {
     return await SessionDbManager.createPath(userSessionPath);
   };
 
-  static getSessionPath: CallableFunction = async (userSessionPath?: Analytics.Session.Path) => {
+  static getSessionPath: CallableFunction = async (userSessionPath?: Analytics.Path) => {
     return await SessionDbManager.getPath(userSessionPath);
   };
 }

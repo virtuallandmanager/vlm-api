@@ -44,10 +44,6 @@ router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
       userInfo.roles = [User.Roles.BASIC_USER];
     }
 
-    if (DateTime.now().toUnixInteger() < DateTime.fromFormat("05/01/2023", "mm/dd/yyyy").plus({ months: 6 }).toUnixInteger()) {
-      userInfo.roles.push(User.Roles.EARLY_ACCESS);
-    }
-
     const dbUser = await UserManager.get(userInfo);
     userOrgs = await OrganizationManager.getUserOrgs(dbUser.sk, Organization.Roles.ORG_OWNER);
 
@@ -63,7 +59,7 @@ router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
         real_tip: "Use the user/vlm/update endpoint.",
       });
     }
-    userInfo.registeredAt = DateTime.now().toUnixInteger();
+    userInfo.registeredAt = Date.now();
     userInfo = await UserManager.update(userInfo);
     userOrgs = await OrganizationManager.getUserOrgs(dbUser.sk, Organization.Roles.ORG_OWNER);
 

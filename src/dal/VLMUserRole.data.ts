@@ -1,20 +1,20 @@
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { VLMUserRole } from "../models/UserRole.model";
+import { User } from "../models/User.model";
 
 export abstract class VLMUserRoleDbManager {
   static get = async (id: number | string) => {
     const params = {
       TableName: vlmMainTable,
       Key: {
-        pk: VLMUserRole.pk,
+        pk: User.Role.pk,
         sk: String(id),
       },
     };
 
     try {
       const VLMUserRoleRecord = await docClient.get(params).promise();
-      return VLMUserRoleRecord.Item as VLMUserRole;
+      return VLMUserRoleRecord.Item as User.Role;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "VLMUserRole.data/get",
@@ -22,7 +22,7 @@ export abstract class VLMUserRoleDbManager {
     }
   };
 
-  static put = async (vlmUserRole: VLMUserRole) => {
+  static put = async (vlmUserRole: User.Role) => {
     const params = {
       TableName: vlmMainTable,
       Item: {

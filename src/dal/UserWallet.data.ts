@@ -1,4 +1,4 @@
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
 import { BaseWallet } from "../models/Wallet.model";

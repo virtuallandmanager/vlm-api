@@ -1,17 +1,16 @@
-import AWS from "aws-sdk";
-import config from "../../config/config.js";
+import { DocumentClient } from "aws-sdk/clients/dynamodb.js";
+import { daxClient, docClient } from "../dal/common.data";
 
-AWS.config.update(config.aws_remote_config);
-const docClient = new AWS.DynamoDB.DocumentClient();
-
-export const largeQuery: any = async (params: any, allData: any) => {
-  // console.log("Querying Table");
-
+export const largeQuery: CallableFunction = async (params: DocumentClient.QueryInput, options: { cache: boolean } = { cache: false }, allData?: DocumentClient.AttributeMap[]) => {
   if (!allData) {
     allData = [];
   }
 
-  let data = await docClient.query(params).promise();
+  if (options.cache) {
+    var data = await daxClient.query(params).promise();
+  } else {
+    var data = await docClient.query(params).promise();
+  }
 
   if (data["Items"].length > 0) {
     allData = [...allData, ...data["Items"]];
@@ -19,29 +18,26 @@ export const largeQuery: any = async (params: any, allData: any) => {
 
   if (!params.Limit && data.LastEvaluatedKey) {
     params.ExclusiveStartKey = data.LastEvaluatedKey;
-    return await largeQuery(params, allData);
+    return await largeQuery(params, options, allData);
   } else {
     let finalData = allData;
     return finalData;
   }
 };
 
-export const largeScan: any = async (params: any, allData: any) => {
-  // console.log("Scanning Table");
-
+export const largeScan: CallableFunction = async (params: DocumentClient.QueryInput, chunkCb?: CallableFunction, allData?: DocumentClient.AttributeMap[]) => {
   if (!allData) {
     allData = [];
   }
 
   let data = await docClient.scan(params).promise();
-
   if (data["Items"].length > 0) {
     allData = [...allData, ...data["Items"]];
+    await chunkCb(data["Items"]);
   }
-
   if (!params.Limit && data.LastEvaluatedKey) {
     params.ExclusiveStartKey = data.LastEvaluatedKey;
-    return await largeScan(params, allData);
+    return await largeScan(params, chunkCb, allData);
   } else {
     let finalData = allData;
     return finalData;

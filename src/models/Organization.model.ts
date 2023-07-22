@@ -9,18 +9,16 @@ export namespace Organization {
     pk: string = Account.pk;
     sk: string = uuidv4();
     displayName: string = "AnonCo";
+    legalName: string = "";
     emailAddress?: string;
     discordChannel?: string;
-    created?: EpochTimeStamp;
+    createdAt?: EpochTimeStamp = Date.now();;
     [key: string]: any;
 
     constructor(config: Organization.Config) {
       Object.keys(config).forEach((key: string) => {
         this[key] = config[key];
       });
-      if (!this.created) {
-        this.created = DateTime.now().toUnixInteger();
-      }
     }
   }
 
@@ -94,7 +92,7 @@ export namespace Organization {
     connectedWallet?: string;
     publicKey?: string;
     hasConnectedWeb3?: boolean;
-    displayName?: string;
+    name?: string;
     [key: string]: any;
   };
 

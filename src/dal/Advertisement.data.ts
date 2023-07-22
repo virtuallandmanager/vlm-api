@@ -1,5 +1,5 @@
 import { Advertisement } from "../models/Advertisement.model";
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 
 export abstract class AdvertisementDbManager {
@@ -17,6 +17,7 @@ export abstract class AdvertisementDbManager {
         from: "Advertisement.data/obtain",
         adConfig,
       });
+      return;
     }
   };
 
@@ -40,6 +41,7 @@ export abstract class AdvertisementDbManager {
         from: "Advertisement.data/get",
         adConfig,
       });
+      return;
     }
   };
 
@@ -62,6 +64,7 @@ export abstract class AdvertisementDbManager {
         from: "Advertisement.data/put",
         adConfig,
       });
+      return;
     }
   };
 }

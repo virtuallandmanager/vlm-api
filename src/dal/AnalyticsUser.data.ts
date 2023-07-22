@@ -1,13 +1,13 @@
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Analytics } from "../models/Analytics.model";
 
 export abstract class AnalyticsUserDbManager {
-  static obtain = async (analyticsUserConfig: Analytics.User.Account) => {
+  static obtain: CallableFunction = async (analyticsUserConfig: Analytics.User.Account) => {
     let existingUser, newUser;
     try {
       existingUser = await this.get(analyticsUserConfig);
-      
+
       if (existingUser) {
         return existingUser;
       }
@@ -20,6 +20,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/obtain",
         analyticsUserConfig,
       });
+      return;
     }
   };
 
@@ -42,6 +43,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/get",
         analyticsUser,
       });
+      return;
     }
   };
 
@@ -62,6 +64,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/getById",
         sk,
       });
+      return;
     }
   };
 
@@ -82,6 +85,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/put",
         analyticsUser,
       });
+      return;
     }
   };
 }

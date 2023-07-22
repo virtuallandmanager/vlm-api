@@ -1,6 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Session as BaseSession } from "../models/Session.model";
-import { daxClient, docClient, vlmMainTable } from "./common";
+import { daxClient, docClient, vlmAnalyticsTable, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { DateTime } from "luxon";
 import { largeQuery } from "../helpers/data";
@@ -8,42 +8,35 @@ import { Analytics } from "../models/Analytics.model";
 import { User } from "../models/User.model";
 
 export abstract class SessionDbManager {
-  static start: CallableFunction = async (session: BaseSession.Config) => {
+  static start: CallableFunction = async (sessionConfig: BaseSession.Config) => {
     const startTime = DateTime.now();
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
-      Key: { pk: session.pk, sk: session.sk },
+      Key: { pk: sessionConfig.pk, sk: sessionConfig.sk },
       ExpressionAttributeNames: {
         "#ts": "ts",
-        "#ttl": "ttl",
         "#sessionStart": "sessionStart",
       },
       ExpressionAttributeValues: {
-        ":sessionStart": startTime.toUnixInteger(),
+        ":sessionStart": startTime.toMillis(),
         ":ts": Date.now(),
       },
+      UpdateExpression: "SET #ts = :ts, #sessionStart = :sessionStart",
     };
 
-    if (session.pk == Analytics.Session.Config.pk) {
-      params.UpdateExpression = "SET #ts = :ts, #sessionStart = :sessionStart REMOVE #ttl";
-    } else {
-      params.ExpressionAttributeValues[":ttl"] = startTime.plus({ hours: 12 }).toUnixInteger();
-      params.UpdateExpression = "SET #ts = :ts, #sessionStart = :sessionStart, #ttl = :ttl";
-    }
-
     try {
-      const session = await docClient.update(params).promise();
-      return session.Attributes;
+      await docClient.update(params).promise();
+      return await this.get(sessionConfig);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Session.data/start",
-        session,
+        sessionConfig,
       });
     }
   };
 
   static create: CallableFunction = async (session: BaseSession.Config, expirationTime?: { hours: number; minutes: number; seconds: number }) => {
-    const ttl = expirationTime ? DateTime.now().plus(expirationTime).toUnixInteger() : undefined;
+    const ttl = expirationTime ? DateTime.now().plus(expirationTime).toMillis() : undefined;
 
     const params = {
       TableName: vlmMainTable,
@@ -59,14 +52,38 @@ export abstract class SessionDbManager {
       return dbSession.Attributes;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Session.data/start",
+        from: "Session.data/create",
         session,
       });
     }
   };
 
-  static get: CallableFunction = async (session: BaseSession.Config): Promise<User.Session.Config | void> => {
+  static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
+    const params = {
+      TableName: vlmMainTable,
+      Item: {
+        ...config,
+        ts: Date.now(),
+        ttl: DateTime.now().plus({ months: 12 }).toMillis(),
+      },
+    };
+
+    try {
+      await docClient.put(params).promise();
+      return true;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Session.data/logAnalyticsAction",
+      });
+      return false;
+    }
+  };
+
+  static get: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config): Promise<Analytics.Session.Config | User.Session.Config | void> => {
     const { pk, sk } = session;
+    if (!pk || !sk) {
+      console.log(`PROBLEM: ${session}`);
+    }
     const params = {
       TableName: vlmMainTable,
       Key: {
@@ -74,18 +91,15 @@ export abstract class SessionDbManager {
         sk,
       },
     };
-
     try {
       const sessionRecord = await daxClient.get(params).promise();
-      if (sessionRecord?.Item?.sessionEnd <= Date.now()) {
-        return;
-      }
-      return sessionRecord.Item as User.Session.Config;
+      return sessionRecord.Item;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Session.data/getVLM",
+        from: "Session.data/get",
         session,
       });
+      throw error;
     }
   };
 
@@ -105,13 +119,21 @@ export abstract class SessionDbManager {
     };
 
     try {
-      const sessionRecords = await largeQuery(params);
-      return sessionRecords;
+      const sessionRecords = await largeQuery(params),
+        expandedRecords: User.Session.Config[] = [];
+      for (let i = 0; i < sessionRecords.length; i++) {
+        const expanded: User.Session.Config = await this.get(sessionRecords[i]);
+        if (expanded && !expanded.sessionEnd) {
+          expandedRecords.push(expanded);
+        }
+      }
+      return expandedRecords;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Session.data/getVLMByUserId",
         userId,
       });
+      return [];
     }
   };
 
@@ -139,7 +161,7 @@ export abstract class SessionDbManager {
     }
   };
 
-  static addPathId: CallableFunction = async (session: BaseSession.Config, path: Analytics.Session.Path) => {
+  static addPathId: CallableFunction = async (session: BaseSession.Config, path: Analytics.Path) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: session.pk, sk: session.sk },
@@ -165,7 +187,7 @@ export abstract class SessionDbManager {
     }
   };
 
-  static renew: CallableFunction = async (session: BaseSession.Config) => {
+  static renew: CallableFunction = async (session: User.Session.Config | Analytics.Session.Config) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: session.pk, sk: session.sk },
@@ -186,42 +208,43 @@ export abstract class SessionDbManager {
       return await SessionDbManager.get(session);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Session.data/end",
+        from: "Session.data/renew",
         session,
       });
     }
   };
 
-  static end: CallableFunction = async (session: BaseSession.Config) => {
-    const params: DocumentClient.UpdateItemInput = {
-      TableName: vlmMainTable,
-      Key: { pk: session.pk, sk: session.sk },
-      ConditionExpression: "attribute_not_exists(sessionEnd) AND #ts <= :sessionTs",
-      UpdateExpression: "set #ts = :ts, #sessionEnd = :sessionEnd, #ttl = :sessionEnd",
-      ExpressionAttributeNames: { "#ts": "ts", "#sessionEnd": "sessionEnd", "#ttl": "ttl" },
-      ExpressionAttributeValues: {
-        ":sessionEnd": session.sessionEnd,
-        ":sessionTs": session.ts,
-        ":ts": Date.now(),
-      },
-    };
-
+  static end: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config) => {
+    const endTime = DateTime.now().toUnixInteger();
     try {
-      await daxClient.update(params).promise();
-      return await SessionDbManager.get(session);
+      const params: DocumentClient.UpdateItemInput = {
+        TableName: vlmMainTable,
+        Key: { pk: session.pk, sk: session.sk },
+        UpdateExpression: "set #ts = :ts, #sessionEnd = :sessionEnd",
+        ExpressionAttributeNames: { "#ts": "ts", "#sessionEnd": "sessionEnd" },
+        ExpressionAttributeValues: {
+          ":sessionEnd": endTime,
+          ":ts": endTime,
+        },
+      };
+
+      await docClient.update(params).promise();
+      return session;
     } catch (error) {
+      console.log(error);
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Session.data/end",
         session,
       });
     }
+    return;
   };
 
-  static getPath: CallableFunction = async (userSessionPath: Analytics.Session.Path) => {
+  static getPath: CallableFunction = async (userSessionPath: Analytics.Path) => {
     const { pk, sk } = userSessionPath;
 
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       Key: {
         pk,
         sk,
@@ -241,9 +264,9 @@ export abstract class SessionDbManager {
 
   static getPathById: CallableFunction = async (sk: string) => {
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       Key: {
-        pk: Analytics.Session.Path.pk,
+        pk: Analytics.Path.pk,
         sk,
       },
     };
@@ -259,29 +282,29 @@ export abstract class SessionDbManager {
     }
   };
 
-  static createPath: CallableFunction = async (path: Analytics.Session.Path, pathLink: Analytics.Session.PathLink) => {
+  static createPath: CallableFunction = async (path: Analytics.Path, pathSegment: Analytics.PathSegment) => {
     const ts = Date.now();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
           Put: {
-            // Add a scene
+            // Add a path
             Item: {
               ...path,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmAnalyticsTable,
           },
         },
         {
           Put: {
-            // Add preset for scene
+            // Add the first path segment
             Item: {
-              ...pathLink,
+              ...pathSegment,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmAnalyticsTable,
           },
         },
       ],
@@ -292,35 +315,60 @@ export abstract class SessionDbManager {
       return await SessionDbManager.getPath(path);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/initScene",
+        from: "Session.data/createPath",
       });
     }
   };
 
-  static extendPath: CallableFunction = async (path: Analytics.Session.Path) => {
-    try {
-      const params = {
-        TableName: vlmMainTable,
-        Key: {
-          pk: path.pk,
-          sk: path.sk,
-        },
-        UpdateExpression: "set #path = list_append(if_not_exists(#path, :emptyList), :pathPoint)",
-        ExpressionAttributeNames: {
-          "#path": "path",
-        },
-        ExpressionAttributeValues: {
-          ":pathPoint": [path.path],
-          ":emptyList": new Array(),
-        },
-      };
+  static addPathSegments: CallableFunction = async (pathId: string, pathSegments: Analytics.PathSegment[]) => {
+    const ts = Date.now(),
+      pathSegmentIds = pathSegments.map((pathSegment) => pathSegment.sk);
 
-      await daxClient.update(params).promise();
-      return await SessionDbManager.getPath(path);
+    try {
+      for (let i = 0; i < pathSegments.length; i++) {
+        const params: DocumentClient.TransactWriteItemsInput = {
+          TransactItems: [
+            {
+              Put: {
+                // Add a path segment to the path
+                Item: {
+                  ...pathSegments[i],
+                  ts,
+                },
+                TableName: vlmAnalyticsTable,
+              },
+            },
+            {
+              Update: {
+                // Update the path with the new path segments
+                TableName: vlmAnalyticsTable,
+                Key: {
+                  pk: Analytics.Path.pk,
+                  sk: pathId,
+                },
+                UpdateExpression: "set #segments = list_append(if_not_exists(#segments, :emptyList), :pathSegment), #ts = :ts",
+                ExpressionAttributeNames: {
+                  "#segments": "segments",
+                  "#ts": "ts",
+                },
+                ExpressionAttributeValues: {
+                  ":pathSegment": [pathSegments[i].sk],
+                  ":emptyList": [],
+                  ":ts": ts,
+                },
+              },
+            },
+          ],
+        };
+        await docClient.transactWrite(params).promise();
+      }
+
+      const path = await SessionDbManager.getPathById(pathId);
+
+      return { added: pathSegments.length, total: path.pathSegments.length };
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "UserSessionPath.data/put",
-        path,
+        from: "Session.data/addPathSegments",
       });
     }
   };

@@ -4,14 +4,16 @@ export class Advertisement {
   static pk: string = "vlm:advertisement";
   pk: string = Advertisement.pk;
   sk: string = uuidv4();
+  title: string;
   campaignId: string;
   type: EAdvertisementType;
   contentUrl: string;
-  [key: string]: any;
   constructor(config: Advertisement) {
-    Object.keys(config).forEach((key: string) => {
-      this[key] = config[key];
-    });
+    this.sk = config.sk || this.sk;
+    this.campaignId = config.campaignId;
+    this.title = config.title;
+    this.type = config.type;
+    this.contentUrl = config.contentUrl;
   }
 }
 

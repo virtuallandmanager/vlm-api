@@ -1,7 +1,4 @@
-import {
-  Advertisement,
-  TAdvertisementConfig,
-} from "../models/Advertisement.model";
+import { Advertisement } from "../models/Advertisement.model";
 import { AdvertisementDbManager } from "../dal/Advertisement.data";
 import { OrganizationDbManager } from "../dal/Organization.data";
 import { Organization } from "../models/Organization.model";
@@ -9,9 +6,9 @@ import { UserDbManager } from "../dal/User.data";
 
 export abstract class BalanceManager {
   static createAdvertisement: CallableFunction = async (
-    eventConfig?: TAdvertisementConfig
+    adConfig?: Advertisement
   ) => {
-    const event = new Advertisement(eventConfig);
+    const event = new Advertisement(adConfig);
     return await AdvertisementDbManager.put(event);
   };
 

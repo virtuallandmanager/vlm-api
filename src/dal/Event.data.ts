@@ -1,8 +1,10 @@
 import { Event } from "../models/Event.model";
-import { docClient, vlmLandLegacyTable, vlmMainTable } from "./common";
+import { docClient, vlmLandLegacyTable, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
 import { largeQuery } from "../helpers/data";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import { Giveaway } from "../models/Giveaway.model";
 
 export abstract class EventDbManager {
   static obtain: CallableFunction = async (eventConfig: Event) => {
@@ -19,6 +21,7 @@ export abstract class EventDbManager {
         from: "Event.data/obtain",
         eventConfig,
       });
+      return;
     }
   };
 
@@ -41,6 +44,97 @@ export abstract class EventDbManager {
         from: "Event.data/get",
         eventConfig,
       });
+      return;
+    }
+  };
+
+  static getById: CallableFunction = async (sk: string) => {
+    if (!sk) {
+      return;
+    }
+    const params: DocumentClient.GetItemInput = {
+      Key: {
+        pk: Event.Config.pk,
+        sk,
+      },
+      TableName: vlmMainTable,
+    };
+
+    try {
+      const event = await docClient.get(params).promise();
+      return event.Item;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/getByIds",
+        sk,
+      });
+      return;
+    }
+  };
+
+  static getByIds: CallableFunction = async (sks: string[]) => {
+    if (!sks?.length) {
+      return;
+    }
+    const params: DocumentClient.TransactGetItemsInput = {
+      TransactItems: [],
+    };
+
+    sks.forEach((sk: string) => {
+      params.TransactItems.push({
+        Get: {
+          // Add a connection from organization to user
+          Key: {
+            pk: Event.Config.pk,
+            sk,
+          },
+          TableName: vlmMainTable,
+        },
+      });
+    });
+
+    try {
+      const events = await docClient.transactGet(params).promise();
+      return events.Responses.map((item) => item.Item);
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/getByIds",
+        sks,
+      });
+      return;
+    }
+  };
+
+  static getGiveawaysByIds: CallableFunction = async (sks: string[]) => {
+    if (!sks?.length) {
+      return;
+    }
+    const params: DocumentClient.TransactGetItemsInput = {
+      TransactItems: [],
+    };
+
+    sks.forEach((sk: string) => {
+      params.TransactItems.push({
+        Get: {
+          // Add a connection from organization to user
+          Key: {
+            pk: Event.Giveaway.Config.pk,
+            sk,
+          },
+          TableName: vlmMainTable,
+        },
+      });
+    });
+
+    try {
+      const events = await docClient.transactGet(params).promise();
+      return events.Responses.map((item) => item.Item);
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/getGiveawaysByIds",
+        sks,
+      });
+      return;
     }
   };
 
@@ -65,7 +159,7 @@ export abstract class EventDbManager {
     return event;
   };
 
-  static getByUser: CallableFunction = async (user: User.Account) => {
+  static getAllForUser: CallableFunction = async (user: User.Account) => {
     const params = {
       TableName: vlmMainTable,
       IndexName: "userId-index",
@@ -81,13 +175,68 @@ export abstract class EventDbManager {
     };
 
     try {
-      const eventRecords = await largeQuery(params);
-      return eventRecords as Event.SceneLink[];
+      const eventRecords = await largeQuery(params),
+        eventIds = eventRecords.map((event: Event.Config) => event.sk),
+        events = await EventDbManager.getByIds(eventIds);
+      return events;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getByUser",
+        from: "Event.data/getAllForUser",
         user,
       });
+      return;
+    }
+  };
+
+  static getGiveawaysForEvent: CallableFunction = async (event: Event.Config) => {
+    const params = {
+      TableName: vlmMainTable,
+      KeyConditionExpression: "#pk = :pkValue",
+      FilterExpression: "#eventId = :eventIdValue",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#eventId": "eventId",
+      },
+      ExpressionAttributeValues: {
+        ":pkValue": Event.GiveawayLink.pk,
+        ":eventIdValue": event.sk,
+      },
+    };
+
+    try {
+      const eventRecords = await largeQuery(params),
+        giveawayIds = eventRecords.map((link: Event.GiveawayLink) => link.giveawayId),
+        giveaways = await EventDbManager.getGiveawaysByIds(giveawayIds);
+      return giveaways;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/getGiveawaysForEvent",
+        event,
+      });
+      return;
+    }
+  };
+
+  static adminGetAll: CallableFunction = async () => {
+    const params = {
+      TableName: "VLM_MigratedLegacyEvents",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Giveaway.Item.pk,
+      },
+      KeyConditionExpression: "#pk = :pk",
+    };
+
+    try {
+      const eventQuery = await largeQuery(params);
+      return eventQuery;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/adminGetAll",
+      });
+      return;
     }
   };
 
@@ -101,13 +250,35 @@ export abstract class EventDbManager {
     };
 
     try {
-      const dbEvent = await docClient.put(params).promise();
-      return dbEvent.Attributes;
+      await docClient.put(params).promise();
+      return event;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Event.data/put",
         event,
       });
+      return;
+    }
+  };
+
+  static linkGiveaway: CallableFunction = async (link: Event.GiveawayLink) => {
+    const params = {
+      TableName: vlmMainTable,
+      Item: {
+        ...link,
+        ts: Date.now(),
+      },
+    };
+
+    try {
+      await docClient.put(params).promise();
+      return link;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/linkGiveaway",
+        link,
+      });
+      return;
     }
   };
 }

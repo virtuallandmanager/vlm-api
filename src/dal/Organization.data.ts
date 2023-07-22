@@ -1,4 +1,4 @@
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Organization } from "../models/Organization.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
@@ -12,6 +12,7 @@ export abstract class OrganizationDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/get",
       });
+      return;
     }
   };
 
@@ -34,6 +35,7 @@ export abstract class OrganizationDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/getById",
       });
+      return;
     }
   };
 
@@ -66,6 +68,7 @@ export abstract class OrganizationDbManager {
         from: "Organization.data/getOrgsFromIds",
         sks,
       });
+      return;
     }
   };
 
@@ -85,6 +88,7 @@ export abstract class OrganizationDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/getUserConById",
       });
+      return;
     }
   };
 
@@ -104,6 +108,7 @@ export abstract class OrganizationDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/getUserConById",
       });
+      return;
     }
   };
 
@@ -134,6 +139,7 @@ export abstract class OrganizationDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/getUserConsByUserId",
       });
+      return;
     }
   };
 
@@ -153,6 +159,7 @@ export abstract class OrganizationDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/getBalance",
       });
+      return;
     }
   };
 
@@ -177,6 +184,7 @@ export abstract class OrganizationDbManager {
         from: "Organization.data/update",
         organization,
       });
+      return;
     }
   };
 
@@ -201,6 +209,7 @@ export abstract class OrganizationDbManager {
         from: "Organization.data/update",
         balance,
       });
+      return;
     }
   };
 
@@ -218,19 +227,18 @@ export abstract class OrganizationDbManager {
         from: "Organization.data/addMember",
         orgUserCon,
       });
+      return;
     }
   };
 
   static init: CallableFunction = async (orgAccount: Organization.Account, orgUserCon: Organization.UserConnector, orgBalances: Organization.Balance[]) => {
-    const { pk, sk, displayName } = orgAccount,
-      org = { pk, sk, displayName };
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
           Put: {
             // Add an organization
             Item: {
-              ...org,
+              ...orgAccount,
               ts: Date.now(),
             },
             TableName: vlmMainTable,
@@ -277,6 +285,7 @@ export abstract class OrganizationDbManager {
         orgUserCon,
         orgBalances,
       });
+      return;
     }
   };
 
@@ -309,6 +318,7 @@ export abstract class OrganizationDbManager {
         from: "Organization.data/getUserConsFromIds",
         sks,
       });
+      return;
     }
   };
 

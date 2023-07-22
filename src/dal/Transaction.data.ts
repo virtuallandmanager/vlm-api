@@ -1,22 +1,22 @@
-import { docClient, vlmMainTable } from "./common";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { BaseWallet } from "../models/Wallet.model";
 import { GenericDbManager } from "./Generic.data";
-import { Transaction } from "../models/Transaction.model";
+import { Accounting } from "../models/Accounting.model";
 
 export abstract class TransactionDbManager {
   static get: CallableFunction = async (wallet: BaseWallet) => {
     const params = {
       TableName: vlmMainTable,
       Key: {
-        pk: Transaction.pk,
+        pk: Accounting.Transaction.pk,
         sk: wallet.address,
       },
     };
 
     try {
       const walletRecord = await docClient.get(params).promise();
-      return walletRecord.Item as Transaction;
+      return walletRecord.Item as Accounting.Transaction;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Transaction.data/get",
@@ -27,8 +27,8 @@ export abstract class TransactionDbManager {
 
   static getIdsForUser: CallableFunction = async (userId: string) => {
     try {
-      const partialTransactions = await GenericDbManager.getAllForUser(Transaction.pk, userId),
-        transactionIds = partialTransactions.map((transaction: Transaction) => transaction.sk);
+      const partialTransactions = await GenericDbManager.getAllForUser(Accounting.Transaction.pk, userId),
+        transactionIds = partialTransactions.map((transaction: Accounting.Transaction) => transaction.sk);
 
       return transactionIds;
     } catch (error) {

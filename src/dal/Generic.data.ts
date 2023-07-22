@@ -1,9 +1,10 @@
-import { IDbItem, docClient, vlmMainTable } from "./common";
+import { IDbItem, daxClient, docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { largeQuery } from "../helpers/data";
+import { VLMRecord } from "../models/VLM.model";
 
 export abstract class GenericDbManager {
-  static obtain = async (dataConfig: IDbItem) => {
+  static obtain: CallableFunction = async (dataConfig: IDbItem) => {
     let existingData, updatedData, finalData;
     try {
       existingData = await this.get(dataConfig);
@@ -16,6 +17,7 @@ export abstract class GenericDbManager {
         from: "Generic.data/obtain",
         dataConfig,
       });
+      return;
     }
   };
 
@@ -38,6 +40,39 @@ export abstract class GenericDbManager {
         from: "Generic.data/get",
         dataConfig,
       });
+      return;
+    }
+  };
+
+  static getFragment = async (dataConfig: IDbItem, props: string[]) => {
+    const { pk, sk } = dataConfig;
+    let ProjectionExpression,
+      ExpressionAttributeNames: { [any: string]: string } = {};
+
+    props.forEach((prop: string) => {
+      ExpressionAttributeNames[`#${prop}`] = prop;
+    });
+    ProjectionExpression = Object.keys(ExpressionAttributeNames).join(", ");
+
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk,
+        sk,
+      },
+      ProjectionExpression,
+      ExpressionAttributeNames,
+    };
+
+    try {
+      const record = await docClient.get(params).promise();
+      return record.Item;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Generic.data/getFragment",
+        dataConfig,
+      });
+      return;
     }
   };
 
@@ -65,6 +100,7 @@ export abstract class GenericDbManager {
         pk,
         userId,
       });
+      return;
     }
   };
 
@@ -92,10 +128,11 @@ export abstract class GenericDbManager {
         pk,
         orgId,
       });
+      return;
     }
   };
 
-  static put = async (dataConfig: IDbItem) => {
+  static put = async (dataConfig: IDbItem, useCaching: boolean = false) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
@@ -105,13 +142,19 @@ export abstract class GenericDbManager {
     };
 
     try {
-      await docClient.put(params).promise();
-      return await this.get(dataConfig);
+      if (useCaching) {
+        await daxClient.put(params).promise();
+      } else {
+        await docClient.put(params).promise();
+      }
+      const dbItem = await this.get(dataConfig);
+      return dbItem;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Generic.data/put",
         dataConfig,
       });
+      return;
     }
   };
 }

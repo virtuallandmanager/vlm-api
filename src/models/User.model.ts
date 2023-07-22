@@ -62,6 +62,7 @@ export namespace User {
     emailAddress?: string;
     aggregates?: Aggregates;
     registeredAt?: number;
+    hideDemoScene?: boolean = false;
     roles?: Roles[];
 
     constructor(config: Config) {
@@ -72,8 +73,10 @@ export namespace User {
       this.smsPhoneNumber = config.smsPhoneNumber;
       this.emailAddress = config.emailAddress;
       this.registeredAt = config.registeredAt;
+      this.hideDemoScene = config.hideDemoScene;
       this.avatar = config.avatar;
       this.roles = config.roles;
+      this.lastIp = config.clientIp || config.lastIp;
     }
   }
 
@@ -108,12 +111,14 @@ export namespace User {
   export class Balance {
     static pk: string = "vlm:user:balance";
     pk?: string = Balance.pk;
-    sk: string = uuidv4();
-    type: BalanceType;
-    value: number;
+    sk?: string = uuidv4();
+    userId?: string;
+    type?: BalanceType;
+    value?: number;
 
     constructor(config: Balance) {
       this.sk = config.sk || this.sk;
+      this.userId = config.userId;
       this.type = config.type;
       this.value = config.value;
     }
@@ -160,6 +165,7 @@ export namespace User {
     smsPhoneNumber?: SMSPhoneNumber;
     emailAddress?: string;
     registeredAt?: number;
+    hideDemoScene?: boolean;
     avatar?: string;
     roles?: Roles[];
   };
@@ -177,12 +183,10 @@ export namespace User {
     sk: string = uuidv4();
     userId: string;
     sceneId: string;
-    world: Metaverse.Worlds;
 
     constructor(user: Account, scene: BaseScene.Config) {
       this.userId = user.sk;
       this.sceneId = scene.sk;
-      this.world = scene.world;
     }
   }
 
@@ -190,7 +194,7 @@ export namespace User {
     export class Config extends BaseSession.Config {
       static pk: string = "vlm:user:session";
       pk?: string = Config.pk;
-      ttl?: number = DateTime.now().plus({ hours: 12 }).toUnixInteger();
+      ttl?: number = DateTime.now().plus({ hours: 12 }).toMillis();
 
       constructor(config: Config) {
         super(config);

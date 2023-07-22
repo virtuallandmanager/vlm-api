@@ -1,5 +1,4 @@
 import { NFT } from "./NFT.model";
-import { DCLUser } from "./User.model";
 
 export type ModerationSettings = {
   allowCertainWearables?: boolean;
@@ -9,24 +8,24 @@ export type ModerationSettings = {
   allowWeb3Only?: boolean;
   allowedWearables?: NFT[];
   bannedWearables?: NFT[];
-  bannedUsers?: DCLUser[];
-  allowedUsers?: DCLUser[];
+  bannedUsers?: { name: string; connectedWallet: string }[];
+  allowedUsers?: { name: string; connectedWallet: string }[];
   banActions?: EBanActions[];
   allowActions?: EAllowActions[];
-  banWallType?: EBanWallType
+  banWallType?: EBanWallType;
 };
 
 export enum EBanActions {
   WALL,
-  BLACKOUT
+  BLACKOUT,
 }
 
 export enum EBanWallType {
   BLACK,
   INVISIBLE,
-  MIRROR
+  MIRROR,
 }
 
 export enum EAllowActions {
-  MOVE
+  MOVE,
 }

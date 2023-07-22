@@ -1,6 +1,5 @@
 import { ClickEvent } from "./ClickEvent.model";
-import { ESceneWidgetType } from "./SceneWidget.model";
-import { EVideoSourceTypes } from "./SceneVideo.model";
+import { Scene } from "./Scene.model";
 
 export type LegacySceneConfig = {
   tokenId: string; // Partition Key
@@ -33,6 +32,19 @@ export type LegacyEventConfig = {
   }[];
 };
 
+export type LegacyGiveawayClaim = {
+  id: string;
+  baseParcel: string;
+  claimedAt: string;
+  clientIp: string;
+  contractAddress: string;
+  tokenId: number;
+  txHash: string;
+  eventId: string;
+  wallet: string;
+  timestamp: number;
+};
+
 export type LegacyVideoScreenConfig = {
   id: string;
   customId?: string;
@@ -43,7 +55,7 @@ export type LegacyVideoScreenConfig = {
   instances: LegacyVideoInstanceConfig[];
   liveLink?: string;
   name: string;
-  offType: EVideoSourceTypes;
+  offType: Scene.Video.SourceType;
   offImageLink: string;
   parent?: string;
   playlist: string[];
@@ -111,6 +123,6 @@ export type LegacyImageInstanceConfig = {
 
 export type LegacyCustomizationConfig = {
   id: string;
-  type?: ESceneWidgetType;
+  type?: Scene.Widget.ControlType;
   value?: string | boolean;
 };
