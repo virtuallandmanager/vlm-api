@@ -21,8 +21,3 @@ services:
       options:
         max-size: "200k"
         max-file: "10"
-
-networks:
-  default:
-    external:
-      name: proxy
