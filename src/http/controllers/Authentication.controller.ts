@@ -43,7 +43,7 @@ router.get("/web3", async (req: Request, res: Response) => {
     if (!existingSession) {
       newSession = new User.Session.Config(sessionConfig);
       await SessionManager.getIpData(newSession);
-      SessionManager.issueSessionToken(newSession);
+      SessionManager.issueUserSessionToken(newSession);
       SessionManager.issueSignatureToken(newSession);
       await SessionManager.storePreSession(newSession);
     } else {
@@ -73,7 +73,6 @@ router.post("/login", web3AuthMiddleware, async (req: Request, res: Response) =>
     session = req.session;
 
   try {
-
     if (!session.sessionStart) {
       await SessionManager.startVLMSession(session);
     }
@@ -174,7 +173,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       sessionStart: Date.now(),
     });
     await SessionManager.getIpData(session);
-    SessionManager.issueSessionToken(session);
+    SessionManager.issueAnalyticsSessionToken(session);
     await SessionManager.storePreSession(session);
 
     return res.status(200).json({

@@ -1,4 +1,4 @@
-import { docClient, vlmMainTable } from "./common.data";
+import { daxClient, docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
@@ -43,7 +43,7 @@ export abstract class UserDbManager {
     };
 
     try {
-      const userRecord = await docClient.get(params).promise();
+      const userRecord = await daxClient.get(params).promise();
       const user = userRecord.Item as User.Account;
       return user;
     } catch (error) {
@@ -85,7 +85,7 @@ export abstract class UserDbManager {
     };
 
     try {
-      const userRecord = await docClient.get(params).promise();
+      const userRecord = await daxClient.get(params).promise();
       const user = userRecord.Item as User.Account;
       return user;
     } catch (error) {
@@ -189,7 +189,7 @@ export abstract class UserDbManager {
     };
 
     try {
-      await docClient.update(params).promise();
+      await daxClient.update(params).promise();
       return await UserDbManager.obtainBalance(balance);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -209,7 +209,7 @@ export abstract class UserDbManager {
     };
 
     try {
-      const roleRecord = await docClient.get(params).promise();
+      const roleRecord = await daxClient.get(params).promise();
       const role = roleRecord.Item as User.Role;
       return role;
     } catch (error) {
@@ -233,7 +233,7 @@ export abstract class UserDbManager {
     };
 
     try {
-      await docClient.update(params).promise();
+      await daxClient.update(params).promise();
       return await UserDbManager.get(user);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -254,7 +254,7 @@ export abstract class UserDbManager {
     };
 
     try {
-      await docClient.put(params).promise();
+      await daxClient.put(params).promise();
       return await UserDbManager.get(user);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
