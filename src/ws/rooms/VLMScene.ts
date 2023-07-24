@@ -4,7 +4,7 @@ import { SessionManager } from "../../logic/Session.logic";
 import { Analytics } from "../../models/Analytics.model";
 import { User } from "../../models/User.model";
 import { UserManager } from "../../logic/User.logic";
-import { wsAuthMiddleware } from "../../middlewares/security/auth";
+import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/security/auth";
 import { bindEvents, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
 import { Session } from "../../models/Session.model";
 import { AnalyticsManager } from "../../logic/Analytics.logic";
@@ -74,9 +74,15 @@ export class VLMScene extends Room<VLMSceneState> {
     try {
       let auth: { session: Session.Config; user: Analytics.User.Account | User.Account } = { session: sessionConfig, user: {} };
 
-      await wsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-        auth.session = session;
-      });
+      if (sessionConfig.pk == Analytics.Session.Config.pk) {
+        await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+          auth.session = session;
+        });
+      } else {
+        await userAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+          auth.session = session;
+        });
+      }
 
       // connect a VLM scene host
       if (auth.session.pk == Analytics.Session.Config.pk) {
@@ -84,8 +90,6 @@ export class VLMScene extends Room<VLMSceneState> {
         auth.session = response.session;
         auth.user = response.user;
       }
-
-      // add VLM session and user data to Colyseus client auth object
 
       // connect a VLM scene host
       if (auth.session?.pk == User.Session.Config.pk && sessionConfig.sceneId) {

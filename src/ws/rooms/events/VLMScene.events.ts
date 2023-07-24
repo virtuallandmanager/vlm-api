@@ -7,7 +7,7 @@ import { Analytics } from "../../../models/Analytics.model";
 import { User } from "../../../models/User.model";
 import { ScenePresetManager } from "../../../logic/ScenePreset.logic";
 import { SceneElementManager } from "../../../logic/SceneElement.logic";
-import { wsAuthMiddleware } from "../../../middlewares/security/auth";
+import { analyticsAuthMiddleware } from "../../../middlewares/security/auth";
 import { AdminLogManager } from "../../../logic/ErrorLogging.logic";
 import { SceneStream } from "../schema/VLMSceneState";
 import { HistoryManager } from "../../../logic/History.logic";
@@ -104,7 +104,7 @@ async function handleSessionStart(client: Client, sessionConfig: Analytics.Sessi
   try {
     const { sessionToken, sceneId } = sessionConfig;
 
-    await wsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       client.auth = { session, user: {} };
       let dbSession = await SessionManager.startAnalyticsSession({
           ...sessionConfig,
@@ -153,7 +153,7 @@ async function handleSessionAction(client: Client, message: { action: string; me
       { session } = client.auth,
       { sceneId } = session;
 
-    await wsAuthMiddleware(client, { sessionToken, sceneId }, async () => {
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async () => {
       const response = await SessionManager.logAnalyticsAction({ action, metadata, pathPoint, sessionId: session.sk });
       if (!response) {
         AdminLogManager.logError("Failed to log analytics action", { ...message, ...client.auth });

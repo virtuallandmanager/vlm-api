@@ -18,7 +18,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
   // Verify the token
   try {
-    const session = await SessionManager.validateSessionToken(sessionToken);
+    const session = await SessionManager.validateUserSessionToken(sessionToken);
     if (!session) {
       return res.status(401).json({ error: "Unauthorized: Session token was invalid or expired." });
     } else {
@@ -75,14 +75,14 @@ export async function vlmAdminMiddleware(req: Request, res: Response, next: Next
   }
 }
 
-export async function wsAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: (session?: Analytics.Session.Config | User.Session.Config) => void) {
+export async function analyticsAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: (session?: Analytics.Session.Config | User.Session.Config) => void) {
   let session;
   const { sessionToken, sceneId } = message;
 
   // Perform token validation here
   if (sessionToken) {
     // Token is valid, allow access to the next message handling logic
-    session = await SessionManager.validateSessionToken(sessionToken);
+    session = await SessionManager.validateAnalyticsSessionToken(sessionToken);
   }
   
   if (client?.auth?.session?.sessionToken && client.auth.session?.sessionToken !== sessionToken) {
@@ -94,6 +94,23 @@ export async function wsAuthMiddleware(client: Client, message: { sessionToken: 
     await SessionManager.startAnalyticsSession(newBotSession);
     session = newBotSession;
   }
+  if (session) {
+    next(session);
+    return;
+  }
+  next();
+}
+
+export async function userAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: (session?: Analytics.Session.Config | User.Session.Config) => void) {
+  let session;
+  const { sessionToken, sceneId } = message;
+
+  // Perform token validation here
+  if (sessionToken) {
+    // Token is valid, allow access to the next message handling logic
+    session = await SessionManager.validateUserSessionToken(sessionToken);
+  }
+  
   if (session) {
     next(session);
     return;
