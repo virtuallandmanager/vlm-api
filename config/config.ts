@@ -29,4 +29,5 @@ export default {
     host: process.env.PRESENCE_SERVER,
     port: process.env.PRESENCE_PORT as unknown as number,
   },
+  s3_bucket: process.env.S3_BUCKET,
 };
