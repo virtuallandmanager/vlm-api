@@ -25,9 +25,6 @@ export default {
   vpn_api: {
     apiKey: process.env.VPN_API_KEY,
   },
-  presence_server: {
-    host: process.env.PRESENCE_SERVER,
-    port: process.env.PRESENCE_PORT as unknown as number,
-  },
+  presence_server: JSON.parse(process.env.PRESENCE_SERVER),
   s3_bucket: process.env.S3_BUCKET,
 };
