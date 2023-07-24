@@ -33,12 +33,11 @@ if (process.env.NODE_ENV !== "production") {
     transport: new WebSocketTransport({ server }),
   });
 } else {
-  const presence = JSON.parse(process.env.PRESENCE_SERVER);
-  presence.port = Number(presence.port);
+  const presenceServer = { host: process.env.PRESENCE_SERVER_HOST, port: Number(process.env.PRESENCE_SERVER_PORT) };
   gameServer = new Server({
     transport: new WebSocketTransport({ server }),
-    presence: new RedisPresence(presence),
-    driver: new RedisDriver(presence),
+    presence: new RedisPresence(presenceServer),
+    driver: new RedisDriver(presenceServer),
   });
 }
 
