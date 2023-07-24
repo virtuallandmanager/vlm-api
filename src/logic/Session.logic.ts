@@ -241,7 +241,7 @@ export abstract class SessionManager {
       decodedSession,
       { signatureToken, signature, signatureAccount, signatureMessage } = config;
     try {
-      decodedSession = jwt.verify(signatureToken, process.env.JWT_ACCESS);
+      decodedSession = jwt.verify(signatureToken, process.env.JWT_SIGNATURE);
     } catch (error) {
       console.log(error);
       return;
@@ -250,7 +250,7 @@ export abstract class SessionManager {
     if (!decodedSession) {
       AdminLogManager.logError("No Session Decoded", {
         from: "Signature Validation Middleware",
-        object: jwt.verify(signatureToken, process.env.JWT_ACCESS) as String,
+        object: jwt.verify(signatureToken, process.env.JWT_SIGNATURE) as String,
       });
       return;
     }
