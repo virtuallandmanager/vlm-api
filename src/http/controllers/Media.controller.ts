@@ -1,89 +1,67 @@
 import express, { Request, Response } from "express";
-import { v4 as uuidv4 } from "uuid";
-import mime from "mime";
-import { OrganizationManager } from "../../logic/Organization.logic";
 import { authMiddleware } from "../../middlewares/security/auth";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
-import { uploadImage } from "../../middlewares/media/upload";
+import config from "../../../config/config";
+import { s3 } from "../../dal/common.data";
+import { resizeAndUpload, uploadImage } from "../../middlewares/media/upload";
+import { SessionManager } from "../../logic/Session.logic";
 import { UserManager } from "../../logic/User.logic";
 import { User } from "../../models/User.model";
-import config from "../../../config/config";
-import { ImageManager } from "../../logic/Image.logic";
-import { Organization } from "../../models/Organization.model";
-import { S3 } from "aws-sdk";
+import { VLMMedia } from "../../models/VLM.model";
 
 const router = express.Router();
 
-router.post("/image/upload", authMiddleware, uploadImage.single("image"), async (req: Request, res: Response) => {
+router.post("/user/image", authMiddleware, uploadImage, resizeAndUpload, async (req: Request, res: Response) => {
   try {
-    const originalImage = req.file.buffer,
-      originalContentType = req.file.mimetype,
-      session = req.session,
-      orgId = req.body.orgId,
-      folderPath = req.body.folderPath,
-      imageId = uuidv4().substring(0, 8);
+    const { sk, extension, metadata } = req.body.imageData;
 
-    const user = await UserManager.obtain(
-        new User.Account({
-          sk: session.userId,
-          connectedWallet: session.connectedWallet,
-        })
-      ),
-      userOrgs = await OrganizationManager.getUserOrgs(user.sk);
+    const pubFilePath = `media/image/${sk}/`;
 
-    if (!userOrgs.find((org: Organization.Account) => org.id == orgId)) {
-      return res.status(401).json({
-        text: "You're not a member of this organization.",
-      });
-    }
-    const fullFolderPath = `organization/${orgId}${folderPath}/${imageId}`;
+    // Create a link between this image and the user
+    const session = await SessionManager.getVLMSession(req.session);
+    const user = await UserManager.getById(session.userId);
+    await UserManager.createMediaLink(new User.MediaLink(user, { sk, mediaType: VLMMedia.Type.IMAGE }));
 
-    const resized1024 = await ImageManager.resizeImage(originalImage, 1024);
-    const resized512 = await ImageManager.resizeImage(originalImage, 512);
-
-    const originalImageParams = new S3.ManagedUpload({
-      params: {
-        Bucket: "vlm-images",
-        Key: `${fullFolderPath}/original.${mime.getExtension(originalContentType)}`,
-        Body: originalImage,
-        ContentType: originalContentType,
-        ACL: "public-read",
-      },
-    });
-    const medImageParams = new S3.ManagedUpload({
-      params: {
-        Bucket: "vlm-images",
-        Key: `${fullFolderPath}/texture.${mime.getExtension(originalContentType)}`,
-        Body: resized1024,
-        ContentType: originalContentType,
-        ACL: "public-read",
-      },
-    });
-    const thumbImageParams = new S3.ManagedUpload({
-      params: {
-        Bucket: "vlm-images",
-        Key: `${fullFolderPath}/thumbnail.${mime.getExtension(originalContentType)}`,
-        Body: resized512,
-        ContentType: originalContentType,
-        ACL: "public-read",
-      },
-    });
-
-    await originalImageParams.promise();
-    await medImageParams.promise();
-    await thumbImageParams.promise();
-
-    return res.status(200).json({
-      text: "Image Successfully Uploaded!",
+    // Send a successful response
+    res.send({
+      message: "Image uploaded successfully",
+      imageSrc: `${pubFilePath}original.${extension}`,
+      textureSrc: `${pubFilePath}texture.${extension}`,
+      thumbnailSrc: `${pubFilePath}thumbnail.${extension}`,
+      metadata,
     });
   } catch (error) {
-    AdminLogManager.logError(JSON.stringify(error), {
-      from: "Image.controller/upload",
+    AdminLogManager.logError("Image failed to upload.", { from: "Media.controller/user/image" });
+    res.status(500).send({ message: "Server error" });
+  }
+});
+
+router.get("/image/:sk/:file", async (req: Request, res: Response) => {
+  const { sk, file } = req.params,
+    filePath = `${config.environment_short}/image/${sk}/${file}`;
+
+  const params = {
+    Bucket: config.s3_bucket,
+    Key: filePath,
+  };
+
+  try {
+    // Use the getObject method to retrieve the image from S3
+    const data = await s3.getObject(params).promise();
+
+    // The image content is returned in the 'Body' property
+    const image = data.Body;
+
+    // To display the image in the browser, set the appropriate response headers
+    res.set({
+      "Content-Type": data.ContentType,
+      "Content-Length": data.ContentLength,
     });
-    return res.status(500).json({
-      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
-      error,
-    });
+
+    // Send the image data in the response
+    res.send(image);
+  } catch (error) {
+    res.status(500).send({ error: "Error retrieving image" });
   }
 });
 

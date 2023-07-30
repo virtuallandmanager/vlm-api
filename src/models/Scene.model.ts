@@ -4,6 +4,7 @@ import { TransformConstructorArgs } from "./Transform.model";
 import { ClickEvent } from "./ClickEvent.model";
 import { ModerationSettings } from "./ModerationSettings.model";
 import { DateTime } from "luxon";
+import { bool } from "aws-sdk/clients/signer";
 
 export namespace Scene {
   export class Config {
@@ -11,7 +12,7 @@ export namespace Scene {
     pk?: string = Config.pk;
     sk?: string = uuidv4();
     name?: string = "New Scene";
-    imageLink?: string = "";
+    imageSrc?: string = "";
     locations?: Metaverse.Location[] = [];
     worlds?: Metaverse.Worlds[] = [];
     scenePreset?: string | Preset;
@@ -23,7 +24,7 @@ export namespace Scene {
     constructor(config?: Config) {
       this.sk = config.sk || this.sk;
       this.name = config.name || this.name;
-      this.imageLink = config.imageLink || this.imageLink;
+      this.imageSrc = config.imageSrc || this.imageSrc;
       this.locations = config.locations || this.locations;
       this.worlds = config.worlds || this.worlds;
       this.scenePreset = config.scenePreset;
@@ -177,7 +178,7 @@ export namespace Scene {
       instances?: string[] | Instance[] = [];
       liveLink?: string = "";
       offType?: SourceType = SourceType.NONE;
-      offImageLink?: string = "";
+      offImageSrc?: string = "";
       parent?: string = "";
       playlist?: string[] = [];
       enabled?: boolean = true;
@@ -198,7 +199,7 @@ export namespace Scene {
         this.instances = config.instances;
         this.liveLink = config.liveLink;
         this.offType = config.offType;
-        this.offImageLink = config.offImageLink;
+        this.offImageSrc = config.offImageSrc;
         this.parent = config.parent;
         this.playlist = config.playlist;
         this.enabled = config.enabled;
@@ -256,12 +257,16 @@ export namespace Scene {
       sk?: string = uuidv4();
       customId?: string;
       customRendering?: boolean;
+      externalUrl?: boolean;
       name?: string;
       clickEvent?: ClickEvent;
       emission?: number;
-      imageLink?: string;
+      imageSrc?: string;
+      thumbnailSrc?: string;
+      textureSrc?: string;
       height?: number | string;
       width?: number | string;
+      density?: number | string;
       instances?: string[] | Instance[] = [];
       parent?: string;
       enabled?: boolean;
@@ -275,13 +280,17 @@ export namespace Scene {
         this.sk = config.sk || this.sk; // Sort Key
         this.customId = config.customId || this.customId;
         this.customRendering = config.customRendering;
+        this.externalUrl = config.externalUrl;
         this.name = config.name;
         this.clickEvent = config.clickEvent;
         this.emission = config.emission;
         this.instances = config.instances;
-        this.imageLink = config.imageLink;
+        this.imageSrc = config.imageSrc;
+        this.thumbnailSrc = config.thumbnailSrc;
+        this.textureSrc = config.textureSrc;
         this.height = config.height;
         this.width = config.width;
+        this.density = config.density;
         this.parent = config.parent;
         this.enabled = config.enabled;
         this.withCollisions = config.withCollisions;
@@ -333,7 +342,7 @@ export namespace Scene {
       name?: string;
       clickEvent?: ClickEvent;
       emission?: number;
-      imageLink?: string;
+      imageSrc?: string;
       contractAddress?: string;
       tokenId?: string | number;
       instances?: string[] | Instance[] = [];
@@ -352,7 +361,7 @@ export namespace Scene {
         this.name = config.name;
         this.clickEvent = config.clickEvent;
         this.emission = config.emission;
-        this.imageLink = config.imageLink;
+        this.imageSrc = config.imageSrc;
         this.contractAddress = config.contractAddress;
         this.tokenId = config.tokenId;
         this.instances = config.instances;
@@ -522,7 +531,7 @@ export namespace Scene {
   export type ElementName = "image" | "video" | "nft" | "sound" | "widget";
   export type Action = "init" | "create" | "update" | "delete" | "trigger";
   export type Settings = "moderation";
-  export type Property = "enabled" | "liveLink" | "imageLink" | "nftData" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency";
+  export type Property = "enabled" | "liveLink" | "imageSrc" | "nftData" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency";
 
   export class ColyseusMessage {
     action: Action;

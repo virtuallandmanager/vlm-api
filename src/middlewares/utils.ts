@@ -1,5 +1,5 @@
 // allow requests from localhost
-export const TESTS_ENABLED = true
+export const TESTS_ENABLED = process.env.NODE_ENV === 'development'
 
 // We want all signatures to be "current". We consider "current" to be the current time,
 // with a 10 minute tolerance to account for network delays and possibly unsynched clocks

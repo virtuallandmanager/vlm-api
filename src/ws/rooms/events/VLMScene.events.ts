@@ -15,7 +15,7 @@ import { HistoryManager } from "../../../logic/History.logic";
 type ElementName = "image" | "video" | "nft" | "sound" | "widget";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
 type Settings = "moderation";
-type Property = "enabled" | "liveLink" | "imageLink" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency" | "contactAddres" | "tokenId";
+type Property = "enabled" | "liveLink" | "imageSrc" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency" | "contactAddres" | "tokenId";
 export type VLMSceneElement = Scene.Image.Config | Scene.NFT.Config | Scene.Sound.Config | Scene.Video.Config;
 export type VLMSceneElementInstance = Scene.Image.Instance & Scene.NFT.Instance & Scene.Sound.Instance & Scene.Video.Instance;
 
@@ -84,9 +84,7 @@ export function bindEvents(room: VLMScene) {
         if (broadcast) {
           const { sceneId } = client.auth;
           room.clients.forEach((roomClient) => {
-            console.log("ofa");
             if (roomClient.auth.sceneId == sceneId) {
-              console.log("SENT!");
               roomClient.send(eventType, message);
             }
           });

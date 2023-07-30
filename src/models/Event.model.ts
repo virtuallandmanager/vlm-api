@@ -13,7 +13,7 @@ export namespace Event {
     createdAt?: number = DateTime.now().toUnixInteger();
     startTime: number;
     endTime?: number;
-    imageLink?: string;
+    imageSrc?: string;
     claimLimits?: Giveaway.ClaimLimits; // caps total number of giveaway claims allowed
     constructor(config: Event.Config) {
       this.sk = config.sk || this.sk;
@@ -22,7 +22,7 @@ export namespace Event {
       this.createdAt = config.createdAt || this.createdAt;
       this.startTime = config.startTime;
       this.endTime = config.endTime;
-      this.imageLink = config.imageLink;
+      this.imageSrc = config.imageSrc;
       this.claimLimits = config.claimLimits;
     }
   }

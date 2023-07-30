@@ -2,8 +2,6 @@ import express from "express";
 import bodyParser from "body-parser";
 import requestIp from "request-ip";
 import cors, { CorsOptions } from "cors";
-import * as dotenv from "dotenv";
-import "dotenv/config";
 import healthCheck from "./healthCheck";
 import userController from "./http/controllers/User.controller";
 import authController from "./http/controllers/Authentication.controller";
@@ -12,8 +10,6 @@ import sceneController from "./http/controllers/Scene.controller";
 import eventController from "./http/controllers/Event.controller";
 import mediaController from "./http/controllers/Media.controller";
 import logController from "./http/controllers/Log.controller";
-
-dotenv.config({ path: __dirname + "/.env" });
 
 // Create Express server
 const app = express();
@@ -28,8 +24,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(bodyParser.json({ limit: "5mb" }));
-app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
+const jsonParser = bodyParser.json({ limit: "5mb" });
+const urlencodedParser = bodyParser.urlencoded({ limit: "5mb", extended: true });
 
 const corsOptions: CorsOptions = {
   origin: [/^https:\/\/([a-z0-9]+\.)?decentraland\.org$/, /^https:\/\/([a-z0-9]+\.)?vlm\.gg$/],
@@ -50,12 +46,12 @@ if (process.env.NODE_ENV == "development") {
 }
 
 app.use("/_health", healthCheck);
-app.use("/auth", authController);
-app.use("/admin", adminController);
-app.use("/scene", sceneController);
-app.use("/user", userController);
-app.use("/event", eventController);
-app.use("/media", mediaController);
-app.use("/log", logController);
+app.use("/auth", jsonParser, urlencodedParser, authController);
+app.use("/admin", jsonParser, urlencodedParser, adminController);
+app.use("/scene", jsonParser, urlencodedParser, sceneController);
+app.use("/user", jsonParser, urlencodedParser, userController);
+app.use("/event", jsonParser, urlencodedParser, eventController);
+app.use("/media", mediaController); // No body-parser middleware applied to this route
+app.use("/log", jsonParser, urlencodedParser, logController);
 
 export default app;

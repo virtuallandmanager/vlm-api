@@ -4,7 +4,6 @@ import { authMiddleware } from "../../middlewares/security/auth";
 import { OrganizationManager } from "../../logic/Organization.logic";
 import { User } from "../../models/User.model";
 import { Organization } from "../../models/Organization.model";
-import { DateTime } from "luxon";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 
 const router = express.Router();

@@ -144,14 +144,13 @@ export abstract class SceneDbManager {
         sceneLinkIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sk),
         ids = await SceneDbManager.getSceneIdsFromLinkIds(sceneLinkIds);
 
-        if (user?.hideDemoScene){
-          return ids || []; 
-        } else if (ids?.length) {
-          return [Scene.DemoSceneId, ...ids]
-        } else {
-          return [Scene.DemoSceneId]
-        }
-
+      if (user?.hideDemoScene) {
+        return ids || [];
+      } else if (ids?.length) {
+        return [Scene.DemoSceneId, ...ids];
+      } else {
+        return [Scene.DemoSceneId];
+      }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/getIdsByUser",
@@ -189,7 +188,7 @@ export abstract class SceneDbManager {
       return sceneIds;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getSceneLinksFromIds",
+        from: "Scene.data/getSceneIdsFromLinkIds",
         sks,
       });
       return;
@@ -205,6 +204,9 @@ export abstract class SceneDbManager {
     };
 
     sks.forEach((sk: string) => {
+      if (!sk) {
+        return;
+      }
       params.TransactItems.push({
         Get: {
           // Add a connection from organization to user
@@ -864,7 +866,7 @@ export abstract class SceneDbManager {
       return await this.get(sceneConfig);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/updateElementProperty",
+        from: "Scene.data/updateSceneProperty",
         sceneConfig,
         property,
         newValue,

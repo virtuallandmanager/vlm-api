@@ -1,13 +1,12 @@
-import { Alchemy } from "alchemy-sdk";
+import { Alchemy, Network } from "alchemy-sdk";
 import AWS, { DynamoDB } from "aws-sdk";
 import DAX from "amazon-dax-client";
 import config from "../../config/config";
 
 export let docClient: AWS.DynamoDB.DocumentClient;
 export let daxClient: AWS.DynamoDB.DocumentClient;
-export let s3 = new AWS.S3();
-export let alchemyEth: Alchemy;
-export let alchemyPoly: Alchemy;
+export let alchemyEth: Alchemy = new Alchemy({ apiKey: process.env.ALCHEMY_API_KEY, network: Network.ETH_MAINNET });
+export let alchemyPoly: Alchemy = new Alchemy({ apiKey: process.env.ALCHEMY_POLY_API_KEY, network: Network.MATIC_MAINNET });
 
 if (process.env.NODE_ENV !== "development") {
   // For non-development environments, the environment already has the necessary permissions from the EC2 IAM role.
@@ -31,7 +30,6 @@ if (process.env.NODE_ENV !== "development") {
   daxClient = new AWS.DynamoDB.DocumentClient({
     service: daxdb,
   });
-
 } else {
   // Load environment variables from developer's .env file
   AWS.config.update({
@@ -45,6 +43,7 @@ if (process.env.NODE_ENV !== "development") {
   daxClient = docClient;
 }
 
+export let s3 = new AWS.S3();
 export const vlmMainTable = process.env.NODE_ENV == "production" ? "vlm_main" : `vlm_main${process.env.DEV_TABLE_EXT}`;
 export const vlmAnalyticsTable = process.env.NODE_ENV == "production" ? "vlm_analytics" : `vlm_analytics${process.env.DEV_TABLE_EXT}`;
 export const vlmLogTable = process.env.NODE_ENV == "production" ? "vlm_logs" : `vlm_logs${process.env.DEV_TABLE_EXT}`;

@@ -1,27 +1,108 @@
+import { Request, Response, NextFunction } from "express";
 import multer from "multer";
-import multerS3 from "multer-s3";
-import { S3Client } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
-import { Request } from "express";
+import sharp from "sharp";
 import config from "../../../config/config";
+import { s3 } from "../../dal/common.data";
+import path from "path";
+import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 
-export const uploadImage = multer({
-  storage: multerS3({
-    s3: new S3Client({region: config.aws_config.region}),
-    bucket: config.s3_bucket,
-    cacheControl: "max-age=31536000",
-    metadata: (req, file, cb) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    key: (req: Request, file, cb) => {
-      const extension = file.originalname.split(".").pop();
-      const uuid = uuidv4().substring(0, 6),
-        original = `${uuid}-original.${extension}`,
-        texture = `${uuid}-texture.${extension}`,
-        thumbnail = `${uuid}-thumb.${extension}`;
-      req.imageKeys = { original, texture, thumbnail };
-      cb(null, original);
-    },
-  }),
+const upload = multer({
+  fileFilter: (req, file, cb) => {
+    // check if mimetype starts with 'image/'
+    if (file.mimetype.startsWith("image/")) {
+      // accept file
+      cb(null, true);
+    } else {
+      // reject file
+      cb(null);
+      req.body.fileValidationError = "Not an image! Please upload an image.";
+    }
+  },
 });
+
+export const uploadImage = function (req: Request, res: Response, next: NextFunction) {
+  upload.single("image")(req, res, function (err) {
+    if (err) {
+      AdminLogManager.logError(JSON.stringify(err), { from: "Image.middlewares/uploadImage" });
+      return res.status(500).send({ error: "Error uploading file." });
+    }
+    const imageBuffer = req.file?.buffer;
+    const originalname = req.file?.originalname;
+    const extension = path.extname(originalname)?.substring(1);
+    const sk = uuidv4();
+    req.body = { ...req.body, imageData: { imageBuffer, sk, extension, originalname } };
+
+    next();
+  });
+};
+
+export const getImagePath = async (req: Request, sk: string) => {
+  let filePath = `${config.environment_short}/`;
+  filePath = `${filePath}images/${sk}/`;
+
+  return filePath;
+};
+
+export const resizeAndUpload = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sk, extension, originalname } = req.body.imageData;
+
+    // Now call the next middleware function and pass these along
+    const filePath = `${config.environment_short}/image/${sk}/`;
+
+    await s3
+      .putObject({
+        Bucket: config.s3_bucket,
+        Key: `${filePath}original.${extension}`,
+        Body: req.file.buffer,
+        ACL: "public-read",
+      })
+      .promise();
+
+    // Use sharp to resize the image to 1024px
+    const resizedImageBuffer1024 = await sharp(req.file.buffer)
+      .resize(1024, 1024, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toBuffer();
+
+    // Upload the resized image to S3
+    await s3
+      .putObject({
+        Bucket: config.s3_bucket,
+        Key: `${filePath}texture.${extension}`,
+        Body: resizedImageBuffer1024,
+        ACL: "public-read",
+      })
+      .promise();
+
+    // Use sharp to resize the image to 512px
+    const resizedImageBuffer512 = await sharp(req.file.buffer)
+      .resize(512, 512, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toBuffer();
+
+    // Upload the 512px resized image to S3
+    await s3
+      .putObject({
+        Bucket: config.s3_bucket,
+        Key: `${filePath}thumbnail.${extension}`,
+        Body: resizedImageBuffer512,
+        ACL: "public-read",
+      })
+      .promise();
+
+    // Use sharp to retrieve image dimensions
+    req.body.imageData.metadata = await sharp(req.file.buffer).metadata();
+    req.body.imageData.metadata.name = originalname;
+
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: "Error uploading file." });
+  }
+};

@@ -160,6 +160,7 @@ export abstract class SceneElementManager {
       if (message.property) {
         return await SceneDbManager.updateSceneElementProperty(message);
       } else {
+        message.elementData.pk = message.elementData.pk || `vlm:scene:${message.element}`;
         const elementData = await GenericDbManager.put(message.elementData);
         const scenePreset = await SceneDbManager.getPreset(message.scenePreset.sk);
         return { scenePreset, elementData };

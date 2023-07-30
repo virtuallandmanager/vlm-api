@@ -1,4 +1,4 @@
-import fetch from "cross-fetch";
+import axios from "axios";
 import { Ipv4Address } from "aws-sdk/clients/inspector";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 
@@ -8,8 +8,8 @@ export default {
       return null;
     }
     try {
-      const data = await fetch(`https://vpnapi.io/api/${clientIp}?key=${process.env.VPN_API_KEY}`);
-      const ipData = await data.json();
+      const response = await axios.get(`https://vpnapi.io/api/${clientIp}?key=${process.env.VPN_API_KEY}`);
+      const ipData = response.data;
       return ipData;
     } catch (error) {
       AdminLogManager.logError(error, { from: "ip.ts/addIpData" });

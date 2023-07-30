@@ -5,6 +5,7 @@ import { Session as BaseSession } from "./Session.model";
 import { DateTime } from "luxon";
 import { Metaverse } from "./Metaverse.model";
 import { Scene as BaseScene } from "./Scene.model";
+import { VLMMedia } from "./VLM.model";
 
 export namespace BaseUser {
   export abstract class Account {
@@ -187,6 +188,21 @@ export namespace User {
     constructor(user: Account, scene: BaseScene.Config) {
       this.userId = user.sk;
       this.sceneId = scene.sk;
+    }
+  }
+
+  export class MediaLink {
+    static pk: string = "vlm:user:media:link";
+    pk: string = MediaLink.pk;
+    sk: string = uuidv4();
+    userId: string;
+    mediaId: string;
+    mediaType: VLMMedia.Type;
+
+    constructor(user: Account, media: { sk: string; mediaType: VLMMedia.Type }) {
+      this.userId = user.sk;
+      this.mediaId = media.sk;
+      this.mediaType = media.mediaType;
     }
   }
 

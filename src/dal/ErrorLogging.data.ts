@@ -2,18 +2,12 @@ import { v4 as uuidv4 } from "uuid";
 import { docClient, vlmLogTable } from "./common.data";
 import { Log } from "../models/Log.model";
 import { DateTime } from "luxon";
-
-enum ELogType {
-  INFO,
-  WARNING,
-  ERROR,
-  FATAL,
-}
+import { User } from "../models/User.model";
 
 export abstract class AdminLogDbManager {
   static retries: { [retryId: string]: number } = {};
 
-  static addLogToDb = async (message: unknown, metadata: Log.MetadataConfig, type: Log.Type, retryId?: string) => {
+  static addLogToDb = async (message: unknown, metadata: Log.MetadataConfig, userInfo: User.Account, type: Log.Type, retryId?: string) => {
     const ts = DateTime.now().toUnixInteger(),
       sk = retryId || uuidv4(),
       environment = process.env.NODE_ENV;
@@ -33,6 +27,9 @@ export abstract class AdminLogDbManager {
       case Log.Type.ERROR:
         newLog = new Log.AdminLogError({ sk, type, message, metadata, environment, ts });
         break;
+      case Log.Type.WAT:
+        newLog = new Log.AdminLogWAT({ sk, type, message, metadata, environment, ts, userInfo });
+        break;
       case Log.Type.FATAL:
         newLog = new Log.AdminLogFatal({ sk, type, message, metadata, environment, ts });
         break;
@@ -43,7 +40,7 @@ export abstract class AdminLogDbManager {
       Item: newLog,
     };
     try {
-      console.log(`${ELogType[type]} logged${metadata.from ? ` from ${metadata.from}` : ""}:`, metadata, message);
+      console.log(`${Log.Type[type]} logged${metadata.from ? ` from ${metadata.from}` : ""}:`, metadata, message);
       await docClient.put(params).promise();
       if (this.retries[sk]) {
         delete this.retries[sk];
@@ -55,7 +52,7 @@ export abstract class AdminLogDbManager {
         return sk;
       }
       this.retries.id++;
-      await this.addLogToDb(message, metadata, type, sk);
+      await this.addLogToDb(message, metadata, userInfo, type, sk);
       console.log(error);
       return { error: JSON.stringify(error), metadata };
     }

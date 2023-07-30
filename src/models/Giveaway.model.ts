@@ -80,7 +80,7 @@ export namespace Giveaway {
     itemId: number | string;
     claimLimits?: ClaimLimits = { total: 0, perUser: 1, perIp: 3 };
     claimCount?: number;
-    imageLink?: string;
+    imageSrc?: string;
     ts?: number = Date.now();
 
     constructor(config: Item) {
@@ -91,7 +91,7 @@ export namespace Giveaway {
       this.itemId = config.itemId;
       this.claimLimits = config.claimLimits;
       this.claimCount = config.claimCount || 0;
-      this.imageLink = config.imageLink;
+      this.imageSrc = config.imageSrc;
       this.ts = config.ts;
     }
   }

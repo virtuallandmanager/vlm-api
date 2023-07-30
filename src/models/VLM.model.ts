@@ -17,3 +17,10 @@ export class VLMRecord extends Object implements IsVLMRecord {
     });
   }
 }
+
+export namespace VLMMedia {
+  export enum Type {
+    IMAGE,
+    VIDEO,
+  }
+}

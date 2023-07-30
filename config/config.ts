@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export default {
+  environment: process.env.NODE_ENV,
+  environment_short: process.env.NODE_ENV == "production" ? "prod" : "dev",
   aws_config: {
     accessKeyId: process.env.AWS_ACCESS_KEY,
     secretAccessKey: process.env.AWS_SECRET_KEY,

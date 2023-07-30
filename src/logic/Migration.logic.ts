@@ -149,7 +149,7 @@ export abstract class MigrationManager {
         const giveawayItem = new Giveaway.Item({
           contractAddress: item.contractAddress,
           itemId: item.tokenId,
-          imageLink: `https://peer.decentraland.org/lambdas/collections/contents/urn:decentraland:matic:collections-v2:${item.contractAddress}:${item.tokenId}/thumbnail`,
+          imageSrc: `https://peer.decentraland.org/lambdas/collections/contents/urn:decentraland:matic:collections-v2:${item.contractAddress}:${item.tokenId}/thumbnail`,
         });
         await GiveawayManager.createItem(giveawayItem);
       });

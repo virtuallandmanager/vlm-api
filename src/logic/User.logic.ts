@@ -57,12 +57,16 @@ export abstract class UserManager {
 
   static createUserRoles: CallableFunction = async () => {
     await User.InitialRoles.forEach(async (role: User.Role) => {
-      return await GenericDbManager.put(role);
+      return (await GenericDbManager.put(role)) as User.Role;
     });
   };
 
   static createSceneLink: CallableFunction = async (sceneLink: User.SceneLink) => {
-    return await GenericDbManager.put(sceneLink);
+    return (await GenericDbManager.put(sceneLink)) as User.SceneLink;
+  };
+
+  static createMediaLink: CallableFunction = async (mediaLink: User.MediaLink) => {
+    return (await GenericDbManager.put(mediaLink)) as User.MediaLink;
   };
 
   // getUserRole gets the name and description of a user role by the id of that user role.

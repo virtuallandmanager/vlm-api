@@ -56,7 +56,7 @@ export type LegacyVideoScreenConfig = {
   liveLink?: string;
   name: string;
   offType: Scene.Video.SourceType;
-  offImageLink: string;
+  offImageSrc: string;
   parent?: string;
   playlist: string[];
   show: boolean;
@@ -88,7 +88,7 @@ export type LegacyImageConfig = {
   customId: string;
   emission: number;
   height: number;
-  imageLink: string;
+  imageSrc: string;
   isTransparent: boolean;
   name: string;
   show: boolean;

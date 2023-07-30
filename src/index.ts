@@ -3,9 +3,9 @@ import { RedisPresence } from "@colyseus/redis-presence";
 import { RedisDriver } from "@colyseus/redis-driver";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { VLMScene } from "./ws/rooms/VLMScene";
-import app from "./app";
 import * as dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ path: __dirname + "/.env" });
+import app from "./app";
 
 const port = Number(process.env.PORT || 3010);
 console.log(`
