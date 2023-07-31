@@ -49,7 +49,8 @@ export abstract class AdminLogManager {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR);
       this.logErrorToDiscord(`
-      :spinning-ligt: -- ${userInfo ? "USER-REPORTED " : ""}ERROR LOGGED FROM ${config.environment.toUpperCase()} -- :spinning-ligt:\n
+      :rotating_light: -- ${userInfo ? "USER-REPORTED " : ""}ERROR LOGGED FROM ${config.environment.toUpperCase()} -- :rotating_light:\n
+      <@&1041552453918801973>\n
       TIME:\n
       **${new Date().toLocaleString()}**\n\n
       ERROR:\n
@@ -62,7 +63,7 @@ export abstract class AdminLogManager {
       \`\`\`json\n${JSON.stringify(userInfo, null, 2)}\n\`\`\`\n`
           : ""
       }
-      :spinning-ligt: -- END ERROR -- :spinning-ligt:\n
+      :rotating_light: -- END ERROR -- :rotating_light:\n
       `);
     } catch (error: any) {
       this.logError(error, { from: "AdminLogManager.logExternalError", metadata });
