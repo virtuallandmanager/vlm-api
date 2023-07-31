@@ -43,7 +43,7 @@ if (process.env.NODE_ENV !== "development") {
   daxClient = docClient;
 }
 
-export let s3 = new AWS.S3();
+export let s3 = new AWS.S3({ region: process.env.AWS_REGION });
 export const vlmMainTable = process.env.NODE_ENV == "production" ? "vlm_main" : `vlm_main${process.env.DEV_TABLE_EXT}`;
 export const vlmAnalyticsTable = process.env.NODE_ENV == "production" ? "vlm_analytics" : `vlm_analytics${process.env.DEV_TABLE_EXT}`;
 export const vlmLogTable = process.env.NODE_ENV == "production" ? "vlm_logs" : `vlm_logs${process.env.DEV_TABLE_EXT}`;
