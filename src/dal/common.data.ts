@@ -9,27 +9,31 @@ export let alchemyEth: Alchemy = new Alchemy({ apiKey: process.env.ALCHEMY_API_K
 export let alchemyPoly: Alchemy = new Alchemy({ apiKey: process.env.ALCHEMY_POLY_API_KEY, network: Network.MATIC_MAINNET });
 
 if (process.env.NODE_ENV !== "development") {
-  // For non-development environments, the environment already has the necessary permissions from the EC2 IAM role.
-  // So just create the AWS service clients.
-  AWS.config.update({
-    region: process.env.AWS_REGION,
-  });
+  try {
+    // For non-development environments, the environment already has the necessary permissions from the EC2 IAM role.
+    // So just create the AWS service clients.
+    AWS.config.update({
+      region: process.env.AWS_REGION,
+    });
 
-  const dax = new DAX(config.aws_dax_config);
-  var daxdb = new AWS.DynamoDB({
-    ...config.aws_dax_config.endpoints,
-    service: dax,
-  } as DynamoDB.ClientConfiguration);
+    const dax = new DAX(config.aws_dax_config);
+    var daxdb = new AWS.DynamoDB({
+      ...config.aws_dax_config.endpoints,
+      service: dax,
+    } as DynamoDB.ClientConfiguration);
 
-  let dynamodb = new AWS.DynamoDB(config.aws_config);
+    let dynamodb = new AWS.DynamoDB(config.aws_config);
 
-  docClient = new AWS.DynamoDB.DocumentClient({
-    service: dynamodb,
-  });
+    docClient = new AWS.DynamoDB.DocumentClient({
+      service: dynamodb,
+    });
 
-  daxClient = new AWS.DynamoDB.DocumentClient({
-    service: daxdb,
-  });
+    daxClient = new AWS.DynamoDB.DocumentClient({
+      service: daxdb,
+    });
+  } catch (error) {
+    console.log("Error creating AWS service clients:", error);
+  }
 } else {
   // Load environment variables from developer's .env file
   AWS.config.update({
