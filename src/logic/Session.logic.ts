@@ -169,7 +169,6 @@ export abstract class SessionManager {
     try {
       decodedSession = jwt.verify(sessionToken, process.env.JWT_ACCESS);
     } catch (error) {
-      console.log(error);
       return false;
     }
 
@@ -205,7 +204,6 @@ export abstract class SessionManager {
     try {
       decodedSession = jwt.verify(sessionToken, process.env.JWT_ANALYTICS);
     } catch (error) {
-      console.log(error);
       return false;
     }
 
@@ -243,7 +241,6 @@ export abstract class SessionManager {
     try {
       decodedSession = jwt.verify(signatureToken, process.env.JWT_SIGNATURE);
     } catch (error) {
-      console.log(error);
       return;
     }
 
@@ -311,7 +308,6 @@ export abstract class SessionManager {
         return user;
       }
     } catch (error) {
-      console.log(error);
       return;
     }
   };
