@@ -11,6 +11,7 @@ import { analyticsAuthMiddleware } from "../../../middlewares/security/auth";
 import { AdminLogManager } from "../../../logic/ErrorLogging.logic";
 import { SceneStream } from "../schema/VLMSceneState";
 import { HistoryManager } from "../../../logic/History.logic";
+import { Metaverse } from "../../../models/Metaverse.model";
 
 type ElementName = "image" | "video" | "nft" | "sound" | "widget";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
@@ -108,14 +109,16 @@ async function handleSessionStart(client: Client, sessionConfig: Analytics.Sessi
           ...sessionConfig,
           sk: client.auth.sessionId,
         }),
-        world = session.worldLocation.world,
-        scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, worlds: [world] })),
+        worldLocation = session.worldLocation,
+        scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [worldLocation] })),
         scenePreset;
 
-      if (scene.worlds && !scene.worlds.includes(world)) {
-        await SceneManager.updateSceneProperty({ scene, prop: "worlds", val: [...scene.worlds, world] });
-      } else if (!scene.worlds || scene.worlds.length == 0) {
-        await SceneManager.updateSceneProperty({ scene, prop: "worlds", val: [world] });
+      const worldHasBeenAdded = scene?.locations && scene.locations.indexOf((location: Metaverse.Location) => location == worldLocation) > -1;
+
+      if (scene && !worldHasBeenAdded) {
+        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...scene.locations, worldLocation] });
+      } else if (scene && (!scene.locations || scene.locations.length == 0)) {
+        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [worldLocation] });
       }
 
       client.send("session_started", { session: dbSession });

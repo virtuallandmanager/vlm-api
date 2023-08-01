@@ -4,7 +4,6 @@ import { TransformConstructorArgs } from "./Transform.model";
 import { ClickEvent } from "./ClickEvent.model";
 import { ModerationSettings } from "./ModerationSettings.model";
 import { DateTime } from "luxon";
-import { bool } from "aws-sdk/clients/signer";
 
 export namespace Scene {
   export class Config {
@@ -14,7 +13,6 @@ export namespace Scene {
     name?: string = "New Scene";
     imageSrc?: string = "";
     locations?: Metaverse.Location[] = [];
-    worlds?: Metaverse.Worlds[] = [];
     scenePreset?: string | Preset;
     presets?: Array<string | Preset> = [];
     settings?: Array<string | Setting> = [];
@@ -26,7 +24,6 @@ export namespace Scene {
       this.name = config.name || this.name;
       this.imageSrc = config.imageSrc || this.imageSrc;
       this.locations = config.locations || this.locations;
-      this.worlds = config.worlds || this.worlds;
       this.scenePreset = config.scenePreset;
       this.presets = config.presets || this.presets;
       this.settings = config.settings || this.settings;
