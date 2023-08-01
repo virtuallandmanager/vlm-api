@@ -56,7 +56,6 @@ export const resizeAndUpload = async (req: Request, res: Response, next: NextFun
         Bucket: config.s3_bucket,
         Key: `${filePath}original.${extension}`,
         Body: req.file.buffer,
-        ACL: "public-read",
       })
       .promise();
 
@@ -74,7 +73,6 @@ export const resizeAndUpload = async (req: Request, res: Response, next: NextFun
         Bucket: config.s3_bucket,
         Key: `${filePath}texture.${extension}`,
         Body: resizedImageBuffer1024,
-        ACL: "public-read",
       })
       .promise();
 
@@ -92,7 +90,6 @@ export const resizeAndUpload = async (req: Request, res: Response, next: NextFun
         Bucket: config.s3_bucket,
         Key: `${filePath}thumbnail.${extension}`,
         Body: resizedImageBuffer512,
-        ACL: "public-read",
       })
       .promise();
 
