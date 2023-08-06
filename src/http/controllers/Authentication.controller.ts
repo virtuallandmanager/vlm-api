@@ -143,17 +143,24 @@ router.get("/restore", authMiddleware, async (req: Request, res: Response) => {
 });
 
 router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_INTERVAL_MS }), async (req: Request & dcl.DecentralandSignatureData<Metadata>, res: Response | any) => {
+  const { baseParcel, sceneId, user, worldLocation, subPlatform } = req.body,
+    clientIp = req.clientIp,
+    parcelArr = baseParcel?.split(",").map((str: string): number => Number(str));
+
+  if (user) {
+    user.lastIp = clientIp;
+  }
+
   try {
-    const { baseParcel, sceneId, user, worldLocation, subPlatform } = req.body,
-      clientIp = req.clientIp,
-      parcelArr = baseParcel?.split(",").map((str: string): number => Number(str));
-
-    if (user) {
-      user.lastIp = clientIp;
-    }
-
     await runChecks(req, parcelArr);
+  } catch (error: unknown) {
+    res.status(401).json({
+      text: JSON.stringify(error) || "Your connection could not be authenticated.",
+      error,
+    });
+  }
 
+  try {
     const dbUser = await AnalyticsManager.obtainUserByWallet(
       {
         address: user.userId,

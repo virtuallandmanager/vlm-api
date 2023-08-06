@@ -123,7 +123,7 @@ export class VLMScene extends Room<VLMSceneState> {
     try {
       console.log("Checking HLS stream: ", url);
       const response = await axios.get(url);
-      console.log(response);
+      // console.log(response);
       if (response.status === 200) {
         return !!response.data;
       } else {
