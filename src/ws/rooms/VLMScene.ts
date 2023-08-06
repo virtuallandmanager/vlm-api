@@ -8,15 +8,36 @@ import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/s
 import { bindEvents, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
 import { Session } from "../../models/Session.model";
 import { AnalyticsManager } from "../../logic/Analytics.logic";
-import { VLMSceneState } from "./schema/VLMSceneState";
+import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
 import { DateTime } from "luxon";
+import { ArraySchema } from "@colyseus/schema";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
+import https from "https";
 
 export class VLMScene extends Room<VLMSceneState> {
   onCreate(options: any) {
     bindEvents(this);
     this.setState(new VLMSceneState());
     this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000);
+  }
+
+  removeDuplicates(arr: ArraySchema<SceneStream>) {
+    // Use a Set to store unique 'sk' values.
+    const skSet = new Set();
+    const result = new ArraySchema<SceneStream>();
+
+    for (let obj of arr) {
+      // If the 'sk' value is already in the Set, skip this object.
+      if (skSet.has(obj.sk)) {
+        continue;
+      }
+
+      // Add the 'sk' value to the Set and push the object to the result array.
+      skSet.add(obj.sk);
+      result.push(obj);
+    }
+
+    return result;
   }
 
   async checkStateOfStreams() {
@@ -35,7 +56,7 @@ export class VLMScene extends Room<VLMSceneState> {
       console.warn("There are more than 100 streams. Consider revising the logic.");
       return;
     }
-
+    this.state.streams = this.removeDuplicates(this.state.streams);
     console.log(`--- Checking Streams ---`);
     console.log(DateTime.now().toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
     console.log(`Cached Streams: ${this.state.streams.length}`);
@@ -124,8 +145,11 @@ export class VLMScene extends Room<VLMSceneState> {
       if (!url) {
         return;
       }
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+      });
       console.log("Checking HLS stream: ", url);
-      const response = await axios.get(url);
+      const response = await axios.get(url, { httpsAgent: agent });
       // console.log(response);
       if (response.status === 200) {
         return !!response.data;
