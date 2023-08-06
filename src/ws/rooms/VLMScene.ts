@@ -121,6 +121,9 @@ export class VLMScene extends Room<VLMSceneState> {
 
   async getHlsContent(url: string): Promise<boolean> {
     try {
+      if (!url) {
+        return;
+      }
       console.log("Checking HLS stream: ", url);
       const response = await axios.get(url);
       // console.log(response);

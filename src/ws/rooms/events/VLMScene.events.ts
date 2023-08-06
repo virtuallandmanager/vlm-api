@@ -133,7 +133,7 @@ async function handleSessionStart(client: Client, sessionConfig: Analytics.Sessi
           const video = scenePreset.videos[i];
           if (room.state.streams.find((stream) => stream.sk == video.sk)) {
             return;
-          } else {
+          } else if (video.liveLink) {
             const status = await room.isStreamLive(video.liveLink),
               stream = new SceneStream({ sk: video.sk, url: video.liveLink, status, sceneId });
             client.send("scene_video_status", stream);
@@ -180,7 +180,7 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
 
     // check for other clients with the same sceneId and remove the scene's videos from the cache if there are none
     const sceneClients = room.clients.filter((c) => c.auth.session.sceneId == session.sceneId && c.auth.user.sk != client.auth.user.sk);
-
+    console.log(`sceneClients remaining for ${session.sceneId} - ${sceneClients}`);
     if (sceneClients.length < 1) {
       room.state.streams = room.state.streams.filter((stream) => stream.sceneId != session.sceneId);
     }
