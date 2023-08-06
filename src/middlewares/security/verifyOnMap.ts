@@ -1,9 +1,11 @@
 import { MARGIN_OF_ERROR, PeerResponse } from "../utils";
+import { ensureHttps } from "./securityChecks";
 
 // validate that the player is active in a catalyst server, and in the indicated coordinates, or within a margin of error
 export async function checkPlayer(playerId: string, server: string, parcel: number[]) {
-  const url = server + "/comms/peers/";
+  const url = ensureHttps(server + "/comms/peers/");
   // const url = `https://peer.decentraland.org/comms/peers`
+
   console.log(url);
   try {
     const response = await fetch(url);

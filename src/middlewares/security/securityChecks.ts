@@ -1,6 +1,5 @@
 import { Request } from "express";
 import dcl from "decentraland-crypto-middleware";
-
 import { denyListedIPS, TESTS_ENABLED, Metadata } from "../utils";
 import { checkCoords, checkPlayer } from "./verifyOnMap";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
@@ -16,7 +15,7 @@ export function checkOrigin(req: Request) {
   return regexes.some((regex) => regex.test(origin));
 }
 
-function ensureHttps(url: string) {
+export function ensureHttps(url: string) {
   if (url.startsWith("http://")) {
     return url.replace("http://", "https://");
   } else if (!url.startsWith("https://")) {
