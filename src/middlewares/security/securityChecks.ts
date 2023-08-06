@@ -37,6 +37,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     return parseInt(item, 10);
   });
   const base = metadata.realm.domain || metadata.realm.hostname || "";
+  console.log("BASE: " + base);
 
   if (!base) {
     AdminLogManager.logExternalError("NOTICED MISSING DCL METADATA!", { req });
