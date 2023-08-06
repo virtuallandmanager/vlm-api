@@ -107,8 +107,8 @@ export namespace Analytics {
     segments?: PathSegment[] = [];
 
     constructor(config: Path) {
-      this.sk = config.sk || this.sk;
-      this.segments = config.segments;
+      this.sk = config?.sk || this.sk;
+      this.segments = config?.segments || this.segments;
     }
   }
 

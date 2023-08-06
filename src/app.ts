@@ -34,7 +34,7 @@ const corsOptions: CorsOptions = {
 };
 
 const corsDevOptions: CorsOptions = {
-  origin: [/^https:\/\/([a-z0-9]+\.)?decentraland\.org$/, /^https:\/\/([a-z0-9]+\.)?vlm\.gg$/, /^http:\/\/localhost:\d+$/, /^https:\/\/localhost:\d+$/],
+  origin: [/^https:\/\/([a-z0-9]+\.)?decentraland\.org$/, /^https:\/\/([a-z0-9]+\.)?vlm\.gg$/, /^http:\/\/localhost:\d+$/, /^https:\/\/localhost:\d+$/, /^http:\/\/\d+.\d+.\d+.\d+:\d+$/],
   allowedHeaders: ["Content-Type, Authorization, x-identity-timestamp, x-identity-metadata, x-identity-auth-chain-0, x-identity-auth-chain-1, x-identity-auth-chain-2"],
   credentials: true,
 };

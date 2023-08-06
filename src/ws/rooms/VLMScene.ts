@@ -84,31 +84,31 @@ export class VLMScene extends Room<VLMSceneState> {
         });
       }
 
-      // connect a VLM scene host
-      if (auth.session.pk == Analytics.Session.Config.pk) {
-        const response = await this.connectAnalyticsUser(client, auth.session);
-        auth.session = response.session;
-        auth.user = response.user;
-      }
-
-      // connect a VLM scene host
-      if (auth.session?.pk == User.Session.Config.pk && sessionConfig.sceneId) {
-        auth.session.sceneId = sessionConfig.sceneId;
-        auth.user = await this.connectHostUser(client, auth.session);
-      }
-
       return auth;
     } catch (error) {
       console.log(error);
     }
   }
 
-  async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account }) {}
+  async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account }) {
+    // connect a VLM scene host
+    if (auth.session.pk == Analytics.Session.Config.pk) {
+      const response = await this.connectAnalyticsUser(client, auth.session);
+      auth.session = response.session;
+      auth.user = response.user;
+    }
+
+    // connect a VLM scene host
+    if (auth.session?.pk == User.Session.Config.pk && sessionConfig.sceneId) {
+      auth.session.sceneId = sessionConfig.sceneId;
+      auth.user = await this.connectHostUser(client, auth.session);
+    }
+  }
 
   async connectAnalyticsUser(client: Client, sessionConfig: User.Session.Config) {
     const session = await SessionManager.startAnalyticsSession(sessionConfig);
     const user = await AnalyticsManager.getUserById(session.userId);
-    console.log(`${user.displayName} joined in ${sessionConfig.world || "world"}.`);
+    console.log(`${user.displayName} joined in ${sessionConfig.world || "world"} - ${client.sessionId}.`);
     return { user, session };
   }
 
