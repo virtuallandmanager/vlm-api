@@ -17,7 +17,7 @@ export namespace History {
 
   export class Root {
     static pk: string = "vlm:history:root";
-    pk?: string = Update.pk;
+    pk?: string = Root.pk;
     sk?: string = uuidv4();
     historyId?: string;
     root?: Object;
