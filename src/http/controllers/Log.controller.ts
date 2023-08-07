@@ -4,8 +4,8 @@ const router = express.Router();
 
 router.post("/error", async (req: Request, res: Response) => {
   try {
-    const { log, metadata, userInfo } = req.body;
-    await AdminLogManager.logExternalError(log, metadata, userInfo);
+    const { error, metadata, userInfo } = req.body;
+    await AdminLogManager.logExternalError(error, metadata, userInfo);
 
     return res.status(200).json({
       text: "Logged error successfully.",
