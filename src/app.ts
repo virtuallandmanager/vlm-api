@@ -7,6 +7,7 @@ import userController from "./http/controllers/User.controller";
 import authController from "./http/controllers/Authentication.controller";
 import adminController from "./http/controllers/Admin.controller";
 import sceneController from "./http/controllers/Scene.controller";
+import sessionController from "./http/controllers/Session.controller";
 import eventController from "./http/controllers/Event.controller";
 import mediaController from "./http/controllers/Media.controller";
 import logController from "./http/controllers/Log.controller";
@@ -49,6 +50,7 @@ app.use("/_health", healthCheck);
 app.use("/auth", jsonParser, urlencodedParser, authController);
 app.use("/admin", jsonParser, urlencodedParser, adminController);
 app.use("/scene", jsonParser, urlencodedParser, sceneController);
+app.use("/session", jsonParser, urlencodedParser, sessionController);
 app.use("/user", jsonParser, urlencodedParser, userController);
 app.use("/event", jsonParser, urlencodedParser, eventController);
 app.use("/media", mediaController); // No body-parser middleware applied to this route

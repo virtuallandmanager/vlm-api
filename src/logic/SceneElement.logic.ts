@@ -22,13 +22,18 @@ export abstract class SceneElementManager {
       const sceneElements = [];
       if (sks && sks.length) {
         for (let i = 0; i < sks.length; i++) {
-          const sceneElement = await SceneManager.getSceneElementById(pk, sks[i]);
+          let sceneElement = await SceneManager.getSceneElementById(pk, sks[i]);
 
           if (pk == "vlm.scene.nft" && sceneElement.contractAddress && sceneElement.tokenId > -1) {
             await alchemy.nft.getNftMetadata(sceneElement.contractAddress, sceneElement.tokenId);
           }
           if (sceneElement.instances && sceneElement.instances.length) {
-            sceneElement.instances = await this.buildElementInstances(pk + ":instance", sceneElement.instances);
+            if (typeof sceneElement.instances[0] == "string") {
+              sceneElement.instances = await this.buildElementInstances(pk + ":instance", sceneElement.instances);
+            } else if (sceneElement.instances[0].sk) {
+              sceneElement = await GenericDbManager.put({ ...sceneElement, instances: sceneElement.instances.map((instance: Scene.Element) => instance.sk) }, true);
+              sceneElement.instances = await this.buildElementInstances(pk + ":instance", sceneElement.instances);
+            }
           }
           sceneElements.push(sceneElement);
         }

@@ -127,19 +127,21 @@ async function handleSessionStart(client: Client, sessionConfig: Analytics.Sessi
         scenePreset = await ScenePresetManager.getScenePresetById(scene.scenePreset);
         scenePreset = await ScenePresetManager.buildScenePreset(scenePreset, { skToId: true });
 
-        client.send("scene_preset_update", { action: "init", scenePreset });
-
         for (let i = 0; i < scenePreset.videos.length; i++) {
           const video = scenePreset.videos[i];
-          if (room.state.streams.find((stream) => stream.sk == video.sk)) {
-            return;
+          const cachedStream = room.state.streams.find((stream) => stream.sk == video.sk);
+          if (cachedStream) {
+            video.isLive = cachedStream.status;
+            continue;
           } else if (video.liveLink) {
             const status = await room.isStreamLive(video.liveLink),
               stream = new SceneStream({ sk: video.sk, url: video.liveLink, status, sceneId });
-            client.send("scene_video_status", stream);
             room.state.streams.push(stream);
+            video.isLive = status;
           }
         }
+
+        client.send("scene_preset_update", { action: "init", scenePreset });
       }
     });
     return false;
@@ -194,7 +196,7 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
 export function handleHostJoined(client: Client, message: any, room: VLMScene) {
   // Logic for host_joined message
   try {
-    const { user } = client.auth;
+    const { user } = message;
     // Find the client who triggered the message
     const triggeringClient = room.clients.find((c) => c.sessionId === client.sessionId);
 
@@ -398,7 +400,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
     }
 
     if (message.element === "video" && message.elementData.instances.length > 0) {
-      room.state.streams = room.state.streams.filter((stream: SceneStream) => stream.sceneId !== message.sceneData.sk);
+      room.state.streams = room.state.streams.filter((stream: SceneStream) => stream.sceneId !== message.sceneData?.sk || message.id);
       const presetVideos = message.scenePreset.videos;
 
       presetVideos.forEach((video: Scene.Video.Config) => {

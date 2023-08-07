@@ -57,12 +57,12 @@ export class VLMScene extends Room<VLMSceneState> {
       return;
     }
     this.state.streams = this.removeDuplicates(this.state.streams);
-    console.log(`--- Checking Streams ---`);
-    console.log(DateTime.now().toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
-    console.log(`Cached Streams: ${this.state.streams.length}`);
-    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status}`).join("\n ")}`);
-    console.log(`Batch size: ${this.state.batchSize}`);
-    console.log(`------------------------`);
+    // console.log(`--- Checking Streams ---`);
+    // console.log(DateTime.now().toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
+    // console.log(`Cached Streams: ${this.state.streams.length}`);
+    // console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status}`).join("\n ")}`);
+    // console.log(`Batch size: ${this.state.batchSize}`);
+    // console.log(`------------------------`);
 
     if (this.state.streamIndex >= this.state.streams.length) {
       this.state.streamIndex = 0;
@@ -135,8 +135,8 @@ export class VLMScene extends Room<VLMSceneState> {
 
   async connectHostUser(client: Client, session: User.Session.Config) {
     const user = await UserManager.getById(session.userId);
-    console.log(`${user.displayName} joined in VLM.`);
-    handleHostJoined(client, { session }, this);
+    client.auth.user = user;
+    handleHostJoined(client, { session, user }, this);
     return user;
   }
 
@@ -148,7 +148,7 @@ export class VLMScene extends Room<VLMSceneState> {
       const agent = new https.Agent({
         rejectUnauthorized: false,
       });
-      console.log("Checking HLS stream: ", url);
+      // console.log("Checking HLS stream: ", url);
       const response = await axios.get(url, { httpsAgent: agent });
       // console.log(response);
       if (response.status === 200) {
