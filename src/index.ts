@@ -14,7 +14,7 @@ console.log(`
 ░░▀░░▀▀▀░▀░▀░░▀░░▀▀▀░▀░▀░▀▀▀░░░▀▀▀░▀░▀░▀░▀░▀▀░░░░▀░▀░▀░▀░▀░▀░▀░▀░▀▀▀░▀▀▀░▀░▀
 `);
 console.log(`------------------------------------------------------------------------------`);
-console.log(`|            Version 0.1.0 - Stunning 8K Resolution Meditation App            |`);
+console.log(`|            Version 0.1.1 - Stunning 8K Resolution Meditation App            |`);
 console.log(`------------------------------------------------------------------------------`);
 console.log(`//////////////////////// STARTING API ON PORT ${port} ////////////////////////`);
 console.log(`//////////////////////////// ${process.env.NODE_ENV.toUpperCase()} MODE ////////////////////////////`);
