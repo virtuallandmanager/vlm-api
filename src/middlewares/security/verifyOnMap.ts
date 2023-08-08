@@ -1,3 +1,4 @@
+import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { MARGIN_OF_ERROR, PeerResponse } from "../utils";
 import { ensureHttps } from "./securityChecks";
 
@@ -6,7 +7,6 @@ export async function checkPlayer(playerId: string, server: string, parcel: numb
   const url = ensureHttps(server + "/comms/peers/");
   // const url = `https://peer.decentraland.org/comms/peers`
 
-  console.log(url);
   try {
     const response = await fetch(url);
     const data: PeerResponse = await response.json();
@@ -20,8 +20,8 @@ export async function checkPlayer(playerId: string, server: string, parcel: numb
       return player && checkCoords(player.parcel, parcel);
     }
   } catch (error) {
-    console.log(error);
-    return false;
+    AdminLogManager.logError(error, { text: "Failed to check player status!", from: "verifyOnMap/checkPlayer" });
+    return true;
   }
 
   return false;

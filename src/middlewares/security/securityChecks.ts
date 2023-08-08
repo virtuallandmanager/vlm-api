@@ -42,7 +42,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     AdminLogManager.logExternalError("NOTICED MISSING DCL METADATA!", { req });
     return;
   } else if (TESTS_ENABLED) {
-    return;
+    // return;
   } else {
     ensureHttps(base);
   }
