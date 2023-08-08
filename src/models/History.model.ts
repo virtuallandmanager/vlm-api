@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export namespace History {
   export class Config {
-    static pk: string = "vlm:history:config";
+    static pk: string = "vlm:history";
     pk?: string = Config.pk;
     sk?: string = uuidv4(); //shares SK with whatever it's storing a history for
     updates?: string[] | Update[] = [];

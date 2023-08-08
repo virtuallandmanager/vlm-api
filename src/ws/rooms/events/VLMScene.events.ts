@@ -16,7 +16,7 @@ import { Metaverse } from "../../../models/Metaverse.model";
 type ElementName = "image" | "video" | "nft" | "sound" | "widget";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
 type Settings = "moderation";
-type Property = "enabled" | "liveLink" | "imageSrc" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency" | "contactAddres" | "tokenId";
+type Property = "enabled" | "liveSrc" | "imageSrc" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency" | "contactAddres" | "tokenId";
 export type VLMSceneElement = Scene.Image.Config | Scene.NFT.Config | Scene.Sound.Config | Scene.Video.Config;
 export type VLMSceneElementInstance = Scene.Image.Instance & Scene.NFT.Instance & Scene.Sound.Instance & Scene.Video.Instance;
 
@@ -106,9 +106,9 @@ async function handleSessionStart(client: Client, sessionConfig: Analytics.Sessi
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       client.auth = { session, user: {} };
       let dbSession = await SessionManager.startAnalyticsSession({
-          ...sessionConfig,
-          sk: client.auth.sessionId,
-        }),
+        ...sessionConfig,
+        sk: client.auth.sessionId,
+      }),
         worldLocation = session.worldLocation,
         scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [worldLocation] })),
         scenePreset;
@@ -133,9 +133,9 @@ async function handleSessionStart(client: Client, sessionConfig: Analytics.Sessi
           if (cachedStream) {
             video.isLive = cachedStream.status;
             continue;
-          } else if (video.liveLink) {
-            const status = await room.isStreamLive(video.liveLink),
-              stream = new SceneStream({ sk: video.sk, url: video.liveLink, status, sceneId });
+          } else if (video.liveSrc) {
+            const status = await room.isStreamLive(video.liveSrc),
+              stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status, sceneId });
             room.state.streams.push(stream);
             video.isLive = status;
           }
@@ -157,7 +157,7 @@ async function handleSessionAction(client: Client, message: { action: string; me
       { sceneId } = session;
 
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async () => {
-      const response = await SessionManager.logAnalyticsAction({ action, metadata, pathPoint, sessionId: session.sk });
+      const response = await SessionManager.logAnalyticsAction({ name: action, metadata, pathPoint, sessionId: session.sk });
       if (!response) {
         AdminLogManager.logError("Failed to log analytics action", { ...message, ...client.auth });
       }
@@ -404,7 +404,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
       const presetVideos = message.scenePreset.videos;
 
       presetVideos.forEach((video: Scene.Video.Config) => {
-        const stream = new SceneStream({ sk: video.sk, url: video.liveLink, status: null, sceneId: client.auth.session.sceneId });
+        const stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status: null, sceneId: client.auth.session.sceneId });
         room.state.streams.push(stream);
       });
     }

@@ -57,10 +57,10 @@ export class VLMScene extends Room<VLMSceneState> {
       return;
     }
     this.state.streams = this.removeDuplicates(this.state.streams);
-    // console.log(`--- Checking Streams ---`);
+    console.log(`--- Checking Streams ---`);
     // console.log(DateTime.now().toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
     // console.log(`Cached Streams: ${this.state.streams.length}`);
-    // console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status}`).join("\n ")}`);
+    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status}`).join("\n ")}`);
     // console.log(`Batch size: ${this.state.batchSize}`);
     // console.log(`------------------------`);
 
@@ -71,10 +71,11 @@ export class VLMScene extends Room<VLMSceneState> {
     const streams = this.state.streams.slice(this.state.streamIndex, this.state.streamIndex + this.state.batchSize);
 
     for (const stream of streams) {
+      const streamStatus = stream.status;
       const status = await this.isStreamLive(stream.url);
 
       // If the status has changed, update it and notify relevant clients
-      if (status !== stream.status) {
+      if (status !== streamStatus) {
         stream.status = status;
         console.log(`Stream State Changed:`);
         console.log(`Scene: ${stream.sceneId} | Stream: ${stream.url} | Status: ${status}`);
@@ -158,7 +159,6 @@ export class VLMScene extends Room<VLMSceneState> {
         return false;
       }
     } catch (error: any) {
-      console.log(error);
       if (error.response && error.response.status == 403) {
         this.state.streams = this.state.streams.filter((stream) => stream.url !== url);
         const clientAuths = this.clients.map((client) => client.auth);

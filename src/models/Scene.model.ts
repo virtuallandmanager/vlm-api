@@ -173,7 +173,7 @@ export namespace Scene {
       emission?: number = 1;
       enableLiveStream?: boolean = false;
       instances?: string[] | Instance[] = [];
-      liveLink?: string = "";
+      liveSrc?: string = "";
       offType?: SourceType = SourceType.NONE;
       offImageSrc?: string = "";
       parent?: string = "";
@@ -194,7 +194,7 @@ export namespace Scene {
         this.emission = config.emission;
         this.enableLiveStream = config.enableLiveStream;
         this.instances = config.instances;
-        this.liveLink = config.liveLink;
+        this.liveSrc = config.liveSrc;
         this.offType = config.offType;
         this.offImageSrc = config.offImageSrc;
         this.parent = config.parent;
@@ -528,7 +528,7 @@ export namespace Scene {
   export type ElementName = "image" | "video" | "nft" | "sound" | "widget";
   export type Action = "init" | "create" | "update" | "delete" | "trigger";
   export type Settings = "moderation";
-  export type Property = "enabled" | "liveLink" | "imageSrc" | "nftData" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency";
+  export type Property = "enabled" | "liveSrc" | "imageSrc" | "nftData" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency";
 
   export class ColyseusMessage {
     action: Action;
