@@ -404,6 +404,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
       const presetVideos = message.scenePreset.videos;
 
       presetVideos.forEach((video: Scene.Video.Config) => {
+        if (!video.liveSrc) return;
         const stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status: null, sceneId: client.auth.session.sceneId });
         room.state.streams.push(stream);
       });
