@@ -67,7 +67,7 @@ router.get("/image/:sk/:file", async (req: Request, res: Response) => {
 
 router.get("/demo-image/:id", async (req: Request, res: Response) => {
   const { id } = req.params,
-    filePath = `prod/demo-images/${id}.png`;
+    filePath = `prod/demo-images/${id}`;
 
   const params = {
     Bucket: config.s3_bucket,
@@ -96,7 +96,7 @@ router.get("/demo-image/:id", async (req: Request, res: Response) => {
 
 router.get("/demo-video/:id", async (req: Request, res: Response) => {
   const { id } = req.params,
-    filePath = `prod/demo-videos/${id}.mp4`;
+    filePath = `prod/demo-videos/${id}`;
 
   const params = {
     Bucket: config.s3_bucket,
