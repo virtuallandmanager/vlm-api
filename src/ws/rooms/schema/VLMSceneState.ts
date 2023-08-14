@@ -8,6 +8,9 @@ export class SceneStream extends Schema {
   url: string;
 
   @type("string")
+  presetId: string;
+
+  @type("string")
   sceneId: string;
 
   @type("boolean")

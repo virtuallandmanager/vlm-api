@@ -9,7 +9,6 @@ import { bindEvents, handleHostJoined, handleSessionEnd } from "./events/VLMScen
 import { Session } from "../../models/Session.model";
 import { AnalyticsManager } from "../../logic/Analytics.logic";
 import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
-import { DateTime } from "luxon";
 import { ArraySchema } from "@colyseus/schema";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import https from "https";
@@ -82,7 +81,7 @@ export class VLMScene extends Room<VLMSceneState> {
         // Send a message to anyone in the room that has a matching sceneId
         for (const [sessionId, client] of Object.entries(this.clients)) {
           if (client.auth?.session.sceneId === stream.sceneId) {
-            client.send("scene_video_status", { sk: stream.sk, status });
+            client.send("scene_video_status", { sk: stream.sk, status, url: stream.url });
           }
         }
       }
@@ -112,8 +111,9 @@ export class VLMScene extends Room<VLMSceneState> {
     }
   }
 
-  async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account }) {
+  async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account, sceneId: string }) {
     // connect a VLM scene host
+    auth.sceneId = sessionConfig.sceneId;
     if (auth.session.pk == Analytics.Session.Config.pk) {
       const response = await this.connectAnalyticsUser(client, auth.session);
       auth.session = response.session;
@@ -153,7 +153,7 @@ export class VLMScene extends Room<VLMSceneState> {
       const response = await axios.get(url, { httpsAgent: agent });
       // console.log(response);
       if (response.status === 200) {
-        return !!response.data;
+        return true;
       } else {
         AdminLogManager.logInfo("Received non-200 success status", { url, streams: JSON.stringify(this.state.streams), totalClients: this.clients.length, clients: this.clients, response: JSON.stringify(response) });
         return false;
@@ -164,6 +164,7 @@ export class VLMScene extends Room<VLMSceneState> {
         const clientAuths = this.clients.map((client) => client.auth);
         try {
           const log = await AdminLogManager.logWarning("Received 403 Forbidden error from HLS stream.", { url, streams: JSON.stringify(this.state.streams), totalClients: this.clients.length, clients: clientAuths, error: JSON.stringify(error) });
+          return false;
         } catch (error) {
           return false;
         }

@@ -49,3 +49,4 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 gameServer.define("vlm_scene", VLMScene);
+gameServer.define("vlm_portable", VLMScene);

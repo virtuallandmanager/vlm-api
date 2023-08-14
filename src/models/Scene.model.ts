@@ -489,7 +489,7 @@ export namespace Scene {
       name?: string;
       type?: ControlType;
       selections?: WidgetSelection[];
-      value?: unknown;
+      value?: number | string | Object | Array<unknown> | boolean;
       range?: [number, number];
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
       ts?: EpochTimeStamp;

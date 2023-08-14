@@ -42,7 +42,7 @@ export abstract class HistoryManager {
     const { displayName } = user,
       userId = user.sk;
     try {
-      const history = new History.Config({ sk });
+      const history = await HistoryDbManager.get(new History.Config({ sk }));
       let update;
 
       if (history.updates.length === 0) {
