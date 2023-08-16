@@ -20,7 +20,7 @@ export namespace Metaverse {
     name?: string = "New World";
   }
 
-  export type Location = { world: Metaverse.Worlds; location: string; coordinates: number[] | string[]; url?: string };
+  export type Location = { world: Metaverse.Worlds; location: string; coordinates: number[] | string[]; parcels: string[], url?: string };
 
   export type Worlds = "decentraland" | "hyperfy";
 }

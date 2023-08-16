@@ -51,12 +51,12 @@ export namespace Analytics {
       pk?: string = Config.pk;
       device?: string;
       paths?: string[];
-      worldLocation?: Metaverse.Location;
+      location?: Metaverse.Location;
 
       constructor(config: Config) {
         super(config);
         this.device = config.device;
-        this.worldLocation = config.worldLocation;
+        this.location = config.location;
       }
     }
 
@@ -65,13 +65,13 @@ export namespace Analytics {
       pk?: string = Config.pk;
       device?: string;
       paths?: string[];
-      worldLocation?: Metaverse.Location;
+      location?: Metaverse.Location;
       suspicious: boolean = true;
 
       constructor(config: Config) {
         super(config);
         this.device = config.device;
-        this.worldLocation = config.worldLocation;
+        this.location = config.location;
       }
     }
 
@@ -106,7 +106,7 @@ export namespace Analytics {
     sk?: string = uuidv4(); // Sort Key
     segments?: PathSegment[] = [];
 
-    constructor(config: Path) {
+    constructor(config?: Path) {
       this.sk = config?.sk || this.sk;
       this.segments = config?.segments || this.segments;
     }

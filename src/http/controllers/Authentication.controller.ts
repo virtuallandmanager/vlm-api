@@ -143,7 +143,7 @@ router.get("/restore", authMiddleware, async (req: Request, res: Response) => {
 });
 
 router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_INTERVAL_MS }), async (req: Request & dcl.DecentralandSignatureData<Metadata>, res: Response | any) => {
-  const { baseParcel, sceneId, user, worldLocation, subPlatform } = req.body,
+  const { baseParcel, sceneId, user, location, subPlatform } = req.body,
     clientIp = req.clientIp,
     parcelArr = baseParcel?.split(",").map((str: string): number => Number(str));
 
@@ -173,7 +173,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
     const session = new Analytics.Session.Config({
       userId: dbUser.sk,
       connectedWallet: dbUser.connectedWallet,
-      worldLocation,
+      location,
       sceneId,
       clientIp,
       device: subPlatform,

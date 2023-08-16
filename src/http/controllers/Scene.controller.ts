@@ -41,16 +41,17 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
   try {
     const sceneConfig = req.body,
       newScene = new Scene.Config(sceneConfig),
-      userAccount = UserManager.getById(req.session.userId),
+      userAccount = await UserManager.getById(req.session.userId),
       newSceneLink = new User.SceneLink({ sk: req.session.userId }, newScene),
+      scene = await SceneManager.createScene(newScene),
       sceneLink = await SceneManager.createUserLink(newSceneLink),
-      scene = await SceneManager.buildScene(newScene, req.body.locale);
+      fullScene = await SceneManager.buildScene(scene, req.body.locale);
 
-    HistoryManager.initHistory(userAccount, newScene);
+    HistoryManager.initHistory(userAccount, fullScene);
 
     return res.status(200).json({
       text: "Successfully authenticated.",
-      scene,
+      scene: fullScene,
       sceneLink,
     });
   } catch (error: unknown) {

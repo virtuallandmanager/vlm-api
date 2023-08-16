@@ -20,7 +20,7 @@ export namespace Session {
     expires?: EpochTimeStamp;
     sceneId?: string;
     world?: Metaverse.Worlds;
-    worldLocation?: Metaverse.Location;
+    location?: Metaverse.Location;
     ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Config) {
@@ -36,7 +36,7 @@ export namespace Session {
       this.expires = config.expires;
       this.sceneId = config.sceneId;
       this.world = config.world;
-      this.worldLocation = config.worldLocation;
+      this.location = config.location;
       this.ts = config.ts || this.ts;
     }
   }

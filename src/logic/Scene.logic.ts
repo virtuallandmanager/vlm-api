@@ -90,7 +90,7 @@ export abstract class SceneManager {
 
   static changeScenePreset: CallableFunction = async (message: VLMSceneMessage) => {
     try {
-      let scene = await this.updateSceneProperty({ scene: message.sceneData, prop: "scenePreset", val: message.id });
+      let scene = await this.updateSceneProperty({ scene: message.sceneData, prop: "scenePreset", val: message.id || message.scenePreset.sk });
       scene = await this.buildScene(scene);
 
       return scene;

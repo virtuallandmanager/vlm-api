@@ -122,7 +122,7 @@ export abstract class HistoryDbManager {
 
     try {
       await docClient.transactWrite(params).promise();
-      return history;
+      return config;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "History.data/initHistory",

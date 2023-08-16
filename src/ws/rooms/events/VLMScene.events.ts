@@ -14,8 +14,8 @@ import { HistoryManager } from "../../../logic/History.logic";
 import { Metaverse } from "../../../models/Metaverse.model";
 import { VLMPortable } from "../VLMPortable";
 import { deepEqual } from "../../../helpers/data";
-import { UserManager } from "../../../logic/User.logic";
 import { AnalyticsManager } from "../../../logic/Analytics.logic";
+import { SceneSettingsManager } from "../../../logic/SceneSettings.logic";
 
 type ElementName = "image" | "video" | "nft" | "sound" | "widget";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
@@ -78,7 +78,11 @@ export function bindEvents(room: VLMScene) {
     scene_delete_preset_request: handleSceneDeletePresetRequest,
     scene_delete: handleSceneDelete,
 
+    scene_moderator_message: handleModeratorMessage,
+    scene_moderator_crash: handleModeratorCrash,
+
     scene_preset_update: handlePresetUpdate,
+    scene_setting_update: handleSettingUpdate,
     scene_video_update: handleSceneVideoUpdate,
     scene_sound_locator: handleToggleSoundLocators,
   };
@@ -115,35 +119,32 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         ...sessionConfig,
         sk: client.auth.sessionId,
       }),
-        worldLocation = session.worldLocation,
-        scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [worldLocation] })),
+        userLocation = session.location,
+        scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [userLocation] })),
         scenePreset;
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
-        const equal = deepEqual(location, worldLocation) ||
-          location.world === worldLocation.world &&
-          location.location === worldLocation.location &&
-          location.coordinates[0] === worldLocation.coordinates[0] &&
-          location.coordinates[1] === worldLocation.coordinates[1];
+        const equal = deepEqual(location, userLocation) ||
+          location.world === userLocation.world &&
+          location.location === userLocation.location &&
+          location.coordinates[0] === userLocation.coordinates[0] &&
+          location.coordinates[1] === userLocation.coordinates[1] && 
+          location?.parcels?.length == userLocation?.parcels?.length;
         return equal
       });
 
-      const worldHasBeenAdded = existingSceneLocations.length
+      const worldHasBeenAdded = existingSceneLocations?.length
 
       if (scene && !worldHasBeenAdded) {
-        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...scene.locations, worldLocation] });
-      } else if (scene && existingSceneLocations.length) {
+        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...scene.locations, userLocation] });
+      } else if (scene && worldHasBeenAdded) {
         const locations = scene.locations.filter((location: Metaverse.Location) => {
-          const equal = deepEqual(location, worldLocation) ||
-            location.world === worldLocation.world &&
-            location.location === worldLocation.location &&
-            location.coordinates[0] === worldLocation.coordinates[0] &&
-            location.coordinates[1] === worldLocation.coordinates[1];
+          const equal = existingSceneLocations.includes(location);
           return !equal
         });
-        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...locations, worldLocation] });
+        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...locations, userLocation] });
       } else {
-        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [worldLocation] });
+        await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [userLocation] });
 
       }
 
@@ -461,7 +462,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
       });
     }
 
-    message.user = (({ displayName, sk }) => ({ displayName, sk }))(client.auth.user);
+    message.user = (({ displayName, sk, connectedWallet }) => ({ displayName, sk, connectedWallet }))({ ...client.auth.session, ...client.auth.user, });
     message.stage = "post";
     HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: message.action, element: message.element, property: message.property || "preset", id: message.id });
     return true;
@@ -471,11 +472,50 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
   }
 }
 
+export async function handleSettingUpdate(client: Client, message: VLMSceneMessage, room: Room) {
+  // Logic for scene_setting_update message
+  try {
+    const sceneSetting = new Scene.Setting(message.settingData);
+    const scene = await SceneManager.getSceneById(message.sceneData.sk);
+    if (scene.settings.includes(sceneSetting.sk)) {
+      await SceneSettingsManager.updateSceneSetting(scene, sceneSetting);
+      HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "update", element: "scene", property: "setting", id: message.id }, message.sceneData);
+    } else {
+      await SceneSettingsManager.addSettingsToScene(scene, [sceneSetting]);
+      HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "create", element: "scene", property: "setting", id: message.id }, message.sceneData);
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export function handleSceneDelete(client: Client, message: any, room: Room) {
   // Logic for scene_delete message
   HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "delete", element: "scene", id: message.id });
   try {
     return false;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function handleModeratorMessage(client: Client, message: any, room: Room) {
+  try {
+    // Logic for scene_moderator_message message
+    console.log("Moderator Message: ", message)
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "sent moderator message", message })
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function handleModeratorCrash(client: Client, message: any, room: Room) {
+  // Logic for scene_moderator_crash message
+  HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "nuked a user", message })
+  try {
+    return true;
   } catch (error) {
     return false;
   }

@@ -331,7 +331,7 @@ export abstract class SceneDbManager {
   };
 
   static addPresetsToScene: CallableFunction = async (sceneConfig: Scene.Config, scenePresets: Scene.Preset[]) => {
-    const sks = scenePresets.map((preset: Scene.Preset) => preset.sk).filter((sk: string) => !sceneConfig.presets.includes(sk));
+    const sks = scenePresets.map((preset: Scene.Preset) => preset.sk).filter((sk: string) => !sceneConfig?.presets?.includes(sk));
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -446,7 +446,7 @@ export abstract class SceneDbManager {
   };
 
   static addSettingsToScene: CallableFunction = async (sceneConfig: Scene.Config, sceneSettings: Scene.Setting[]) => {
-    const sks = sceneSettings.map((setting: Scene.Setting) => setting.sk).filter((sk: string) => !sceneConfig.settings.includes(sk));
+    const sks = sceneSettings.map((setting: Scene.Setting) => setting.sk).filter((sk: string) => !sceneConfig?.settings?.includes(sk));
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -856,7 +856,7 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
       ExpressionAttributeValues: {
         ":prop": newValue,
-        ":sceneTs": sceneConfig.ts,
+        ":sceneTs": sceneConfig.ts || Date.now(),
         ":ts": Date.now(),
       },
     };

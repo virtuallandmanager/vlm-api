@@ -20,15 +20,15 @@ export namespace Scene {
     ts?: EpochTimeStamp = Date.now();
 
     constructor(config?: Config) {
-      this.sk = config.sk || this.sk;
-      this.name = config.name || this.name;
-      this.imageSrc = config.imageSrc || this.imageSrc;
-      this.locations = config.locations || this.locations;
-      this.scenePreset = config.scenePreset;
-      this.presets = config.presets || this.presets;
-      this.settings = config.settings || this.settings;
-      this.createdAt = config.createdAt || this.createdAt;
-      this.ts = config.ts || this.ts;
+      this.sk = config?.sk || this.sk;
+      this.name = config?.name || this.name;
+      this.imageSrc = config?.imageSrc || this.imageSrc;
+      this.locations = config?.locations || this.locations;
+      this.scenePreset = config?.scenePreset;
+      this.presets = config?.presets || this.presets;
+      this.settings = config?.settings || this.settings;
+      this.createdAt = config?.createdAt || this.createdAt;
+      this.ts = config?.ts || this.ts;
     }
   }
 
@@ -112,6 +112,7 @@ export namespace Scene {
         new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Banned Users", settingValue: [] }),
         new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allowed Wearables", settingValue: [] }),
         new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allowed Users", settingValue: [] }),
+        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allow Web3 Only", settingValue: false }),
       ];
     }
   }
@@ -534,7 +535,7 @@ export namespace Scene {
     action: Action;
     element: ElementName;
     instance: boolean;
-    settings: Settings;
+    setting: Settings;
     property?: Property;
     id?: string;
     elementData?: Element;
@@ -549,7 +550,7 @@ export namespace Scene {
       this.id = message.id;
       this.element = message.element;
       this.instance = message.instance;
-      this.settings = message.settings;
+      this.setting = message.setting;
       this.elementData = message.elementData;
       this.instanceData = message.instanceData;
       this.settingsData = message.settingsData;

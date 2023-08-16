@@ -2,6 +2,7 @@ import { GenericDbManager } from "../dal/Generic.data";
 import { Scene } from "../models/Scene.model";
 import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
+import { SceneManager } from "./Scene.logic";
 
 export abstract class SceneSettingsManager {
 
@@ -32,4 +33,18 @@ export abstract class SceneSettingsManager {
       return;
     }
   };
+
+  static updateSceneSetting: CallableFunction = async (sceneConfig: Scene.Config, sceneSetting: Scene.Setting) => {
+    try {
+      if (!sceneConfig?.settings?.includes(sceneSetting.sk)) {
+        AdminLogManager.logError("Setting has not been added to this scene.", { from: "SceneSettingsManager.updateSceneSetting", sceneSetting });
+        return;
+      }
+      return await GenericDbManager.put(sceneSetting);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneSettingsManager.updateSceneSetting" });
+      return;
+    }
+  };
+
 }
