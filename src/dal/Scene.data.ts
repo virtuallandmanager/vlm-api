@@ -863,7 +863,7 @@ export abstract class SceneDbManager {
 
     try {
       await daxClient.update(params).promise();
-      return await this.get(sceneConfig);
+      return await this.getById(sceneConfig.sk);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/updateSceneProperty",

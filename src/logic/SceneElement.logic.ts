@@ -30,7 +30,7 @@ export abstract class SceneElementManager {
           if (sceneElement.instances && sceneElement.instances.length) {
             if (typeof sceneElement.instances[0] == "string") {
               sceneElement.instances = await this.buildElementInstances(pk + ":instance", sceneElement.instances);
-            } else if (sceneElement.instances[0].sk) {
+            } else if (sceneElement.instances[0]?.sk) {
               sceneElement = await GenericDbManager.put({ ...sceneElement, instances: sceneElement.instances.map((instance: Scene.Element) => instance.sk) }, true);
               sceneElement.instances = await this.buildElementInstances(pk + ":instance", sceneElement.instances);
             }

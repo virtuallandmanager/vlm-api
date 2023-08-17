@@ -88,10 +88,10 @@ export abstract class SceneManager {
     }
   };
 
-  static changeScenePreset: CallableFunction = async (message: VLMSceneMessage) => {
+  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, sceneId:Scene.Preset) => {
     try {
-      let scene = await this.updateSceneProperty({ scene: message.sceneData, prop: "scenePreset", val: message.id || message.scenePreset.sk });
-      scene = await this.buildScene(scene);
+      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: sceneId}),
+      scene = await this.buildScene(sceneStub);
 
       return scene;
     } catch (error) {
@@ -149,8 +149,8 @@ export abstract class SceneManager {
       if (!scene.scenePreset && i == 0) {
         const newPreset = await ScenePresetManager.buildScenePreset(scenePreset);
         const changeResult = await SceneManager.changeScenePreset(scene, newPreset.sk);
-        scene = changeResult.scene;
-        scene.presets[i] = changeResult.preset;
+        scene = changeResult;
+        scene.presets[i] = newPreset;
       } else {
         scene.presets[i] = await ScenePresetManager.buildScenePreset(scenePreset);
       }
