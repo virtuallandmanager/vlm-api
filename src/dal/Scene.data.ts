@@ -50,6 +50,7 @@ export abstract class SceneDbManager {
       return;
     }
   };
+
   static getSetting: CallableFunction = async (sk: string) => {
     const params = {
       TableName: vlmMainTable,
@@ -66,6 +67,58 @@ export abstract class SceneDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/getSetting",
         sk,
+      });
+      return;
+    }
+  };
+
+  static getSceneUserState: CallableFunction = async (sk: string) => {
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk: Scene.UserState.pk,
+        sk,
+      },
+    };
+
+    try {
+      const sceneRecord = await daxClient.get(params).promise();
+      return sceneRecord.Item;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Scene.data/getSceneUserState",
+        sk,
+      });
+      return;
+    }
+  };
+
+  static setSceneUserState: CallableFunction = async (state: Scene.UserState, key: string, value: unknown) => {
+    const newState = { ...state, [key]: value }
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk: Scene.UserState.pk,
+        sk: state.sk,
+      },
+      UpdateExpression: "set #prop = :prop, #ts = :ts",
+      ConditionExpression: "#ts <= :stateTs",
+      ExpressionAttributeNames: { "#prop": "state", "#ts": "ts" },
+      ExpressionAttributeValues: {
+        ":prop": newState,
+        ":stateTs": state.ts || Date.now(),
+        ":ts": Date.now(),
+      },
+    };
+
+    try {
+      await daxClient.update(params).promise();
+      const fullState = await SceneDbManager.getSceneUserState(state.sk);
+      return fullState && fullState[key]
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Scene.data/put",
+        state,
       });
       return;
     }

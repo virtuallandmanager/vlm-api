@@ -5,7 +5,6 @@ import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
 import { SceneSettingsManager } from "./SceneSettings.logic";
 import { ScenePresetManager } from "./ScenePreset.logic";
-import { VLMSceneMessage } from "../ws/rooms/events/VLMScene.events";
 
 export abstract class SceneManager {
   // Base Scene Operations //
@@ -88,10 +87,10 @@ export abstract class SceneManager {
     }
   };
 
-  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, sceneId:Scene.Preset) => {
+  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, sceneId: Scene.Preset) => {
     try {
-      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: sceneId}),
-      scene = await this.buildScene(sceneStub);
+      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: sceneId }),
+        scene = await this.buildScene(sceneStub);
 
       return scene;
     } catch (error) {
@@ -206,6 +205,34 @@ export abstract class SceneManager {
       return await SceneDbManager.getAllLegacy();
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.getLegacyScenes" });
+      return;
+    }
+  };
+  ////
+
+  // Scene User State Operations //
+  static getUserStateByScene: CallableFunction = async (sceneId: string, key: string) => {
+    try {
+      if (key == "pk" || "sk") {
+        return false
+      }
+      const userState = await SceneDbManager.getSceneUserState(sceneId);
+      return userState[key];
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneManager.getSceneElementById" });
+      return;
+    }
+  };
+
+  static setUserStateByScene: CallableFunction = async (sceneId: string, key: string, value: unknown) => {
+    try {
+      if (key == "pk" || "sk") {
+        return false
+      }
+      const userState = await SceneDbManager.getSceneUserState(sceneId);
+      return await SceneDbManager.setSceneUserState(userState, key, value)
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneManager.getSceneElementById" });
       return;
     }
   };

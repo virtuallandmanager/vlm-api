@@ -44,7 +44,7 @@ export namespace Scene {
     widgets?: string[] | Widget.Config[] = [];
     locale?: string = "en-US";
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-    ts?: EpochTimeStamp;
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config?: Preset, clone: boolean = false) {
       if (!clone && config) {
@@ -70,7 +70,7 @@ export namespace Scene {
     type?: SettingType;
     settingName?: string;
     settingValue?: unknown;
-    ts?: EpochTimeStamp;
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Setting) {
       this.sk = config.sk || this.sk;
@@ -78,6 +78,20 @@ export namespace Scene {
       this.type = config.type;
       this.settingName = config.settingName;
       this.settingValue = config.settingValue;
+      this.ts = config.ts || this.ts;
+    }
+  }
+
+  export class UserState {
+    static pk: string = "vlm:scene:setting:state";
+    pk?: string = UserState.pk;
+    sk?: string;
+    state?: { [id: string]: unknown };
+    ts?: EpochTimeStamp = Date.now();
+
+    constructor(config: UserState) {
+      this.sk = config.sk;
+      this.state = config.state;
       this.ts = config.ts || this.ts;
     }
   }

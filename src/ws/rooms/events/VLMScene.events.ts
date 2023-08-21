@@ -65,6 +65,8 @@ export function bindEvents(room: VLMScene) {
     host_left: handleHostLeft,
 
     user_message: handleUserMessage,
+    get_user_state: handleGetUserState,
+    set_user_state: handleSetUserState,
 
     path_start: handlePathStart,
     path_segments_add: handlePathAddSegments,
@@ -128,7 +130,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
           location.world === userLocation.world &&
           location.location === userLocation.location &&
           location.coordinates[0] === userLocation.coordinates[0] &&
-          location.coordinates[1] === userLocation.coordinates[1] && 
+          location.coordinates[1] === userLocation.coordinates[1] &&
           location?.parcels?.length == userLocation?.parcels?.length;
         return equal
       });
@@ -270,6 +272,50 @@ export async function handleUserMessage(client: Client, message: any, room: VLMS
           c.send("user_message", sterileMessage);
       });
       return true
+    })
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function handleGetUserState(client: Client, message: any, room: VLMScene) {
+  try {
+    const { sessionToken } = message;
+    const { sceneId } = client.auth.session;
+    let { user } = client.auth.user;
+    if (!user) {
+      user = await AnalyticsManager.getUserById(client.auth.session.userId);
+    }
+    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+      const userState = await SceneManager.getUserStateByScene(sceneId, message.key);
+      room.clients.forEach((c) => {
+        if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId)
+          c.send("get_user_state_response", userState);
+      });
+      return false
+    })
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function handleSetUserState(client: Client, message: any, room: VLMScene) {
+  try {
+    const { sessionToken } = message;
+    const { sceneId } = client.auth.session;
+    let { user } = client.auth.user;
+    if (!user) {
+      user = await AnalyticsManager.getUserById(client.auth.session.userId);
+    }
+    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+      const userState = await SceneManager.setUserStateByScene(sceneId, message.key, message.value)
+      room.clients.forEach((c) => {
+        if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId)
+          c.send("set_user_state_response", userState);
+      });
+      return false
     })
   } catch (error) {
     return false;
