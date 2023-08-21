@@ -146,6 +146,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
   const { baseParcel, sceneId, user, location, subPlatform } = req.body,
     clientIp = req.clientIp,
     parcelArr = baseParcel?.split(",").map((str: string): number => Number(str));
+  let serverAuthenticated = false;
 
   if (user) {
     user.lastIp = clientIp;
@@ -153,11 +154,12 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
 
   try {
     await runChecks(req, parcelArr);
+    serverAuthenticated = true;
   } catch (error: unknown) {
-    res.status(401).json({
-      text: JSON.stringify(error) || "Your connection could not be authenticated.",
-      error,
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Authentication.controller/decentraland",
     });
+    serverAuthenticated = false;
   }
 
   try {
@@ -177,6 +179,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       sceneId,
       clientIp,
       device: subPlatform,
+      serverAuthenticated,
       sessionStart: Date.now(),
     });
     await SessionManager.getIpData(session);

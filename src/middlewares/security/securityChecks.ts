@@ -18,7 +18,7 @@ export function checkOrigin(req: Request) {
 export function ensureHttps(url: string) {
   if (url.startsWith("http://")) {
     return url.replace("http://", "https://");
-  } else if (!url.startsWith("https://")) {
+  } else if (!url.startsWith("https://") || !url.includes("http")) {
     return "https://" + url;
   }
   return url;
@@ -36,7 +36,6 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     return parseInt(item, 10);
   });
   const base = metadata.realm.domain || metadata.realm.hostname || "";
-  console.log("BASE: " + base);
 
   if (!base) {
     AdminLogManager.logExternalError("NOTICED MISSING DCL METADATA!", { req });
@@ -47,7 +46,6 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     ensureHttps(base);
   }
 
-  console.log(`metadata parcel: ${metadata.parcel} | request parcel: ${parcel}`);
   // check that the request comes from a decentraland domain
   const validOrigin = TESTS_ENABLED || checkOrigin(req);
   if (!validOrigin) {

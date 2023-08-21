@@ -4,8 +4,11 @@ import { ensureHttps } from "./securityChecks";
 
 // validate that the player is active in a catalyst server, and in the indicated coordinates, or within a margin of error
 export async function checkPlayer(playerId: string, server: string, parcel: number[]) {
-  const url = ensureHttps(server + "/comms/peers/");
-  // const url = `https://peer.decentraland.org/comms/peers`
+  let url = ensureHttps(server + "/comms/peers/");
+
+  if (!server) {
+    url = `https://peer.decentraland.org/comms/peers`
+  }
 
   try {
     const response = await fetch(url);

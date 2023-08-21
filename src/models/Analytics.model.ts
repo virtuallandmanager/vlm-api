@@ -52,11 +52,15 @@ export namespace Analytics {
       device?: string;
       paths?: string[];
       location?: Metaverse.Location;
+      serverAuthenticated?: boolean = false;
+      peerAuthenticated?: boolean = false;
 
       constructor(config: Config) {
         super(config);
         this.device = config.device;
         this.location = config.location;
+        this.serverAuthenticated = config.serverAuthenticated;
+        this.peerAuthenticated = config.peerAuthenticated;
       }
     }
 
@@ -85,6 +89,7 @@ export namespace Analytics {
       origin?: Metaverse.Location;
       pathPoint?: PathPoint;
       metadata?: unknown = {};
+
       ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Action) {
