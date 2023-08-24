@@ -8,6 +8,7 @@ import { Organization } from "../models/Organization.model";
 import { Scene } from "../models/Scene.model";
 import { Analytics } from "../models/Analytics.model";
 import { DateTime } from "luxon";
+import { Log } from "../models/Log.model";
 
 export abstract class AdminDbManager {
   static getUsers: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
@@ -184,6 +185,96 @@ export abstract class AdminDbManager {
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Admin.data/getEvents",
+      });
+      return;
+    }
+  };
+
+  static getErrorLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+    let params: QueryInput = {
+      TableName: vlmMainTable,
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#name": "name",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Log.AdminLogError.pk as AttributeValue,
+      },
+      KeyConditionExpression: "#pk = :pk",
+      ProjectionExpression: "sk, #name, startTime, endTime, created",
+      Limit: pageSize || 1000,
+    };
+
+    if (lastEvaluated) {
+      params.ExclusiveStartKey = lastEvaluated;
+    }
+
+    try {
+      const events = await largeQuery(params);
+      return events;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Admin.data/getErrorLogs",
+      });
+      return;
+    }
+  };
+
+  static getWarningLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+    let params: QueryInput = {
+      TableName: vlmMainTable,
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#name": "name",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Log.AdminLogError.pk as AttributeValue,
+      },
+      KeyConditionExpression: "#pk = :pk",
+      ProjectionExpression: "sk, #name, startTime, endTime, created",
+      Limit: pageSize || 1000,
+    };
+
+    if (lastEvaluated) {
+      params.ExclusiveStartKey = lastEvaluated;
+    }
+
+    try {
+      const events = await largeQuery(params);
+      return events;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Admin.data/getWarningLogs",
+      });
+      return;
+    }
+  };
+
+  static getInfoLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+    let params: QueryInput = {
+      TableName: vlmMainTable,
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#name": "name",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Log.AdminLogInfo.pk as AttributeValue,
+      },
+      KeyConditionExpression: "#pk = :pk",
+      ProjectionExpression: "sk, #name, startTime, endTime, created",
+      Limit: pageSize || 1000,
+    };
+
+    if (lastEvaluated) {
+      params.ExclusiveStartKey = lastEvaluated;
+    }
+
+    try {
+      const events = await largeQuery(params);
+      return events;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Admin.data/getInfoLogs",
       });
       return;
     }

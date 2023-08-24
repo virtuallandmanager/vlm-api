@@ -47,7 +47,7 @@ router.get("/web3", async (req: Request, res: Response) => {
       SessionManager.issueSignatureToken(newSession);
       await SessionManager.storePreSession(newSession);
     } else {
-      SessionManager.renew(existingSession);
+      await SessionManager.renew(existingSession);
     }
 
     const session = existingSession || newSession;

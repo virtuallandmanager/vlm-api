@@ -25,6 +25,29 @@ router.get("/panel", authMiddleware, vlmAdminMiddleware, async (req: Request, re
   }
 });
 
+router.get("/logs", authMiddleware, vlmAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const page = req.query.page,
+      pageSize = req.body.pageSize,
+      sort = req.body.sort;
+
+    const adminLogs = await AdminManager.getAdminLogs(page, pageSize, sort);
+
+    return res.status(200).json({
+      text: `Loaded admin logs.`,
+      adminLogs,
+    });
+  } catch (error: any) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Admin.controller/logs",
+    });
+    return res.status(error?.status || 500).json({
+      text: error.text || "Something went wrong on the server. Please try again.",
+      error,
+    });
+  }
+});
+
 router.get("/users", authMiddleware, vlmAdminMiddleware, async (req: Request, res: Response) => {
   try {
     const page = req.query.page,
@@ -99,6 +122,6 @@ router.post("/update", authMiddleware, vlmAdminMiddleware, async (req: Request, 
       error,
     });
   }
-}); 
+});
 
 export default router;

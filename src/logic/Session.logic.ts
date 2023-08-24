@@ -16,7 +16,11 @@ export abstract class SessionManager {
   };
 
   static startAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
-    return await SessionDbManager.start(new Analytics.Session.Config(config));
+    const recentSession = await SessionDbManager.getRecentAnalyticsSession(config.userId);
+    if (recentSession) {
+      await SessionDbManager.revive(recentSession);
+    }
+    return recentSession || await SessionDbManager.start(new Analytics.Session.Config(config));
   };
 
   static getAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
@@ -86,7 +90,7 @@ export abstract class SessionManager {
       } else {
         return;
       }
-    } catch (error) {}
+    } catch (error) { }
   };
 
   static renew: CallableFunction = async (session: User.Session.Config) => {

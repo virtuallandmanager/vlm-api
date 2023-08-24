@@ -653,6 +653,8 @@ export abstract class SceneDbManager {
 
   static removeInstanceFromElement: CallableFunction = async (message: VLMSceneMessage) => {
     try {
+      const elementConfig = message.elementData,
+        instanceConfig = message.instanceData;
       const dbElement = await GenericDbManager.get(message.elementData),
         instanceIds = dbElement.instances as string[],
         filteredInstanceIds = instanceIds.filter((id: string) => id !== message.instanceData.sk);
@@ -699,9 +701,10 @@ export abstract class SceneDbManager {
       };
 
       await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(dbElement);
-
-      return { elementData };
+      const scenePreset = await this.getPreset(message.scenePreset.sk);
+      const elementData = await GenericDbManager.get(elementConfig);
+      const instanceData = await GenericDbManager.get(instanceConfig);
+      return { scenePreset, elementData, instance: true, instanceData };
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/removeInstanceFromElement",

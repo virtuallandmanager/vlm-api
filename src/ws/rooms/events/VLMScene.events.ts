@@ -154,7 +154,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
 
       if (scene?.scenePreset) {
         scenePreset = await ScenePresetManager.getScenePresetById(scene.scenePreset);
-        scenePreset = await ScenePresetManager.buildScenePreset(scenePreset, { skToId: true });
+        scenePreset = await ScenePresetManager.buildScenePreset(scenePreset);
 
         for (let i = 0; i < scenePreset.videos.length; i++) {
           const video = scenePreset.videos[i];
@@ -325,7 +325,7 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
 export async function handlePathStart(client: Client, message: any, room: VLMScene) {
   try {
     const path = await SessionManager.createSessionPath(message.session);
-    client.send("path_started", { pathId: path.sk });
+    client.send("path_started", { action: "path_started", pathId: path.sk });
     return false;
   } catch (error) {
     return false;

@@ -11,10 +11,14 @@ export abstract class AdminManager {
 
     return { users, organizations, scenes, events, analyticsSessions, userSessions };
   };
-  static getEvents: CallableFunction = async(pageSize?: number, lastEvaluated?: string) => {
+  static getAdminLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: string) => {
+    const [errorLogs, warningLogs, infoLogs] = await Promise.all([await AdminDbManager.getErrorLogs(pageSize, lastEvaluated), await AdminDbManager.getWarningLogs(pageSize, lastEvaluated), await AdminDbManager.getInfoLogs(pageSize, lastEvaluated)]);
+    return { errorLogs, warningLogs, infoLogs }
+  };
+  static getEvents: CallableFunction = async (pageSize?: number, lastEvaluated?: string) => {
     return (await AdminDbManager.getEvents(pageSize, lastEvaluated)) || [];
   };
-  static getOrganizations: CallableFunction = async (pageSize?: number, lastEvaluated?: string)=> {
+  static getOrganizations: CallableFunction = async (pageSize?: number, lastEvaluated?: string) => {
     return (await AdminDbManager.getOrganizations(pageSize, lastEvaluated)) || [];
   };
   static getScenes: CallableFunction = async (pageSize?: number, lastEvaluated?: string) => {
