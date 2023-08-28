@@ -147,7 +147,6 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...locations, userLocation] });
       } else {
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [userLocation] });
-
       }
 
       client.send("session_started", { session: dbSession });
@@ -184,7 +183,7 @@ async function handleSessionAction(client: Client, message: { action: string; me
     const { action, metadata, pathPoint, sessionToken } = message,
       { session } = client.auth,
       { sceneId } = session;
-
+    if (client.auth.session.environment !== "prod") { return false }
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async () => {
       const response = await SessionManager.logAnalyticsAction({ name: action, metadata, pathPoint, sessionId: session.sk });
       if (!response) {
@@ -334,6 +333,7 @@ export async function handlePathStart(client: Client, message: any, room: VLMSce
 
 export async function handlePathAddSegments(client: Client, message: { pathId: string; pathSegments: Analytics.PathSegment[] }, room: VLMScene) {
   try {
+    if (client.auth.session.environment !== "prod") { return false }
     const { added, total } = await SessionManager.extendPath(message.pathId, message.pathSegments);
     client.send("path_segments_added", { action: "path_segments_added", pathId: message.pathId, added, total });
     return false;
@@ -502,14 +502,14 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
       room.state.streams.length = 0;
       room.state.streams.push(...filteredPresetVideos);
       presetVideos.forEach((video: Scene.Video.Config) => {
-        if (!video.liveSrc) return;
+        if (!video.liveSrc || !video.enableLiveStream || !video.enabled) return;
         const stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status: null, presetId: message.scenePreset.sk, sceneId: client.auth.session.sceneId });
         room.state.streams.push(stream);
       });
     }
 
     message.user = (({ displayName, sk, connectedWallet }) => ({ displayName, sk, connectedWallet }))({ ...client.auth.session, ...client.auth.user, });
-    message.stage = "post";
+
     HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: message.action, element: message.element, property: message.property || "preset", id: message.id });
     return true;
   } catch (error) {

@@ -52,15 +52,19 @@ export namespace Analytics {
       device?: string;
       paths?: string[];
       location?: Metaverse.Location;
+      environment?: string;
       serverAuthenticated?: boolean = false;
       peerAuthenticated?: boolean = false;
+      ttl?: EpochTimeStamp;
 
       constructor(config: Config) {
         super(config);
         this.device = config.device;
         this.location = config.location;
+        this.environment = config.environment;
         this.serverAuthenticated = config.serverAuthenticated;
         this.peerAuthenticated = config.peerAuthenticated;
+        this.ttl = config.ttl;
       }
     }
 
@@ -70,12 +74,14 @@ export namespace Analytics {
       device?: string;
       paths?: string[];
       location?: Metaverse.Location;
+      ttl?: EpochTimeStamp;
       suspicious: boolean = true;
 
       constructor(config: Config) {
         super(config);
         this.device = config.device;
         this.location = config.location;
+        this.ttl = config.ttl;
       }
     }
 

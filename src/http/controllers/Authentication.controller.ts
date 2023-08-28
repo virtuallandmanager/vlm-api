@@ -20,7 +20,7 @@ router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
     clientIp = req.clientIp;
   try {
-    if (!address) {
+    if (!address || process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg") {
       return res.status(400).json({
         text: "Wait a minute...who ARE you?",
       });
@@ -143,7 +143,7 @@ router.get("/restore", authMiddleware, async (req: Request, res: Response) => {
 });
 
 router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_INTERVAL_MS }), async (req: Request & dcl.DecentralandSignatureData<Metadata>, res: Response | any) => {
-  const { baseParcel, sceneId, user, location, subPlatform } = req.body,
+  const { baseParcel, sceneId, user, location, subPlatform, environment } = req.body,
     clientIp = req.clientIp,
     parcelArr = baseParcel?.split(",").map((str: string): number => Number(str));
   let serverAuthenticated = false;
@@ -181,6 +181,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       device: subPlatform,
       serverAuthenticated,
       sessionStart: Date.now(),
+      ttl: environment === "prod" ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
     });
     await SessionManager.getIpData(session);
     SessionManager.issueAnalyticsSessionToken(session);

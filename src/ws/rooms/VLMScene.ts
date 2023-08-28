@@ -127,8 +127,8 @@ export class VLMScene extends Room<VLMSceneState> {
     }
   }
 
-  async connectAnalyticsUser(client: Client, sessionConfig: User.Session.Config) {
-    const session = await SessionManager.startAnalyticsSession(sessionConfig);
+  async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config) {
+    const session = await SessionManager.initAnalyticsSession(sessionConfig);
     const user = await AnalyticsManager.getUserById(session.userId);
     console.log(`${user.displayName} joined in ${sessionConfig.world || "world"} - ${client.sessionId}.`);
     return { user, session };
@@ -190,8 +190,8 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onLeave(client: Client) {
-    await handleSessionEnd(client);
     console.log(client.auth?.user?.displayName || "Unknown User", "left!");
+    await handleSessionEnd(client);
     return;
   }
 }

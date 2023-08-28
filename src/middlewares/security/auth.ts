@@ -9,6 +9,13 @@ import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { Analytics } from "../../models/Analytics.model";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+
+  if (process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg") {
+    return res.status(400).json({
+      text: "External requests to certain vlm.gg routes are not allowed.",
+    });
+  }
+
   const sessionToken = extractToken(req);
 
   // If the token is not present, return an error response

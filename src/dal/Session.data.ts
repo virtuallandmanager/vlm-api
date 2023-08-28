@@ -48,8 +48,8 @@ export abstract class SessionDbManager {
     };
 
     try {
-      const dbSession = await docClient.put(params).promise();
-      return dbSession.Attributes;
+      await docClient.put(params).promise();
+      return this.get(session);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Session.data/create",
