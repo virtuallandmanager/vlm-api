@@ -10,12 +10,12 @@ import { Analytics } from "../../models/Analytics.model";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
-  if (process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg" && req.hostname !== "www.vlm.gg") {
-    console.log(req.hostname);
-    return res.status(400).json({
-      text: "External requests to certain vlm.gg routes are not allowed.",
-    });
-  }
+  // if (process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg" && req.hostname !== "www.vlm.gg") {
+  //   console.log(req.hostname);
+  //   return res.status(400).json({
+  //     text: "External requests to certain vlm.gg routes are not allowed.",
+  //   });
+  // }
 
   const sessionToken = extractToken(req);
 
@@ -92,7 +92,7 @@ export async function analyticsAuthMiddleware(client: Client, message: { session
     // Token is valid, allow access to the next message handling logic
     session = await SessionManager.validateAnalyticsSessionToken(sessionToken);
   }
-  
+
   if (client?.auth?.session?.sessionToken && client.auth.session?.sessionToken !== sessionToken) {
     AdminLogManager.logWarning("Client tokens were mismatched over WebSocket connection", { client, message, session });
     AdminLogManager.logWarning("Issued a suspicious session", { client, message, session });
@@ -118,7 +118,7 @@ export async function userAuthMiddleware(client: Client, message: { sessionToken
     // Token is valid, allow access to the next message handling logic
     session = await SessionManager.validateUserSessionToken(sessionToken);
   }
-  
+
   if (session) {
     next(session);
     return;
