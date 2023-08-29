@@ -58,7 +58,7 @@ export namespace Scene {
       this.widgets = config?.widgets || this.widgets;
       this.locale = config?.locale || this.locale;
       this.createdAt = config?.createdAt || this.createdAt;
-      this.ts = config.ts || this.ts;
+      this.ts = config?.ts || this.ts;
     }
   }
 

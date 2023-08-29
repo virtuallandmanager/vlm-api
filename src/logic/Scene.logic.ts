@@ -87,9 +87,9 @@ export abstract class SceneManager {
     }
   };
 
-  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, sceneId: Scene.Preset) => {
+  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, scenePreset: Scene.Preset) => {
     try {
-      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: sceneId }),
+      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: scenePreset.sk }),
         scene = await this.buildScene(sceneStub);
 
       return scene;

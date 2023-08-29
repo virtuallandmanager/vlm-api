@@ -12,7 +12,7 @@ import { UserManager } from "./User.logic";
 export abstract class SessionManager {
   static initAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
     const session = new Analytics.Session.Config(config);
-    await SessionDbManager.create(session, { minutes: 10 });
+    return await SessionDbManager.create(session, { minutes: 10 });
   };
 
   static startAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {

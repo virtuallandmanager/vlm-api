@@ -47,14 +47,14 @@ router.get("/cards", authMiddleware, async (req: Request, res: Response) => {
 
 router.post("/create", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userInfo = req.body.userInfo,
-      userOrgInfo = req.body.userOrgInfo;
+    const userId = req.session.userId,
+      eventConfig = req.body.event;
 
-    const organization = await EventManager.create(userInfo, userOrgInfo);
+    const event = await EventManager.create({ ...eventConfig, userId });
 
     return res.status(200).json({
-      text: "Successfully created user.",
-      organization,
+      text: "Successfully created event.",
+      event,
     });
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {

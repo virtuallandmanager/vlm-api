@@ -20,7 +20,7 @@ router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
     clientIp = req.clientIp;
   try {
-    if (!address || process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg") {
+    if (!address || process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg" &&  req.hostname !== "www.vlm.gg") {
       return res.status(400).json({
         text: "Wait a minute...who ARE you?",
       });

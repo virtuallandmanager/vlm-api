@@ -440,7 +440,7 @@ export async function handleSceneChangePreset(client: Client, message: VLMSceneM
   // Logic for scene_change_preset message
   try {
     const { user } = client.auth;
-    const scene = await SceneManager.changeScenePreset(message),
+    const scene = await SceneManager.changeScenePreset(message.sceneData, message.scenePreset.sk),
       preset = scene.presets.find((scenePreset: Scene.Preset) => scenePreset.sk == scene.scenePreset);
     HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "update", element: "scene", property: "preset", from: message.sceneData.scenePreset, to: preset.sk }, scene);
     room.broadcast("scene_change_preset", { user, scene, preset });
