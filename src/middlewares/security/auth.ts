@@ -10,7 +10,8 @@ import { Analytics } from "../../models/Analytics.model";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
-  if (process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg") {
+  if (process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg" && req.hostname !== "www.vlm.gg") {
+    console.log(req.hostname);
     return res.status(400).json({
       text: "External requests to certain vlm.gg routes are not allowed.",
     });
