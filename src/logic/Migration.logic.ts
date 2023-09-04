@@ -127,8 +127,8 @@ export abstract class MigrationManager {
     await config.forEach(async (event: LegacyEventConfig) => {
       const eventConfig = new Event.Config({
         name: event.name,
-        startTime: new Date(event.startTime).getTime(),
-        endTime: new Date(event.endTime).getTime(),
+        eventStart: new Date(event.startTime).getTime(),
+        eventEnd: new Date(event.endTime).getTime(),
       });
       event.giveawayItems.forEach(async (giveawayItem) => {
         await GiveawayManager.create(giveawayItem);

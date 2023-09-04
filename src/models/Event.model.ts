@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Scene as BaseScene } from "./Scene.model";
 import { Organization } from "./Organization.model";
 import { DateTime } from "luxon";
+import { Metaverse } from "./Metaverse.model";
 
 export namespace Event {
   export class Config {
@@ -11,18 +12,27 @@ export namespace Event {
     userId?: string;
     name: string;
     createdAt?: number = DateTime.now().toUnixInteger();
-    startTime: number;
-    endTime?: number;
+    timeZone?: string = "UTC";
+    eventStart: number;
+    eventEnd?: number;
     imageSrc?: string;
+    location?: string;
+    locationUrl?: string;
+    worlds?: Array<Metaverse.World>;
     claimLimits?: Giveaway.ClaimLimits; // caps total number of giveaway claims allowed
+
     constructor(config: Event.Config) {
       this.sk = config.sk || this.sk;
       this.userId = config.userId;
       this.name = config.name;
       this.createdAt = config.createdAt || this.createdAt;
-      this.startTime = config.startTime;
-      this.endTime = config.endTime;
+      this.timeZone = config.timeZone;
+      this.eventStart = config.eventStart;
+      this.eventEnd = config.eventEnd;
       this.imageSrc = config.imageSrc;
+      this.location = config.location;
+      this.locationUrl = config.locationUrl;
+      this.worlds = config.worlds;
       this.claimLimits = config.claimLimits;
     }
   }
