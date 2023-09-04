@@ -90,7 +90,7 @@ export abstract class UserDbManager {
       return user;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "User.data/getById",
+        from: "User.data/getBalance",
         sk,
       });
     }
