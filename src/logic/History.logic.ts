@@ -6,7 +6,7 @@ import { User } from "../models/User.model";
 import { AdminLogManager } from "./ErrorLogging.logic";
 
 export abstract class HistoryManager {
-  static initHistory: CallableFunction = async (user: User.Account, state: { pk: string; sk: string; [key: string]: unknown }) => {
+  static initHistory: CallableFunction = async (user: User.Account, state: { pk: string; sk: string;[key: string]: unknown }) => {
     const { sk } = state,
       { displayName } = user,
       userId = user.sk,
@@ -45,8 +45,14 @@ export abstract class HistoryManager {
       const history = await HistoryDbManager.get(new History.Config({ sk }));
       let update;
 
-      if (history.updates.length === 0) {
+      if (history?.updates?.length === 0) {
         update = new History.Root({ sk, root: sceneData });
+      } else if (!history) {
+        AdminLogManager.logError("History Log does not exist.", {
+          text: "History log does not exist.",
+          from: "History.logic/addUpdate",
+        });
+        return
       }
 
       update = new History.Update({ userId, displayName, historyId: history.sk, ...descriptors });
