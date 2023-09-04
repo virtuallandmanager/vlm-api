@@ -98,10 +98,15 @@ export class VLMScene extends Room<VLMSceneState> {
       if (sessionConfig.pk == Analytics.Session.Config.pk) {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
           auth.session = session;
+          const response = await this.connectAnalyticsUser(client, auth.session);
+          auth.session = response.session;
+          auth.user = response.user;
         });
       } else {
         await userAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
           auth.session = session;
+          auth.session.sceneId = sessionConfig.sceneId;
+          auth.user = await this.connectHostUser(client, auth.session);
         });
       }
 
@@ -112,24 +117,13 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account, sceneId: string }) {
-    // connect a VLM scene host
-    auth.sceneId = sessionConfig.sceneId;
-    if (auth.session.pk == Analytics.Session.Config.pk) {
-      const response = await this.connectAnalyticsUser(client, auth.session);
-      auth.session = response.session;
-      auth.user = response.user;
-    }
 
-    // connect a VLM scene host
-    if (auth.session?.pk == User.Session.Config.pk && sessionConfig.sceneId) {
-      auth.session.sceneId = sessionConfig.sceneId;
-      auth.user = await this.connectHostUser(client, auth.session);
-    }
   }
 
   async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config) {
     const session = await SessionManager.initAnalyticsSession(sessionConfig);
     const user = await AnalyticsManager.getUserById(session.userId);
+    client.auth.user = user;
     console.log(`${user.displayName} joined in ${sessionConfig.world || "world"} - ${client.sessionId}.`);
     return { user, session };
   }
@@ -137,7 +131,7 @@ export class VLMScene extends Room<VLMSceneState> {
   async connectHostUser(client: Client, session: User.Session.Config) {
     const user = await UserManager.getById(session.userId);
     client.auth.user = user;
-    handleHostJoined(client, { session, user }, this);
+    await handleHostJoined(client, { session, user }, this);
     return user;
   }
 
