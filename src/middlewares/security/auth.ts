@@ -10,12 +10,12 @@ import { Analytics } from "../../models/Analytics.model";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
-  // if (process.env.NODE_ENV === "production" && req.hostname !== "vlm.gg" && req.hostname !== "www.vlm.gg") {
-  //   console.log(req.hostname);
-  //   return res.status(400).json({
-  //     text: "External requests to certain vlm.gg routes are not allowed.",
-  //   });
-  // }
+  if (process.env.NODE_ENV === "production" && req.headers.referer !== "https://vlm.gg" && req.headers.referer !== "https://www.vlm.gg") {
+    console.log(req.headers.referer);
+    // return res.status(400).json({
+    //   text: "Wait a minute...who ARE you?",
+    // });
+  }
 
   const sessionToken = extractToken(req);
 

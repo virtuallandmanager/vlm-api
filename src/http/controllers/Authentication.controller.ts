@@ -20,13 +20,6 @@ router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
     clientIp = req.clientIp;
   try {
-    // if (process.env.NODE_ENV === "production" && req.headers.referer !== "https://vlm.gg" && req.headers.referer !== "https://www.vlm.gg") {
-      console.log(req.headers.referer);
-    //   return res.status(400).json({
-    //     text: "Wait a minute...who ARE you?",
-    //   });
-    // }
-
     const user = await UserManager.obtainUserByWallet({
       address,
       currency: "ETH",
