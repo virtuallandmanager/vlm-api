@@ -95,9 +95,12 @@ export function bindEvents(room: VLMScene) {
         const handler = eventHandlers[eventType];
         const broadcast = await handler(client, message, room);
         if (broadcast) {
-          const { sceneId } = client.auth;
+          const { sceneId } = client.auth.session;
+          if (sceneId) {
+            return;
+          }
           room.clients.forEach((roomClient) => {
-            if (roomClient.auth.session.sceneId == sceneId || roomClient.auth.sceneId == sceneId) {
+            if (roomClient.auth.session.sceneId === sceneId) {
               roomClient.send(eventType, message);
             }
           });
