@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 
 export namespace Session {
   export class Config {
-    static pk: string = "vlm:session:config"; // Partition Key
+    static pk: string = "vlm:session"; // Partition Key
     pk?: string; // Partition Key
     sk?: string = uuidv4(); // Sort Key
     userId?: string; // LSI

@@ -3,7 +3,7 @@ import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { SessionManager } from "../../logic/Session.logic";
 const router = express.Router();
 
-router.get("/path/end", async (req: Request, res: Response) => {
+router.get("/end", async (req: Request, res: Response) => {
   try {
     const { sessionData, pathId, pathSegments } = req.body;
     const session = await SessionManager.getAnalyticsSession(sessionData);

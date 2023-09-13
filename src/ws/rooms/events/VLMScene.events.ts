@@ -200,7 +200,7 @@ async function handleSessionAction(client: Client, message: { action: string; me
 export async function handleSessionEnd(client: Client, message?: any, room?: VLMScene) {
   // Logic for session_end message
   try {
-    const session = client.auth.session || message.session;
+    const session = client.auth.session;
 
     if (session.pk == Analytics.Session.Config) {
       await SessionManager.endAnalyticsSession(session);

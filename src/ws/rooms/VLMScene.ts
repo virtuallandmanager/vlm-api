@@ -57,11 +57,7 @@ export class VLMScene extends Room<VLMSceneState> {
     }
     this.state.streams = this.removeDuplicates(this.state.streams);
     console.log(`--- Checking Streams ---`);
-    // console.log(DateTime.now().toLocaleString(DateTime.DATETIME_FULL_WITH_SECONDS));
-    // console.log(`Cached Streams: ${this.state.streams.length}`);
-    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status}`).join("\n ")}`);
-    // console.log(`Batch size: ${this.state.batchSize}`);
-    // console.log(`------------------------`);
+    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status} - ${stream.sceneId}`).join("\n ")}`);
 
     if (this.state.streamIndex >= this.state.streams.length) {
       this.state.streamIndex = 0;
@@ -185,7 +181,7 @@ export class VLMScene extends Room<VLMSceneState> {
 
   async onLeave(client: Client) {
     console.log(client.auth?.user?.displayName || "Unknown User", "left!");
-    await handleSessionEnd(client);
+    await handleSessionEnd(client, null, this);
     return;
   }
 }
