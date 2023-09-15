@@ -136,6 +136,9 @@ export abstract class SceneManager {
       if (typeof presetArr[i] !== "string") {
         continue;
       }
+      if (!scene.scenePreset && i == 0) {
+        scene.scenePreset = presetArr[i];
+      }
 
       const sk: string = presetArr[i];
       presetIds.push(sk);
@@ -154,6 +157,7 @@ export abstract class SceneManager {
         scene.presets[i] = await ScenePresetManager.buildScenePreset(scenePreset);
       }
     }
+
     // loop ends
   };
 
