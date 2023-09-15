@@ -1,6 +1,7 @@
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { MARGIN_OF_ERROR, PeerResponse } from "../utils";
 import { ensureHttps } from "./securityChecks";
+import { fetch } from "cross-fetch";
 
 // validate that the player is active in a catalyst server, and in the indicated coordinates, or within a margin of error
 export async function checkPlayer(playerId: string, server: string, parcel: number[]) {

@@ -24,8 +24,8 @@ export namespace Scene {
       this.name = config?.name || this.name;
       this.imageSrc = config?.imageSrc || this.imageSrc;
       this.locations = config?.locations || this.locations;
-      this.scenePreset = config?.scenePreset;
       this.presets = config?.presets || this.presets;
+      this.scenePreset = config?.scenePreset || this.presets[0] || "";
       this.settings = config?.settings || this.settings;
       this.createdAt = config?.createdAt || this.createdAt;
       this.ts = config?.ts || this.ts;

@@ -50,6 +50,7 @@
     "axios": "^1.4.0",
     "colyseus": "^0.14.20",
     "cors": "^2.8.5",
+    "cross-fetch": "^4.0.0",
     "decentraland-crypto-middleware": "^1.0.4",
     "ethers": "^6.2.3",
     "express": "^4.16.4",
