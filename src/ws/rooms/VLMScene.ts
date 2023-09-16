@@ -92,19 +92,27 @@ export class VLMScene extends Room<VLMSceneState> {
       let auth: { session: Session.Config; user: Analytics.User.Account | User.Account } = { session: sessionConfig, user: {} };
 
       if (sessionConfig.pk == Analytics.Session.Config.pk) {
-        await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+        await analyticsAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
-          const response = await this.connectAnalyticsUser(client, auth.session);
-          auth.session = response.session;
-          auth.user = response.user;
+          auth.user = user;
+          console.log(`Got user info and session`)
         });
+        const response = await this.connectAnalyticsUser(client, auth.session);
+        auth.session = response.session;
+        console.log('Set user and session', auth)
       } else {
-        await userAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+        await userAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
+          auth.user = user;
           auth.session.sceneId = sessionConfig.sceneId;
-          auth.user = await this.connectHostUser(client, auth.session);
         });
+        const user = await this.connectHostUser(client, auth.session);
+        if (user) {
+          auth.user = user;
+        }
       }
+      client.auth = auth;
+      console.log("END OF AUTH")
 
       return auth;
     } catch (error) {
@@ -113,20 +121,17 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account, sceneId: string }) {
-
+    console.log('Joined', client)
   }
 
   async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config) {
     const session = await SessionManager.initAnalyticsSession(sessionConfig);
-    const user = await AnalyticsManager.getUserById(session.userId);
-    client.auth.user = user;
-    console.log(`${user.displayName} joined in ${sessionConfig.world || "world"} - ${client.sessionId}.`);
-    return { user, session };
+    console.log(`${client.auth?.user?.displayName} joined in ${sessionConfig.world || "world"} - ${client.sessionId}.`);
+    return { session };
   }
 
   async connectHostUser(client: Client, session: User.Session.Config) {
     const user = await UserManager.getById(session.userId);
-    client.auth.user = user;
     await handleHostJoined(client, { session, user }, this);
     return user;
   }
@@ -180,9 +185,17 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onLeave(client: Client) {
-    console.log(client);
-    console.log(client.auth?.user?.displayName || "Unknown User", "left!");
-    await handleSessionEnd(client, null, this);
-    return;
+    try {
+      console.log(client);
+      if (!client.auth.user) {
+        client.auth.user = await UserManager.getById(client.auth.session.userId);
+      }
+      console.log(client.auth?.user?.displayName || "Unknown User", "left!");
+      await handleSessionEnd(client, null, this);
+    } catch (error) {
+      console.log("ERROR!")
+      console.log(error)
+
+    }
   }
 }

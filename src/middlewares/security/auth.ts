@@ -7,6 +7,7 @@ import { User } from "../../models/User.model";
 import { Client } from "colyseus";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { Analytics } from "../../models/Analytics.model";
+import { AnalyticsManager } from "../../logic/Analytics.logic";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
@@ -83,7 +84,7 @@ export async function vlmAdminMiddleware(req: Request, res: Response, next: Next
   }
 }
 
-export async function analyticsAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: (session?: Analytics.Session.Config | User.Session.Config) => void) {
+export async function analyticsAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: ({ session, user }?: { session: Analytics.Session.Config, user: Analytics.User.Account }) => void) {
   let session;
   const { sessionToken, sceneId } = message;
 
@@ -101,15 +102,17 @@ export async function analyticsAuthMiddleware(client: Client, message: { session
     await SessionManager.initAnalyticsSession(newBotSession);
     await SessionManager.startAnalyticsSession(newBotSession);
     session = newBotSession;
+
   }
   if (session) {
-    next(session);
+    const user = await AnalyticsManager.getUserById(client.auth.session.userId);
+    next({ session, user });
     return;
   }
   next();
 }
 
-export async function userAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: (session?: Analytics.Session.Config | User.Session.Config) => void) {
+export async function userAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: ({ session, user }?: { session: User.Session.Config, user: User.Account }) => void) {
   let session;
   const { sessionToken, sceneId } = message;
 
@@ -120,7 +123,8 @@ export async function userAuthMiddleware(client: Client, message: { sessionToken
   }
 
   if (session) {
-    next(session);
+    const user = await UserManager.getById(client.auth.session.userId);
+    next({ session, user });
     return;
   }
   next();
