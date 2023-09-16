@@ -1,0 +1,63 @@
+version: 0.2
+
+env:
+  variables:
+    WEBHOOK_URL: "https://discord.com/api/webhooks/your_webhook_path"
+  parameter-store:
+    # ... (parameters from AWS SSM)
+  secrets-manager:
+    # ... (secrets from AWS Secrets Manager)
+
+phases:
+  install:
+    runtime-versions:
+      docker: 19
+    commands:
+      - echo "Installing required tools..."
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Installing required tools...\"}" $WEBHOOK_URL
+      - apt update -y
+      - apt upgrade -y
+      - apt install -y jq awscli
+      - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      - apt-get install -y docker-ce docker-ce-cli containerd.io
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Completed installing tools.\"}" $WEBHOOK_URL
+
+  pre_build:
+    commands:
+      - echo "Starting pre-build phase..."
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Starting pre-build phase...\"}" $WEBHOOK_URL
+      - echo "WEBHOOK_URL=${WEBHOOK_URL}" >> ./.env
+      - echo "AWS_REGION=${REGION}" >> ./.env
+      - echo "PORT=${PORT}" >> ./.env
+      - echo "S3_BUCKET=${S3_BUCKET}" >> ./.env
+      - echo "AWS_DAX_ENDPOINT=${AWS_DAX_ENDPOINT}" >> ./.env
+      - echo "PRESENCE_SERVER_HOST=$(echo "$PRESENCE_SERVER_JSON" | jq -r '.host')" >> ./.env
+      - echo "PRESENCE_SERVER_PORT=$(echo "$PRESENCE_SERVER_JSON" | jq -r '.port')" >> ./.env
+      - while IFS="=" read -r key value; do echo "$key=$value" >> ./.env; done < <(echo $SECRET | jq -r 'to_entries | .[] | .key + "=" + .value')
+      - while IFS="=" read -r key value; do echo "$key=$value" >> ./.env; done < <(echo $AUTH | jq -r 'to_entries | .[] | .key + "=" + .value')
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Finished pre-build phase.\"}" $WEBHOOK_URL
+
+  build:
+    commands:
+      - echo "Starting build phase..."
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Starting build phase...\"}" $WEBHOOK_URL
+      - docker-compose -f docker-compose.prod.yml up -d --build
+      - docker tag vlm-api:latest 926580065846.dkr.ecr.us-east-2.amazonaws.com/vlm-api:latest
+      - docker push 926580065846.dkr.ecr.us-east-2.amazonaws.com/vlm-api:latest
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Finished build phase.\"}" $WEBHOOK_URL
+
+  post_build:
+    commands:
+      - echo "Post-build cleanup..."
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Post-build cleanup...\"}" $WEBHOOK_URL
+      # ... (rest of the post_build commands)
+      - |
+        curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"Post-build cleanup complete.\"}" $WEBHOOK_URL

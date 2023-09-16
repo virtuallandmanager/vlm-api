@@ -15,6 +15,7 @@ import { DateTime } from "luxon";
 import { OrganizationManager } from "../../logic/Organization.logic";
 import { Organization } from "../../models/Organization.model";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
+import { SceneManager } from "../../logic/Scene.logic";
 
 router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
@@ -142,11 +143,23 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
     parcelArr = baseParcel?.split(",").map((str: string): number => Number(str));
   let serverAuthenticated = false;
 
-  if (user) {
-    user.lastIp = clientIp;
-  }
 
   try {
+    let existingScene = await SceneManager.getSceneById(sceneId);
+
+    if (user) {
+      user.lastIp = clientIp;
+    }
+
+    if (!sceneId || !existingScene) {
+      AdminLogManager.logError("Invalid Scene Request", {
+        from: "Authentication.controller/decentraland",
+      });
+      return res.status(400).json({
+        text: "Bad Request.",
+      });
+    }
+
     await runChecks(req, parcelArr);
     serverAuthenticated = true;
   } catch (error: unknown) {

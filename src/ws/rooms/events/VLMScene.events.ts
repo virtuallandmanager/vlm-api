@@ -210,7 +210,7 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
 
     // check for other clients with the same sceneId and remove the scene's videos from the cache if there are none
     const sceneClients = room.clients.filter((c) => c.auth.session.sceneId == session.sceneId && c.auth.user.sk != client.auth.user.sk);
-    console.log(`sceneClients remaining for ${session.sceneId} - ${sceneClients}`);
+    console.log(`sceneClients remaining for ${session.sceneId} - `, sceneClients);
     if (sceneClients.length < 1) {
       room.state.streams = room.state.streams.filter((stream) => stream.sceneId != session.sceneId);
     }

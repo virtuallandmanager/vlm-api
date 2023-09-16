@@ -180,6 +180,7 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onLeave(client: Client) {
+    console.log(client);
     console.log(client.auth?.user?.displayName || "Unknown User", "left!");
     await handleSessionEnd(client, null, this);
     return;

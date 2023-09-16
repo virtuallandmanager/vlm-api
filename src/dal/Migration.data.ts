@@ -1,9 +1,5 @@
-import { User } from "../models/User.model";
-import { daxClient, docClient, vlmLandLegacyTable, vlmMainTable } from "./common.data";
-import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import DynamoDB, { AttributeMap, DocumentClient } from "aws-sdk/clients/dynamodb";
-import { largeQuery } from "../helpers/data";
-import { Scene } from "../models/Scene.model";
+import { docClient } from "./common.data";
+import DynamoDB from "aws-sdk/clients/dynamodb";
 
 export abstract class MigrationDbManager {
   static moveDataInBatches: CallableFunction = async (sourceTableName: string, destinationTableName: string, batchSize: number): Promise<void> => {
@@ -23,7 +19,7 @@ export abstract class MigrationDbManager {
       const batchWriteParams: DynamoDB.DocumentClient.BatchWriteItemInput = {
         RequestItems: {
           [destinationTableName]: items.map((item) => ({
-            PutRequest: { 
+            PutRequest: {
               Item: item,
             },
           })),
