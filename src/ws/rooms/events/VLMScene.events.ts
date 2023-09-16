@@ -115,8 +115,8 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
   try {
     const { sessionToken, sceneId } = sessionConfig;
 
-    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-      client.auth = { session, user: {} };
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async ({ session, user }) => {
+      client.auth = { session, user: user || {} };
       let dbSession = await SessionManager.startAnalyticsSession({
         ...sessionConfig,
         sk: client.auth.sessionId,
@@ -262,7 +262,7 @@ export async function handleUserMessage(client: Client, message: any, room: VLMS
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
     console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
-    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async ({ session, user }) => {
       message.from = session.connectedWallet;
       message.fromDisplayName = user.displayName;
       const sterileMessage = { from: session.connectedWallet, fromDisplayName: user.displayName, id: message.id, data: message.data };

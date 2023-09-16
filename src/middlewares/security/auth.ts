@@ -94,7 +94,7 @@ export async function analyticsAuthMiddleware(client: Client, message: { session
     session = await SessionManager.validateAnalyticsSessionToken(sessionToken);
   }
 
-  if (client?.auth?.session?.sessionToken && client.auth.session?.sessionToken !== sessionToken) {
+  if (session?.sessionToken && session?.sessionToken !== sessionToken) {
     AdminLogManager.logWarning("Client tokens were mismatched over WebSocket connection", { client, message, session });
     AdminLogManager.logWarning("Issued a suspicious session", { client, message, session });
     client.send("authentication_error", { message: "Invalid token" });
@@ -102,10 +102,9 @@ export async function analyticsAuthMiddleware(client: Client, message: { session
     await SessionManager.initAnalyticsSession(newBotSession);
     await SessionManager.startAnalyticsSession(newBotSession);
     session = newBotSession;
-
   }
   if (session) {
-    const user = await AnalyticsManager.getUserById(client.auth.session.userId);
+    const user = await AnalyticsManager.getUserById(session.userId);
     next({ session, user });
     return;
   }

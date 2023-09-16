@@ -26,11 +26,10 @@ export class VLMPortable extends Room<VLMPortableState> {
 
       if (sessionConfig.pk == Analytics.Session.Config.pk) {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-          auth.session = session;
         });
       } else {
         await userAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-          auth.session = session;
+         
         });
       }
 
