@@ -122,7 +122,7 @@ export async function userAuthMiddleware(client: Client, message: { sessionToken
   }
 
   if (session) {
-    const user = await UserManager.getById(client.auth.session.userId);
+    const user = await UserManager.getById(session.userId);
     next({ session, user });
     return;
   }
