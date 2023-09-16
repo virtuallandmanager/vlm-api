@@ -9,9 +9,9 @@ export namespace Analytics {
   export namespace User {
     export class Account extends BaseUser.Account {
       static pk: string = `vlm:analytics:user`;
-      pk: string = Account.pk;
-      hasConnectedWeb3: boolean;
-      world: string;
+      pk?: string = Account.pk;
+      hasConnectedWeb3?: boolean;
+      world?: string;
       ttl?: number;
 
       constructor(config: Config) {

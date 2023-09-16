@@ -20,38 +20,11 @@ export class VLMPortable extends Room<VLMPortableState> {
   }
 
   async onAuth(client: Client, sessionConfig: Session.Config) {
-    const { sessionToken, sceneId } = sessionConfig;
-    try {
-      let auth: { session: Session.Config; user: Analytics.User.Account | User.Account } = { session: sessionConfig, user: {} };
 
-      if (sessionConfig.pk == Analytics.Session.Config.pk) {
-        await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-        });
-      } else {
-        await userAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-         
-        });
-      }
-
-      return auth;
-    } catch (error) {
-      console.log(error);
-    }
   }
 
   async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account }) {
-    // connect a VLM scene host
-    if (auth.session.pk == Analytics.Session.Config.pk) {
-      const response = await this.connectAnalyticsUser(client, auth.session);
-      auth.session = response.session;
-      auth.user = response.user;
-    }
-
-    // connect a VLM scene host
-    if (auth.session?.pk == User.Session.Config.pk && sessionConfig.sceneId) {
-      auth.session.sceneId = sessionConfig.sceneId;
-      auth.user = await this.connectHostUser(client, auth.session);
-    }
+ 
   }
 
   async connectAnalyticsUser(client: Client, sessionConfig: User.Session.Config) {

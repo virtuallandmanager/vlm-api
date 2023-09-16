@@ -84,7 +84,7 @@ export async function vlmAdminMiddleware(req: Request, res: Response, next: Next
   }
 }
 
-export async function analyticsAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: ({ session, user }?: { session: Analytics.Session.Config, user: Analytics.User.Account }) => void) {
+export async function analyticsAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: (auth?: { session: Analytics.Session.Config, user: Analytics.User.Account }) => void) {
   let session;
   const { sessionToken, sceneId } = message;
 

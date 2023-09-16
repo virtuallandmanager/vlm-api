@@ -89,7 +89,7 @@ export class VLMScene extends Room<VLMSceneState> {
   async onAuth(client: Client, sessionConfig: Session.Config) {
     const { sessionToken, sceneId } = sessionConfig;
     try {
-      let auth: { session: Session.Config; user: Analytics.User.Account | User.Account } = { session: sessionConfig, user: {} };
+      let auth: { session: Session.Config; user: Analytics.User.Account } = { session: sessionConfig, user: {} };
 
       if (sessionConfig.pk == Analytics.Session.Config.pk) {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
@@ -97,7 +97,7 @@ export class VLMScene extends Room<VLMSceneState> {
           auth.user = user;
           console.log(`Got user info and session`)
         });
-        const response = await this.connectAnalyticsUser(client, auth.session);
+        const response = await this.connectAnalyticsUser(client, auth.session, auth.user);
         auth.session = response.session;
         console.log('Set user and session', auth)
       } else {
@@ -112,7 +112,6 @@ export class VLMScene extends Room<VLMSceneState> {
         }
       }
       client.auth = auth;
-      console.log("END OF AUTH")
 
       return auth;
     } catch (error) {
@@ -121,12 +120,11 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account, sceneId: string }) {
-    console.log('Joined', client)
   }
 
-  async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config) {
+  async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config, userConfig: Analytics.User.Account) {
     const session = await SessionManager.initAnalyticsSession(sessionConfig);
-    console.log(`${client.auth?.user?.displayName} joined in ${sessionConfig.world || "world"} - ${client.sessionId}.`);
+    console.log(`${userConfig?.displayName} joined in ${sessionConfig.location.world || "world"} at ${sessionConfig.location.location} - ${client.sessionId}.`);
     return { session };
   }
 
@@ -193,7 +191,6 @@ export class VLMScene extends Room<VLMSceneState> {
       console.log(client.auth?.user?.displayName || "Unknown User", "left!");
       await handleSessionEnd(client, null, this);
     } catch (error) {
-      console.log("ERROR!")
       console.log(error)
 
     }
