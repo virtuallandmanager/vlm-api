@@ -23,6 +23,10 @@ export abstract class AdminLogManager {
   };
   static logError = async (log: unknown, metadata: any, userInfo?: User.Account, noCatch?: boolean) => {
     try {
+      this.logErrorToDiscord(`<@&1041552453918801973>\n
+      ${JSON.stringify(log)}\n
+      -\n
+      Metadata: ${JSON.stringify(metadata)}}`)
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR);
     } catch (error: any) {
       if (noCatch) {
@@ -57,12 +61,11 @@ export abstract class AdminLogManager {
       \`\`\`json\n${JSON.stringify(log, null, 2)}\n\`\`\`\n
       METADATA:\n
       \`\`\`json\n${JSON.stringify(metadata, null, 2)}\n\`\`\`\n
-      ${
-        userInfo
+      ${userInfo
           ? `AFFECTED USER:\n
       \`\`\`json\n${JSON.stringify(userInfo, null, 2)}\n\`\`\`\n`
           : ""
-      }
+        }
       :rotating_light: -- END ERROR -- :rotating_light:\n
       `);
     } catch (error: any) {
