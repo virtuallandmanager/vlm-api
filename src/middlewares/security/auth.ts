@@ -13,9 +13,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
   if (process.env.NODE_ENV === "production" && req.headers.referer !== "https://vlm.gg" && req.headers.referer !== "https://www.vlm.gg") {
     console.log(req.headers.referer);
-    // return res.status(400).json({
-    //   text: "Wait a minute...who ARE you?",
-    // });
   }
 
   const sessionToken = extractToken(req);
