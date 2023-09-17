@@ -5,23 +5,34 @@ import { checkCoords, checkPlayer } from "./verifyOnMap";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 
 export function checkOrigin(req: Request) {
-  const origin = req.header("origin");
+  try {
+    const origin = req.header("origin");
 
-  const regexes = [/^https:\/\/([a-z0-9]+\.)?decentraland\.org\/?$/, /^https:\/\/([a-z0-9]+\.)?vlm\.gg\/?$/];
-  if (TESTS_ENABLED) {
-    regexes.push(/^http:\/\/localhost:\d+\/?$/, /^https:\/\/localhost:\d+\/?$/, /^http:\/\/\d+.\d+.\d+.\d+:\d+\/?$/);
+    const regexes = [/^https:\/\/([a-z0-9]+\.)?decentraland\.org\/?$/, /^https:\/\/([a-z0-9]+\.)?vlm\.gg\/?$/];
+    if (TESTS_ENABLED) {
+      regexes.push(/^http:\/\/localhost:\d+\/?$/, /^https:\/\/localhost:\d+\/?$/, /^http:\/\/\d+.\d+.\d+.\d+:\d+\/?$/);
+    }
+
+    return regexes.some((regex) => regex.test(origin));
+  } catch (error) {
+    AdminLogManager.logExternalError("NOTICED MISSING ORIGIN!", { req });
+    return false;
   }
-
-  return regexes.some((regex) => regex.test(origin));
 }
 
 export function ensureHttps(url: string) {
-  if (url.startsWith("http://")) {
-    return url.replace("http://", "https://");
-  } else if (!url.startsWith("https://") || !url.includes("http")) {
-    return "https://" + url;
+  try {
+    let newUrl = url;
+    if (newUrl.startsWith("http://")) {
+      return newUrl.replace("http://", "https://");
+    } else if (!newUrl.startsWith("https://") || !newUrl.includes("http")) {
+      return "https://" + newUrl;
+    }
+    return newUrl;
+  } catch (error) {
+    AdminLogManager.logExternalError("NOTICED MISSING HTTPS!", { url });
+    return url;
   }
-  return url;
 }
 
 export function checkBannedIPs(req: Request) {
@@ -35,7 +46,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   const coordinates = metadata.parcel.split(",").map((item: string) => {
     return parseInt(item, 10);
   });
-  const base = metadata.realm.domain || metadata.realm.hostname || "";
+  let base = metadata.realm.domain || metadata.realm.hostname || "";
 
   if (!base) {
     AdminLogManager.logExternalError("NOTICED MISSING DCL METADATA!", { req });
@@ -43,7 +54,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   } else if (TESTS_ENABLED) {
     // return;
   } else {
-    ensureHttps(base);
+    base = ensureHttps(base);
   }
 
   // check that the request comes from a decentraland domain
@@ -55,6 +66,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   // filter against a denylist of malicious ips
   const validIP = checkBannedIPs(req);
   if (validIP) {
+    AdminLogManager.logExternalError("NOTICED BANNED IP!", { req });
     throw new Error("INVALID IP");
   }
 
@@ -62,6 +74,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   // validate that the player is in the catalyst & location from the signature
   const validCatalystPos: boolean = (TESTS_ENABLED || req.body.environment == "dev") ? true : await checkPlayer(userAddress, base, coordinates);
   if (!validCatalystPos) {
+    AdminLogManager.logExternalError("NOTICED INVALID CATALYST POSITION!", { req });
     throw new Error("INVALID PLAYER POSITION");
   }
 
@@ -69,6 +82,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   const validPos: boolean = TESTS_ENABLED || parcel?.length ? checkCoords(coordinates, parcel) : true;
 
   if (!validPos) {
+    AdminLogManager.logExternalError("NOTICED INVALID PARCEL POSITION!", { req });
     throw new Error("INVALID PARCEL POSITION");
   }
 }
