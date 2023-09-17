@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 const router = express.Router();
+import ipHelper from "../../helpers/ip";
 import dcl, { express as dclExpress } from "decentraland-crypto-middleware";
 import { VALID_SIGNATURE_TOLERANCE_INTERVAL_MS, Metadata } from "../../middlewares/utils";
 import { runChecks } from "../../middlewares/security/securityChecks";
@@ -147,13 +148,16 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
   try {
     let existingScene = await SceneManager.getSceneById(sceneId);
 
-    if (user) {
+    if (user && user.lastIp !== clientIp) {
       user.lastIp = clientIp;
     }
 
     if (!sceneId || !existingScene) {
+      const ipData = await ipHelper.addIpData(clientIp);
       AdminLogManager.logError("Invalid Scene Request", {
         from: "Authentication.controller/decentraland",
+        request: req.body,
+        ipData
       });
       return res.status(400).json({
         text: "Bad Request.",
@@ -163,8 +167,10 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
     await runChecks(req, parcelArr);
     serverAuthenticated = true;
   } catch (error: unknown) {
+
     AdminLogManager.logError(JSON.stringify(error), {
       from: "Authentication.controller/decentraland",
+      request: req.body
     });
     serverAuthenticated = false;
   }

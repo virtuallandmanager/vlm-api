@@ -34,7 +34,7 @@ export async function checkPlayer(playerId: string, server: string, parcel: numb
       checkPlayer(playerId, server, parcel, attempts);
     } else {
       AdminLogManager.logError(error, { text: "Failed to check player status!", from: "verifyOnMap/checkPlayer" });
-      return true;
+      return false;
     }
   }
 
