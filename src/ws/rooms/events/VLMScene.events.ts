@@ -183,7 +183,7 @@ async function handleSessionAction(client: Client, message: { action: string; me
     const { action, metadata, pathPoint, sessionToken } = message,
       { session } = client.auth,
       { sceneId } = session;
-    if (client.auth.session.environment !== "prod") { return false }
+    if (client.auth.session.environment !== "prod" || client.auth.session.sceneId == "c9ebf130-c946-4445-87f9-15c5d105bdbf") { return false }
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async () => {
       const response = await SessionManager.logAnalyticsAction({ name: action, metadata, pathPoint, sessionId: session.sk });
       if (!response) {
