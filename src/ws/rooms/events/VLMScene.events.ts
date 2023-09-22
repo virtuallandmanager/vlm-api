@@ -64,6 +64,9 @@ export function bindEvents(room: VLMScene) {
     host_joined: handleHostJoined,
     host_left: handleHostLeft,
 
+    analytics_user_joined: handleAnalyticsUserJoined,
+    store_emote: handleStoreEmote,
+
     user_message: handleUserMessage,
     get_user_state: handleGetUserState,
     set_user_state: handleSetUserState,
@@ -230,7 +233,7 @@ export async function handleHostJoined(client: Client, message: any, room: VLMSc
 
     // Iterate over all clients and send the message to each client except the triggering client
     room.clients.forEach((c) => {
-      if (c !== triggeringClient) {
+      if (c !== triggeringClient && c.auth.sceneId === client.auth.sceneId) {
         c.send("host_joined");
       }
     });
@@ -248,6 +251,36 @@ export function handleHostLeft(client: Client, message: any, room: VLMScene) {
   try {
     HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "left scene in VLM" });
     return false;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function handleAnalyticsUserJoined(client: Client, message: any, room: VLMScene) {
+  // Logic for analytics_user_joined message
+  try {
+    const { user } = message;
+    const triggeringClient = room.clients.find((c) => c.sessionId === client.sessionId);
+    if (room.state.emotes.has(user.sk)) {
+      message.emote = room.state.emotes.get(user.sk);
+    }
+    console.log("Analytics User Joined: ", user.displayName, user.connectedWallet);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function handleStoreEmote(client: Client, message: any, room: VLMScene) {
+  // Logic for store_emote message
+  try {
+    const userId = client.auth.user.sk;
+    if (userId && message.emote) {
+      room.state.emotes.set(userId, message.emote);
+    } else {
+      room.state.emotes.delete(userId);
+    }
+    return true;
   } catch (error) {
     return false;
   }

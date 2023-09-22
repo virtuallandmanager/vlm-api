@@ -5,7 +5,7 @@ import { Analytics } from "../../models/Analytics.model";
 import { User } from "../../models/User.model";
 import { UserManager } from "../../logic/User.logic";
 import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/security/auth";
-import { bindEvents, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
+import { bindEvents, handleAnalyticsUserJoined, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
 import { Session } from "../../models/Session.model";
 import { AnalyticsManager } from "../../logic/Analytics.logic";
 import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
@@ -125,6 +125,7 @@ export class VLMScene extends Room<VLMSceneState> {
   async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config, userConfig: Analytics.User.Account) {
     const session = await SessionManager.initAnalyticsSession(sessionConfig);
     console.log(`${userConfig?.displayName} joined in ${sessionConfig.location.world || "world"} at ${sessionConfig.location.location} - ${client.sessionId}.`);
+    await handleAnalyticsUserJoined(client, { session, user: userConfig }, this);
     return { session };
   }
 

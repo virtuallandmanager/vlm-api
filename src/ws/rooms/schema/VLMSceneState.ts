@@ -1,4 +1,4 @@
-import { Schema, ArraySchema, type } from "@colyseus/schema";
+import { Schema, ArraySchema, MapSchema, type } from "@colyseus/schema";
 
 export class SceneStream extends Schema {
   @type("string")
@@ -20,6 +20,8 @@ export class SceneStream extends Schema {
 export class VLMSceneState extends Schema {
   @type([SceneStream])
   streams = new ArraySchema<SceneStream>();
+  @type({ map: "string" })
+  emotes = new MapSchema<string>();
   @type("number")
   streamIndex = 0;
   @type("number")
