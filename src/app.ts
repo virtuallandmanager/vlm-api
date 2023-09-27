@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import requestIp from "request-ip";
 import cors, { CorsOptions } from "cors";
+import { monitor } from "@colyseus/monitor";
 import healthCheck from "./healthCheck";
 import userController from "./http/controllers/User.controller";
 import authController from "./http/controllers/Authentication.controller";
@@ -45,6 +46,7 @@ app.use("/session", jsonParser, urlencodedParser, sessionController);
 app.use("/user", jsonParser, urlencodedParser, userController);
 app.use("/event", jsonParser, urlencodedParser, eventController);
 app.use("/media", mediaController); // No body-parser middleware applied to this route
+app.use("/colyseus", monitor());
 app.use("/log", jsonParser, urlencodedParser, logController);
 
 export default app;

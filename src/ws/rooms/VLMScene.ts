@@ -7,7 +7,6 @@ import { UserManager } from "../../logic/User.logic";
 import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/security/auth";
 import { bindEvents, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
 import { Session } from "../../models/Session.model";
-import { AnalyticsManager } from "../../logic/Analytics.logic";
 import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
 import { ArraySchema } from "@colyseus/schema";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
@@ -16,7 +15,7 @@ import https from "https";
 export class VLMScene extends Room<VLMSceneState> {
   onCreate(options: any) {
     bindEvents(this);
-    this.setState(new VLMSceneState());
+    this.setState(new VLMSceneState(options.sceneId));
     this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000);
   }
 

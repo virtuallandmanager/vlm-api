@@ -12,7 +12,6 @@ import { AdminLogManager } from "../../../logic/ErrorLogging.logic";
 import { SceneStream } from "../schema/VLMSceneState";
 import { HistoryManager } from "../../../logic/History.logic";
 import { Metaverse } from "../../../models/Metaverse.model";
-import { VLMPortable } from "../VLMPortable";
 import { deepEqual } from "../../../helpers/data";
 import { AnalyticsManager } from "../../../logic/Analytics.logic";
 import { SceneSettingsManager } from "../../../logic/SceneSettings.logic";
@@ -221,15 +220,15 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
   }
 }
 
-export async function handleHostJoined(client: Client, message: any, room: VLMScene | VLMPortable) {
+export async function handleHostJoined(client: Client, message: any, room: VLMScene) {
   // Logic for host_joined message
   try {
     const { user } = message;
     // Find the client who triggered the message
-    const triggeringClient = room.clients.find((c) => c.sessionId === client.sessionId);
+    const triggeringClient = room.clients.find((c: Client) => c.sessionId === client.sessionId);
 
     // Iterate over all clients and send the message to each client except the triggering client
-    room.clients.forEach((c) => {
+    room.clients.forEach((c: Client) => {
       if (c !== triggeringClient) {
         c.send("host_joined");
       }
