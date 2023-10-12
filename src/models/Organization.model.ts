@@ -41,15 +41,18 @@ export namespace Organization {
     static pk: string = "vlm:organization:account:balance";
     pk?: string = Balance.pk;
     sk?: string = uuidv4();
-    orgId: string;
-    type: BalanceType;
-    value: number;
-    [key: string]: any;
+    orgId?: string;
+    type?: BalanceType;
+    value?: number;
+    ts?: EpochTimeStamp = Date.now();
+
 
     constructor(config: Balance) {
-      Object.keys(config).forEach((key: string) => {
-        this[key] = config[key];
-      });
+      this.sk = config?.sk || this.sk;
+      this.orgId = config?.orgId;
+      this.type = config?.type;
+      this.value = config?.value;
+      this.ts = config?.ts || this.ts;
     }
   }
 
@@ -60,12 +63,14 @@ export namespace Organization {
     orgId: string;
     type: BalanceType;
     value: number;
-    [key: string]: any;
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Balance) {
-      Object.keys(config).forEach((key: string) => {
-        this[key] = config[key];
-      });
+      this.sk = config?.sk || this.sk;
+      this.orgId = config?.orgId;
+      this.type = config?.type;
+      this.value = config?.value;
+      this.ts = config?.ts || this.ts;
     }
 
     adjust: CallableFunction = (newValue: number) => {

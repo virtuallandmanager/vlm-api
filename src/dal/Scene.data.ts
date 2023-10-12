@@ -385,6 +385,22 @@ export abstract class SceneDbManager {
 
   static addPresetsToScene: CallableFunction = async (sceneConfig: Scene.Config, scenePresets: Scene.Preset[]) => {
     const sks = scenePresets.map((preset: Scene.Preset) => preset.sk).filter((sk: string) => !sceneConfig?.presets?.includes(sk));
+
+    let updateExpression = "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)";
+    const expressionAttributeNames: { [key: string]: string } = {
+      "#presets": "presets",
+    };
+    const expressionAttributeValues: { [key: string]: any } = {
+      ":presetIds": sks,
+      ":empty_list": [],
+    };
+
+    if (!sceneConfig.scenePreset && sks.length > 0) {
+      updateExpression += ", #scenePreset = if_not_exists(#scenePreset, :firstPreset)";
+      expressionAttributeNames["#scenePreset"] = "scenePreset";
+      expressionAttributeValues[":firstPreset"] = sks[0];
+    }
+
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -394,14 +410,9 @@ export abstract class SceneDbManager {
               pk: Scene.Config.pk,
               sk: sceneConfig.sk,
             },
-            UpdateExpression: "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)",
-            ExpressionAttributeNames: {
-              "#presets": "presets",
-            },
-            ExpressionAttributeValues: {
-              ":presetIds": sks,
-              ":empty_list": [],
-            },
+            UpdateExpression: updateExpression,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ExpressionAttributeValues: expressionAttributeValues,
             TableName: vlmMainTable,
           },
         },
@@ -903,7 +914,59 @@ export abstract class SceneDbManager {
     }
   };
 
+static addClaimPointToPreset: CallableFunction = async (presetId: string, claimPoint: Scene.Giveaway.ClaimPoint) => {
+    const sk = claimPoint.sk;
+    const params: DocumentClient.TransactWriteItemsInput = {
+      TransactItems: [
+        {
+          Update: {
+            Key: {
+              pk: Scene.Preset.pk,
+              sk: presetId,
+            },
+            UpdateExpression: "SET #claimPoints = list_append(if_not_exists(#claimPoints, :empty_list), :claimPointIds)",
+            ExpressionAttributeNames: {
+              "#claimPoints": "claimPoints",
+            },
+            ExpressionAttributeValues: {
+              ":claimPointIds": [sk],
+              ":empty_list": [],
+            },
+            TableName: vlmMainTable,
+          },
+        },
+        {
+          Put: {
+            // Create a scene preset
+            Item: {
+              ...claimPoint,
+              ts: Date.now(),
+            },
+            TableName: vlmMainTable,
+          },
+        },
+      ],
+    };
+
+    try {
+      await docClient.transactWrite(params).promise();
+      const elementData = await GenericDbManager.get(claimPoint);
+      const scenePreset = await this.getPreset(presetId);
+
+      return { scenePreset, elementData };
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Scene.data/addClaimPointToPreset",
+      });
+      return;
+    }
+  };
+
   static updateSceneProperty: CallableFunction = async (sceneConfig: Scene.Config, property: string, newValue: unknown) => {
+    const ts = Date.now();
+    if (sceneConfig.ts && sceneConfig.ts > ts) {
+      sceneConfig.ts = ts;
+    }
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: Scene.Config.pk, sk: sceneConfig.sk },
@@ -912,8 +975,8 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
       ExpressionAttributeValues: {
         ":prop": newValue,
-        ":sceneTs": sceneConfig.ts || Date.now(),
-        ":ts": Date.now(),
+        ":sceneTs": Number(sceneConfig.ts) || ts,
+        ":ts": ts,
       },
     };
 

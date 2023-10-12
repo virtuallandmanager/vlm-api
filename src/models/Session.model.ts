@@ -7,9 +7,9 @@ import { DateTime } from "luxon";
 export namespace Session {
   export class Config {
     static pk: string = "vlm:session"; // Partition Key
-    pk?: string; // Partition Key
-    sk?: string = uuidv4(); // Sort Key
-    userId?: string; // LSI
+    pk: string; // Partition Key
+    sk: string = uuidv4(); // Sort Key
+    userId: string; // LSI
     connectedWallet?: string; // LSI
     clientIp?: Ipv4Address; // LSI
     sessionStart?: EpochTimeStamp;
@@ -21,9 +21,10 @@ export namespace Session {
     sceneId?: string;
     world?: Metaverse.Worlds;
     location?: Metaverse.Location;
+    host?: boolean = false;
     ts?: EpochTimeStamp = Date.now();
 
-    constructor(config: Config) {
+    constructor(config: Partial<Config>) {
       this.sk = config.sk || this.sk;
       this.userId = config.userId;
       this.connectedWallet = config.connectedWallet;
@@ -37,6 +38,7 @@ export namespace Session {
       this.sceneId = config.sceneId;
       this.world = config.world;
       this.location = config.location;
+      this.host = config.host;
       this.ts = config.ts || this.ts;
     }
   }

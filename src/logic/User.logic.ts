@@ -47,6 +47,11 @@ export abstract class UserManager {
     return await UserDbManager.obtain(user);
   };
 
+  
+  static obtainBalances: CallableFunction = async (user: User.Account) => {
+    return await UserDbManager.obtainBalances(user);
+  };
+
   static injectUiData: CallableFunction = async (vlmUser: User.Account) => {
     const uiUserInfo = new User.Aggregates();
     uiUserInfo.walletIds = await UserWalletDbManager.getIdsForUser(vlmUser);

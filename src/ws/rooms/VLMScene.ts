@@ -99,7 +99,7 @@ export class VLMScene extends Room<VLMSceneState> {
         const response = await this.connectAnalyticsUser(client, auth.session, auth.user);
         auth.session = response.session;
         console.log('Set user and session', auth)
-      } else {
+      } else if (sessionConfig.host) {
         await userAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
           auth.user = user;
@@ -109,6 +109,8 @@ export class VLMScene extends Room<VLMSceneState> {
         if (user) {
           auth.user = user;
         }
+      } else {
+        AdminLogManager.logError("Invalid session type detected", { sessionConfig });
       }
       client.auth = auth;
 

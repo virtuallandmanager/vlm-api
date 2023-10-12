@@ -103,3 +103,46 @@ export const resizeAndUpload = async (req: Request, res: Response, next: NextFun
     return res.status(500).send({ error: "Error uploading file." });
   }
 };
+
+export const uploadAvatar = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sk, extension, originalname } = req.body.imageData;
+
+    // Now call the next middleware function and pass these along
+    const filePath = `${config.environment_short}/avatar/${sk}/`;
+
+    await s3
+      .putObject({
+        Bucket: config.s3_bucket,
+        Key: `${filePath}original.${extension}`,
+        Body: req.file.buffer,
+      })
+      .promise();
+
+    // Use sharp to resize the image to 512px
+    const resizedImageBuffer512 = await sharp(req.file.buffer)
+      .resize(512, 512, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toBuffer();
+
+    // Upload the 512px resized image to S3
+    await s3
+      .putObject({
+        Bucket: config.s3_bucket,
+        Key: `${filePath}512x512.${extension}`,
+        Body: resizedImageBuffer512,
+      })
+      .promise();
+
+    // Use sharp to retrieve image dimensions
+    req.body.imageData.metadata = await sharp(req.file.buffer).metadata();
+    req.body.imageData.metadata.name = originalname;
+
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ error: "Error uploading file." });
+  }
+};

@@ -12,10 +12,15 @@ export namespace Analytics {
       pk?: string = Account.pk;
       hasConnectedWeb3?: boolean;
       world?: string;
+      lastIp?: string;
       ttl?: number;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config) {
         super(config);
+        this.hasConnectedWeb3 = config?.hasConnectedWeb3 || false;
+        this.lastIp = config?.lastIp;
+        this.ts = config?.ts || this.ts;
         if (config.hasConnectedWeb3 && !config.connectedWallet) {
           this.connectedWallet = config.publicKey;
         } else if (!config.hasConnectedWeb3) {
@@ -48,36 +53,38 @@ export namespace Analytics {
   export namespace Session {
     export class Config extends BaseSession.Config {
       static pk: string = "vlm:analytics:session";
-      pk?: string = Config.pk;
+      pk: string = Config.pk;
       device?: string;
       paths?: string[];
       location?: Metaverse.Location;
       environment?: string;
       serverAuthenticated?: boolean = false;
       peerAuthenticated?: boolean = false;
+      hasConnectedWeb3?: boolean = false;
       ttl?: EpochTimeStamp;
 
-      constructor(config: Config) {
+      constructor(config: Partial<Config>) {
         super(config);
         this.device = config.device;
         this.location = config.location;
         this.environment = config.environment;
         this.serverAuthenticated = config.serverAuthenticated;
         this.peerAuthenticated = config.peerAuthenticated;
+        this.hasConnectedWeb3 = config.hasConnectedWeb3;
         this.ttl = config.ttl;
       }
     }
 
     export class BotConfig extends BaseSession.Config {
       static pk: string = "vlm:analytics:session";
-      pk?: string = Config.pk;
+      pk: string = Config.pk;
       device?: string;
       paths?: string[];
       location?: Metaverse.Location;
       ttl?: EpochTimeStamp;
-      suspicious: boolean = true;
+      suspicious?: boolean = true;
 
-      constructor(config: Config) {
+      constructor(config: Partial<Config>) {
         super(config);
         this.device = config.device;
         this.location = config.location;
@@ -95,7 +102,6 @@ export namespace Analytics {
       origin?: Metaverse.Location;
       pathPoint?: PathPoint;
       metadata?: unknown = {};
-
       ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Action) {

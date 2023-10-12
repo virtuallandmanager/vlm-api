@@ -1,11 +1,15 @@
-import { Giveaway } from "../models/Giveaway.model";
 import { Event } from "../models/Event.model";
 import { docClient, vlmAnalyticsTable, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Accounting } from "../models/Accounting.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { largeScan } from "../helpers/data";
+import { largeQuery, largeScan } from "../helpers/data";
 import { Analytics } from "../models/Analytics.model";
+import { User } from "../models/User.model";
+import { Giveaway } from "../models/Giveaway.model";
+import { BalanceDbManager } from "./Balance.data";
+import { Organization } from "../models/Organization.model";
+import { GenericDbManager } from "./Generic.data";
 
 export abstract class GiveawayDbManager {
   static get: CallableFunction = async (giveawayConfig: Giveaway.Config) => {
@@ -32,7 +36,31 @@ export abstract class GiveawayDbManager {
     }
   };
 
-  static getItemsByIds: CallableFunction = async (sks: string[]) => {
+  static getById: CallableFunction = async (sk: string) => {
+    if (!sk) {
+      return;
+    }
+    const params: DocumentClient.GetItemInput = {
+      Key: {
+        pk: Giveaway.Config.pk,
+        sk,
+      },
+      TableName: vlmMainTable,
+    };
+
+    try {
+      const giveaway = await docClient.get(params).promise();
+      return giveaway.Item as Giveaway.Config;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Event.data/getById",
+        sk,
+      });
+      return;
+    }
+  };
+
+  static getByIds: CallableFunction = async (sks: string[]) => {
     if (!sks?.length) {
       return;
     }
@@ -45,7 +73,7 @@ export abstract class GiveawayDbManager {
         Get: {
           // Add a connection from organization to user
           Key: {
-            pk: Event.Giveaway.Item.pk,
+            pk: Giveaway.Config.pk,
             sk,
           },
           TableName: vlmMainTable,
@@ -54,11 +82,44 @@ export abstract class GiveawayDbManager {
     });
 
     try {
-      const events = await docClient.transactGet(params).promise();
-      return events.Responses.map((item) => item.Item);
+      const giveaways = await docClient.transactGet(params).promise();
+      return giveaways.Responses.map((item) => new Giveaway.Config(item.Item));
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Event.data/getGiveawayItemsByIds",
+        from: "Giveaway.data/getByIds",
+        sks,
+      });
+      return;
+    }
+  };
+
+  static getItemsByIds: CallableFunction = async (sks: string[]) => {
+    if (!sks?.length) {
+      return;
+    }
+    try {
+      const params: DocumentClient.TransactGetItemsInput = {
+        TransactItems: [],
+      };
+
+      sks.forEach((sk: string) => {
+        params.TransactItems.push({
+          Get: {
+            // Add a connection from organization to user
+            Key: {
+              pk: Giveaway.Item.pk,
+              sk,
+            },
+            TableName: vlmMainTable,
+          },
+        });
+      });
+
+      const giveaways = await docClient.transactGet(params).promise();
+      return giveaways.Responses.map((item) => item.Item);
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Giveaway.data/getItemsByIds",
         sks,
       });
       return;
@@ -165,21 +226,50 @@ export abstract class GiveawayDbManager {
     }
   };
 
-  static addItem: CallableFunction = async (giveawayItem: Giveaway.Item) => {
-    const params = {
-      TableName: vlmMainTable,
-      Item: {
-        ...giveawayItem,
-        ts: Date.now(),
+  static addItem: CallableFunction = async ({ giveaway, giveawayItem }: { giveaway: Giveaway.Config, giveawayItem: Giveaway.Item }) => {
+
+    // Add the item
+    const itemPut: DocumentClient.TransactWriteItem = {
+      Put: {
+        TableName: vlmMainTable,
+        Item: {
+          ...giveawayItem,
+          ts: Date.now(),
+        }
+      }
+    };
+
+    // Update the user balance
+    const giveawayUpdate: DocumentClient.TransactWriteItem = {
+      Update: {
+        TableName: vlmMainTable,
+        Key: {
+          pk: Giveaway.Config.pk,
+          sk: giveaway.sk
+        },
+        UpdateExpression: "SET #items = list_append(#items, :item)", // use list_append function to add new value to the list
+        ExpressionAttributeNames: {
+          "#items": "items" // Replace with your attribute name
+        },
+        ExpressionAttributeValues: {
+          ":item": [giveawayItem.sk]
+        }
       },
     };
 
+    const params = {
+      TransactItems: [itemPut, giveawayUpdate],
+    };
+
+
     try {
-      await docClient.put(params).promise();
-      return giveawayItem;
+      await docClient.transactWrite(params).promise();
+      const dbGiveaway = await this.get(giveaway);
+      return dbGiveaway;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Giveaway.data/addItem",
+        giveaway,
         giveawayItem,
       });
       return;
@@ -200,10 +290,163 @@ export abstract class GiveawayDbManager {
       return link;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Event.data/linkGiveaway",
+        from: "Giveaway.data/linkEvent",
         link,
       });
       return;
     }
   };
+
+  static getAllForUser: CallableFunction = async (user: User.Account) => {
+    const params = {
+      TableName: vlmMainTable,
+      IndexName: "userId-index",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#userId": "userId",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Giveaway.Config.pk,
+        ":userId": user.sk,
+      },
+      KeyConditionExpression: "#pk = :pk and #userId = :userId",
+    };
+
+    try {
+      const giveawayRecords = await largeQuery(params),
+        giveawayIds = giveawayRecords.map((giveaway: Giveaway.Config) => giveaway.sk),
+        giveaways = await GiveawayDbManager.getByIds(giveawayIds);
+      return giveaways || [];
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Giveaway.data/getAllForUser",
+        user,
+      });
+      return;
+    }
+  };
+
+  static allocateCreditsToGiveaway: CallableFunction = async ({ giveaway, allocation, balance }: { giveaway: Giveaway.Config, allocation: Accounting.CreditAllocation, balance: User.Balance | Organization.Balance }) => {
+    try {
+
+      // Add an allocation record
+      const allocationPut: DocumentClient.TransactWriteItem = {
+        Put: {
+          TableName: vlmMainTable,
+          Item: allocation,
+        },
+      };
+
+      // Update the giveaway allocation
+      const giveawayUpdate: DocumentClient.TransactWriteItem = {
+        Update: {
+          TableName: vlmMainTable,
+          Key: { pk: Giveaway.Config.pk, sk: giveaway.sk },
+          UpdateExpression: 'ADD #allocatedCredits :credits',
+          ExpressionAttributeValues: {
+            ':credits': allocation.allocatedCredits,
+          },
+          ExpressionAttributeNames: {
+            '#allocatedCredits': 'allocatedCredits',
+          },
+          ReturnValuesOnConditionCheckFailure: 'ALL_OLD',
+        },
+      };
+
+      // Update the user balance
+      const balanceUpdate: DocumentClient.TransactWriteItem = {
+        Update: {
+          TableName: vlmMainTable,
+          Key: { pk: balance.pk, sk: balance.sk },
+          UpdateExpression: 'ADD #value :credits',
+          ExpressionAttributeValues: {
+            ':credits': -allocation.allocatedCredits, // Use a negative value to subtract
+          },
+          ExpressionAttributeNames: {
+            '#value': 'value',
+          },
+          ReturnValuesOnConditionCheckFailure: 'ALL_OLD',
+        },
+      };
+
+      const params = {
+        TransactItems: [allocationPut, giveawayUpdate, balanceUpdate],
+      };
+
+      await docClient.transactWrite(params).promise();
+
+      const adjustedBalance = await BalanceDbManager.get(balance);
+
+      return adjustedBalance;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Giveaway.data/allocateCreditsToGiveaway",
+        giveaway,
+        allocation,
+        balance
+      });
+
+      // Record a failed transaction
+      await GenericDbManager.put({ ...allocation, status: Accounting.TransactionStatus.FAILED });
+      throw error;
+    }
+  };
+
+  static getUserClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account, giveawayId: string }) => {
+    const params = {
+      TableName: vlmMainTable,
+      IndexName: "userId-index",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#userId": "userId",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Giveaway.Claim.pk,
+        ":userId": user.sk,
+      },
+      KeyConditionExpression: "#pk = :pk and #userId = :userId",
+    };
+
+    try {
+      const claimRecords = await largeQuery(params);
+      // get full claim records
+      const claims = await Promise.all(claimRecords.map(async (claim: Giveaway.Claim) => {
+        const fullClaim = await GenericDbManager.get(claim);
+        return fullClaim;
+      }));
+
+      // filter for the giveaway
+      const giveawayClaims = claims.filter((claim: Giveaway.Claim) => claim.giveawayId === giveawayId);
+      return giveawayClaims;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Giveaway.data/getUserClaimsForEvent",
+        event,
+        user,
+      });
+      return;
+    }
+  };
+
+  static addGiveawayClaim: CallableFunction = async (claim: Giveaway.Claim) => {
+    const params = {
+      TableName: vlmMainTable,
+      Item: {
+        ...claim,
+        ts: Date.now(),
+      },
+    };
+
+    try {
+      await docClient.put(params).promise();
+      return claim;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Giveaway.data/addGiveawayClaim",
+        claim,
+      });
+      return;
+    }
+  };
+
 }

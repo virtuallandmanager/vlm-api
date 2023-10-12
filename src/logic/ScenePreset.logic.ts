@@ -19,7 +19,7 @@ export abstract class ScenePresetManager {
   };
 
   static createInitialPreset: CallableFunction = async (scene: Scene.Config, sk?: string) => {
-    const firstPreset = new Scene.Preset({ name: "Signature Arrangement", sk });
+    const firstPreset = new Scene.Preset({ name: "Signature Arrangement", sk: sk || null });
     scene.scenePreset = firstPreset.sk;
     const addPresetsResponse = await this.addPresetsToScene(scene, [firstPreset]);
     scene = addPresetsResponse.scene;

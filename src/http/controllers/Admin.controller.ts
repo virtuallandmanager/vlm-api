@@ -79,10 +79,10 @@ router.get("/events", authMiddleware, vlmAdminMiddleware, async (req: Request, r
 
     const events = await AdminManager.getEvents(page, pageSize, sort);
     events.sort((a: Event.Config, b: Event.Config) => {
-      if (a.startTime < b.startTime) {
+      if (a.eventStart < b.eventStart) {
         return -1;
       }
-      if (a.startTime > b.startTime) {
+      if (a.eventStart > b.eventStart) {
         return 1;
       }
       return 0;

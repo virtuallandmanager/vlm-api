@@ -24,6 +24,29 @@ export abstract class AnalyticsUserDbManager {
     }
   };
 
+  static obtainByWallet: CallableFunction = async (analyticsUserConfig: Analytics.User.Account) => {
+    let existingUser, newUser;
+    try {
+      existingUser = await this.getByWallet(analyticsUserConfig);
+
+      if (existingUser && existingUser == analyticsUserConfig) {
+        return existingUser;
+      } else if (existingUser) {
+        return await this.put({ ...existingUser, ...analyticsUserConfig });
+      }
+
+      newUser = await this.put(analyticsUserConfig);
+
+      return newUser;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "AnalyticsUser.data/obtain",
+        analyticsUserConfig,
+      });
+      return;
+    }
+  };
+
   static get = async (analyticsUser: Analytics.User.Account) => {
     const { pk, sk } = analyticsUser;
 
@@ -37,7 +60,7 @@ export abstract class AnalyticsUserDbManager {
 
     try {
       const analyticsUserRecord = await docClient.get(params).promise();
-      return analyticsUserRecord.Item as Analytics.User.Account;
+      return new Analytics.User.Account(analyticsUserRecord.Item);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "AnalyticsUser.data/get",
@@ -46,6 +69,40 @@ export abstract class AnalyticsUserDbManager {
       return;
     }
   };
+
+  static getByWallet = async (analyticsUser: Analytics.User.Account) => {
+    const { pk, connectedWallet } = analyticsUser;
+
+    const params = {
+      TableName: vlmMainTable,
+      IndexName: "connectedWallet-index",
+      KeyConditionExpression: "#pk = :pk and #connectedWallet = :connectedWallet",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#connectedWallet": "connectedWallet",
+      },
+      ExpressionAttributeValues: {
+        ":pk": pk,
+        ":connectedWallet": connectedWallet,
+      },
+    };
+
+    try {
+      const analyticsUserRecord = await docClient.query(params).promise();
+      const analyticsUserPartial = new Analytics.User.Account(analyticsUserRecord.Items[0]);
+      if (analyticsUserPartial) {
+        return await this.get(analyticsUserPartial);
+      } else {
+        return;
+      }
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "AnalyticsUser.data/getByWallet",
+        analyticsUser,
+      });
+      return;
+    }
+  }
 
   static getById = async (sk: string) => {
     const params = {
@@ -79,7 +136,7 @@ export abstract class AnalyticsUserDbManager {
 
     try {
       await docClient.put(params).promise();
-      return await AnalyticsUserDbManager.get(analyticsUser);
+      return await this.get(analyticsUser);
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "AnalyticsUser.data/put",

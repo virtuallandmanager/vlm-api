@@ -3,7 +3,6 @@ import { BalanceType } from "./Balance.model";
 import { BaseWallet, SupportedCurrencies } from "./Wallet.model";
 import { Session as BaseSession } from "./Session.model";
 import { DateTime } from "luxon";
-import { Metaverse } from "./Metaverse.model";
 import { Scene as BaseScene } from "./Scene.model";
 import { VLMMedia } from "./VLM.model";
 
@@ -58,7 +57,7 @@ export namespace User {
   export class Account extends BaseUser.Account {
     static pk: string = `vlm:user:account`;
     pk?: string = Account.pk;
-    avatar?: string;
+    avatar?: string = `https://vlm.gg/media/avatar/default.png`;
     smsPhoneNumber?: SMSPhoneNumber;
     emailAddress?: string;
     aggregates?: Aggregates;
@@ -75,7 +74,7 @@ export namespace User {
       this.emailAddress = config.emailAddress;
       this.registeredAt = config.registeredAt;
       this.hideDemoScene = config.hideDemoScene;
-      this.avatar = config.avatar;
+      this.avatar = config.avatar || this.avatar;
       this.roles = config.roles;
       this.lastIp = config.clientIp || config.lastIp;
     }
@@ -112,16 +111,18 @@ export namespace User {
   export class Balance {
     static pk: string = "vlm:user:balance";
     pk?: string = Balance.pk;
-    sk?: string = uuidv4();
+    sk?: string;
     userId?: string;
     type?: BalanceType;
-    value?: number;
+    value?: number = 0;
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Balance) {
-      this.sk = config.sk || this.sk;
-      this.userId = config.userId;
-      this.type = config.type;
-      this.value = config.value;
+      this.sk = `${config?.userId}:${config?.type}`;
+      this.userId = config?.userId;
+      this.type = config?.type;
+      this.value = config?.value || this.value;
+      this.ts = config?.ts || this.ts;
     }
   }
 
@@ -209,10 +210,10 @@ export namespace User {
   export namespace Session {
     export class Config extends BaseSession.Config {
       static pk: string = "vlm:user:session";
-      pk?: string = Config.pk;
+      pk: string = Config.pk;
       ttl?: number = DateTime.now().plus({ hours: 12 }).toMillis();
 
-      constructor(config: Config) {
+      constructor(config: Partial<Config>) {
         super(config);
       }
     }

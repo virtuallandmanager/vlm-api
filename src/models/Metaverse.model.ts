@@ -20,7 +20,12 @@ export namespace Metaverse {
     name?: string = "New World";
   }
 
-  export type Location = { world: Metaverse.Worlds; location: string; coordinates?: number[] | string[]; parcels?: string[], url?: string, realm?: RealmData, vlmVersion?: string };
+  export type Location = { world: Metaverse.Worlds; location: string; coordinates?: number[] | string[]; parcels?: string[], url?: string, realm?: RealmData, integrationData?: IntegrationData };
+
+  export type IntegrationData = {
+    sdkVersion?: string;
+    packageVersion?: string;
+  }
 
   export type RealmData = {
     serverName?: string;

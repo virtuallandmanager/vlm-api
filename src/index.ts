@@ -40,12 +40,10 @@ if (process.env.NODE_ENV !== "production") {
   });
 } else {
   const presenceServer = { host: process.env.PRESENCE_SERVER_HOST, port: Number(process.env.PRESENCE_SERVER_PORT) };
-  const publicAddress = process.env.PUBLIC_ADDRESS;
   gameServer = new Server({
     transport: new WebSocketTransport({ server }),
     presence: new RedisPresence(presenceServer),
     driver: new RedisDriver(presenceServer),
-    publicAddress,
   });
 }
 

@@ -24,7 +24,7 @@ export abstract class AnalyticsManager {
     const wallet = new Analytics.User.Wallet(walletConfig);
     const dbWallet = await UserWalletDbManager.obtain(wallet);
     const user = new Analytics.User.Account({ connectedWallet: dbWallet.sk, ...userConfig });
-    const dbUser = await AnalyticsUserDbManager.obtain(user);
+    const dbUser = await AnalyticsUserDbManager.obtainByWallet(user);
     return dbUser;
   };
 

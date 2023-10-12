@@ -81,6 +81,8 @@ export abstract class SceneElementManager {
           return await this.addSoundToPreset(message);
         case "widget":
           return await this.addWidgetToPreset(message);
+        case "claimPoint":
+          return await this.addClaimPointToPreset(message);
       }
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneElementManager.createSceneElement" });
@@ -155,6 +157,16 @@ export abstract class SceneElementManager {
       return await SceneDbManager.addWidgetToPreset(message.scenePreset.sk, widget);
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneElementManager.addWidgetToPreset" });
+      return;
+    }
+  };
+
+  static addClaimPointToPreset: CallableFunction = async (message: VLMSceneMessage) => {
+    try {
+      const claimPoint = new Scene.Giveaway.ClaimPoint(message.elementData);
+      return await SceneDbManager.addClaimPointToPreset(message.scenePreset.sk, claimPoint);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneElementManager.addClaimPointToPreset" });
       return;
     }
   };

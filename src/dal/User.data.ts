@@ -5,6 +5,10 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { UserWalletDbManager } from "./UserWallet.data";
 import { VLMRecord } from "../models/VLM.model";
 import { GenericDbManager } from "./Generic.data";
+import { largeQuery } from "../helpers/data";
+import { SceneDbManager } from "./Scene.data";
+import { Scene } from "../models/Scene.model";
+import { BalanceDbManager } from "./Balance.data";
 
 export abstract class UserDbManager {
   static obtain: CallableFunction = async (user: User.Account) => {
@@ -44,7 +48,7 @@ export abstract class UserDbManager {
 
     try {
       const userRecord = await daxClient.get(params).promise();
-      const user = userRecord.Item as User.Account;
+      const user = new User.Account(userRecord.Item);
       return user;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -75,7 +79,52 @@ export abstract class UserDbManager {
     }
   };
 
-  static getBalance: CallableFunction = async (sk: string) => {
+  static getBalance: CallableFunction = async (user: User.Account) => {
+    if (!user.sk) {
+      const walletRecord = await UserWalletDbManager.get({
+        wallet: user.connectedWallet,
+      });
+      user.sk = walletRecord.userId;
+    }
+
+    const { pk, sk } = user;
+
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk,
+        sk,
+      },
+    };
+
+    try {
+      const balanceResponse = await daxClient.get(params).promise();
+      const balance = balanceResponse.Item as User.Balance;
+      return user;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "User.data/get",
+        user,
+      });
+    }
+  };
+  static obtainBalance: CallableFunction = async (balance: User.Balance) => {
+    let existingBalance, createdBalance;
+    try {
+      existingBalance = await this.getBalance(balance);
+      if (!existingBalance) {
+        createdBalance = await this.putBalance(balance);
+      }
+
+      return existingBalance || createdBalance;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "User.data/obtainBalance",
+        balance,
+      });
+    }
+  };
+  static getBalanceById: CallableFunction = async (sk: string) => {
     const params = {
       TableName: vlmMainTable,
       Key: {
@@ -96,29 +145,33 @@ export abstract class UserDbManager {
     }
   };
 
-  static obtainBalance: CallableFunction = async (balance: User.Balance) => {
-    const params = {
-      TableName: vlmMainTable,
-      Key: {
-        pk: User.Balance.pk,
-        sk: String(balance.sk),
-      },
-    };
-
+  static obtainBalances: CallableFunction = async (userId: string) => {
     try {
-      const balanceRecord = await docClient.get(params).promise();
-      const userBalance = balanceRecord.Item as User.Account;
-      if (userBalance) {
-        return userBalance;
-      } else {
-        await GenericDbManager.put(balance);
-        return balance;
-      }
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: "userId-index",
+        ExpressionAttributeNames: {
+          "#pk": "pk",
+          "#userId": "userId",
+        },
+        ExpressionAttributeValues: {
+          ":pk": User.Balance.pk,
+          ":userId": userId,
+        },
+        KeyConditionExpression: "#pk = :pk and #userId = :userId",
+      };
+
+      const balanceFragments = await largeQuery(params),
+        balanceIds = balanceFragments.map((userBalance: User.Balance) => userBalance.sk),
+        balances = await balanceIds.map(async (balance: User.Balance) => await UserDbManager.getBalanceById(balance.sk));
+
+      return balances;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "User.data/getBalance",
-        balance,
+        from: "Scene.data/obtainBalances",
+        userId,
       });
+      return;
     }
   };
 
@@ -174,7 +227,7 @@ export abstract class UserDbManager {
     }
   };
 
-  static updateBalance: CallableFunction = async (balance: User.Balance & VLMRecord) => {
+  static updateBalance: CallableFunction = async (balance: User.Balance & VLMRecord, adjustment: number) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: balance.pk, sk: balance.sk },
@@ -260,6 +313,24 @@ export abstract class UserDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "User.data/put",
         user,
+      });
+    }
+  }; static putBalance: CallableFunction = async (balance: User.Balance) => {
+    const params = {
+      TableName: vlmMainTable,
+      Item: {
+        ...balance,
+        ts: Date.now(),
+      },
+    };
+
+    try {
+      await daxClient.put(params).promise();
+      return await UserDbManager.getBalance(balance);
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "User.data/put",
+        balance,
       });
     }
   };

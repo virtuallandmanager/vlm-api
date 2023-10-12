@@ -5,6 +5,7 @@ import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
 import { SceneSettingsManager } from "./SceneSettings.logic";
 import { ScenePresetManager } from "./ScenePreset.logic";
+import { GiveawayManager } from "./Giveaway.logic";
 
 export abstract class SceneManager {
   // Base Scene Operations //
@@ -87,15 +88,20 @@ export abstract class SceneManager {
     }
   };
 
-  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, scenePreset: Scene.Preset) => {
+  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, presetId: string) => {
     try {
-      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: scenePreset.sk }),
+      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: presetId }),
         scene = await this.buildScene(sceneStub);
 
       return scene;
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.changeScenePreset" });
     }
+  };
+
+  static getGiveawaysForScene: CallableFunction = async (scene: Scene.Config) => {
+    const giveaways = await GiveawayManager.getGiveawaysForSceneEvents(scene.sk);
+    return giveaways;
   };
   ////
 
@@ -112,7 +118,18 @@ export abstract class SceneManager {
       // create the first preset if one doesn't exist in this scene
       if (!scene.presets || !scene.presets.length) {
         scene = await ScenePresetManager.createInitialPreset(scene);
+      }
+
+      if (scene.presets.every((preset) => typeof preset === "string")) {
+        presetsLoaded = false;
+      } else {
         presetsLoaded = true;
+      }
+
+      if (!scene.scenePreset && !presetsLoaded) {
+        scene.scenePreset = scene.presets[0];
+      } else if (!scene.scenePreset && presetsLoaded && typeof scene.presets[0] !== "string") {
+        scene.scenePreset = scene.scenePreset || scene.presets[0].sk;
       }
 
       if (!presetsLoaded) {

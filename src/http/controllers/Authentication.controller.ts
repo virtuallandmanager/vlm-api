@@ -182,10 +182,13 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
         currency: "ETH",
         ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toMillis() : undefined,
       },
-      { displayName: user.displayName, hasConnectedWeb3: user.hasConnectedWeb3 }
+      { displayName: user.displayName, hasConnectedWeb3: user.hasConnectedWeb3, lastIp: clientIp }
     );
 
-    const session = new Analytics.Session.Config({
+    // get existing session
+    const existingSession = await SessionManager.getAnalyticsSession(dbUser.sk);
+
+    const session = existingSession || new Analytics.Session.Config({
       userId: dbUser.sk,
       connectedWallet: dbUser.connectedWallet,
       location,
@@ -194,6 +197,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       device: subPlatform,
       serverAuthenticated,
       sessionStart: Date.now(),
+      hasConnectedWeb3: user.hasConnectedWeb3,
       ttl: environment === "prod" ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
     });
     await SessionManager.getIpData(session);

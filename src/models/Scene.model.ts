@@ -113,7 +113,7 @@ export namespace Scene {
     pk?: string;
     sk?: string = uuidv4();
     name?: string;
-    ts?: EpochTimeStamp;
+    ts?: EpochTimeStamp = Date.now();
   }
 
   export class DefaultSettings {
@@ -140,7 +140,7 @@ export namespace Scene {
     startTime?: EpochTimeStamp;
     endTime?: EpochTimeStamp;
     permissions?: Permissions;
-    ts?: EpochTimeStamp;
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config?: Invite) {
       if (!config) {
@@ -197,7 +197,7 @@ export namespace Scene {
       volume?: number = 1;
       withCollisions?: boolean = true;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -236,7 +236,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -285,7 +285,7 @@ export namespace Scene {
       isTransparent?: boolean;
       withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -325,7 +325,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -363,7 +363,7 @@ export namespace Scene {
       isTransparent?: boolean;
       withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -399,7 +399,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -441,7 +441,7 @@ export namespace Scene {
       isTransparent?: boolean;
       withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -475,7 +475,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -507,7 +507,7 @@ export namespace Scene {
       value?: number | string | Object | Array<unknown> | boolean;
       range?: [number, number];
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -537,6 +537,59 @@ export namespace Scene {
       text: string;
       value: string;
     };
+  }
+
+  export namespace Giveaway {
+    export class ClaimPoint {
+      static pk: string = "vlm:scene:claimpoint"; // Partition Key
+      pk?: string = ClaimPoint.pk; // Partition Key
+      sk?: string; // Sort Key
+      customId?: string;
+      name?: string;
+      enabled?: boolean;
+      giveawayId?: string;
+      position?: TransformConstructorArgs;
+      rotation?: TransformConstructorArgs;
+      scale?: TransformConstructorArgs;
+      withCollisions?: boolean;
+      type?: ClaimPointType;
+      mannequinType?: MannequinType;
+      parent?: string;
+      customRendering?: boolean;
+      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+      ts?: EpochTimeStamp = Date.now();
+
+      constructor(config: Partial<ClaimPoint> = {}) {
+        this.sk = config.sk || this.sk; // Sort Key
+        this.customId = config.customId || this.customId;
+        this.name = config.name;
+        this.enabled = config.enabled;
+        this.giveawayId = config.giveawayId;
+        this.position = config.position;
+        this.rotation = config.rotation;
+        this.scale = config.scale;
+        this.withCollisions = config.withCollisions;
+        this.type = config.type;
+        this.mannequinType = config.mannequinType;
+        this.parent = config.parent;
+        this.customRendering = config.customRendering;
+        this.createdAt = config.createdAt;
+        this.ts = config.ts;
+      }
+    }
+
+    export enum ClaimPointType {
+      IMAGE,
+      MODEL,
+      MANNEQUIN,
+    };
+
+    export enum MannequinType {
+      MALE,
+      FEMALE,
+      MATCH_PLAYER
+    };
+
   }
 
   export type Instance = Video.Instance | Image.Instance | NFT.Instance | Sound.Instance;

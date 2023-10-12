@@ -39,6 +39,25 @@ export abstract class TransactionDbManager {
     }
   };
 
+  static updateTransactionStatus: CallableFunction = async (transactionSk: string, newStatus: string) => {
+    try {
+      await docClient.update({
+        TableName: vlmMainTable,
+        Key: { pk: Accounting.Transaction.pk, sk: transactionSk },
+        UpdateExpression: "SET #status = :newStatus",
+        ExpressionAttributeNames: {
+          "#status": "status"
+        },
+        ExpressionAttributeValues: {
+          ":newStatus": newStatus
+        }
+      }).promise();
+    } catch (error) {
+      AdminLogManager.logError(error, `Failed to update transaction status: ${JSON.stringify(error)}`);
+      throw error; // Or handle the error as needed
+    }
+  };
+
   static put: CallableFunction = async (wallet: BaseWallet) => {
     const params = {
       TableName: vlmMainTable,

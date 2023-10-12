@@ -151,7 +151,7 @@ export abstract class MigrationManager {
           itemId: item.tokenId,
           imageSrc: `https://peer.decentraland.org/lambdas/collections/contents/urn:decentraland:matic:collections-v2:${item.contractAddress}:${item.tokenId}/thumbnail`,
         });
-        await GiveawayManager.createItem(giveawayItem);
+        await GiveawayManager.addItem(giveawayItem);
       });
     });
     return ids;
@@ -222,8 +222,8 @@ export abstract class MigrationManager {
       });
 
       const newTransaction = new Accounting.Transaction({
-        txType: Accounting.TransactionType.AIRDROP,
-        paymentType: Accounting.PaymentType.CREDIT,
+        txType: Accounting.TransactionType.ITEM_GIVEAWAY,
+        paymentType: Accounting.PaymentType.CREDITS,
         txHash: claim.txHash,
         txAmount: 1,
         complete: true,
