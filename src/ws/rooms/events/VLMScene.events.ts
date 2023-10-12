@@ -514,7 +514,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
 
     if (message.element === "video" && message.elementData.instances.length > 0) {
       const filteredPresetVideos = room.state.streams.filter((stream: SceneStream) => stream.sceneId !== client.auth.session.sceneId && stream.presetId !== message.scenePreset.sk);
-      const presetVideos = message.scenePreset.videos;
+      const presetVideos = message.scenePreset.videos as Scene.Video.Config[];
       room.state.streams.length = 0;
       room.state.streams.push(...filteredPresetVideos);
       presetVideos.forEach((video: Scene.Video.Config) => {
