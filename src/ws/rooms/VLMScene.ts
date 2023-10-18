@@ -51,7 +51,7 @@ export class VLMScene extends Room<VLMSceneState> {
       // Gradually increase batch size from 1 to 20 as the number of streams goes from 5 to 100
       this.state.batchSize = Math.ceil(((this.state.streams.length - 4) / (100 - 4)) * (20 - 1) + 1);
     } else {
-      console.warn("There are more than 100 streams. Consider revising the logic.");
+      AdminLogManager.logErrorToDiscord(`There are more than 100 streams in scene ${this.state.sceneId}. Warn scene owner of performance issues.`);
       return;
     }
     this.state.streams = this.removeDuplicates(this.state.streams);
@@ -94,15 +94,21 @@ export class VLMScene extends Room<VLMSceneState> {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
           auth.user = user;
-          console.log(`Got user info and session`)
+          if (!auth.session || !auth.user) {
+            client.leave();
+            return;
+          }
         });
         const response = await this.connectAnalyticsUser(client, auth.session, auth.user);
         auth.session = response.session;
-        console.log('Set user and session', auth)
       } else if (sessionConfig.host) {
         await userAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
           auth.user = user;
+          if (!auth.session || !auth.user) {
+            client.leave();
+            return;
+          }
           auth.session.sceneId = sessionConfig.sceneId;
         });
         const user = await this.connectHostUser(client, auth.session);

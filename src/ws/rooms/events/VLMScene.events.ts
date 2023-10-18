@@ -242,7 +242,7 @@ export async function handleHostJoined(client: Client, message: any, room: VLMSc
     });
 
     HistoryManager.addUpdate(message.user, message.session.sceneId, { action: "accessed scene in VLM" });
-    console.log("Host User Joined: ", user.displayName, user.connectedWallet);
+    console.log("Host User Joined: ", user?.displayName, user?.connectedWallet);
     return false;
   } catch (error) {
     return false;
@@ -267,11 +267,11 @@ export async function handleUserMessage(client: Client, message: any, room: VLMS
     if (!user) {
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
-    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async ({ session, user }) => {
       message.from = session.connectedWallet;
-      message.fromDisplayName = user.displayName;
-      const sterileMessage = { from: session.connectedWallet, fromDisplayName: user.displayName, id: message.id, data: message.data };
+      message.fromDisplayName = user?.displayName;
+      const sterileMessage = { from: session.connectedWallet, fromDisplayName: user?.displayName, id: message.id, data: message.data };
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId)
           c.send("user_message", sterileMessage);
@@ -291,7 +291,7 @@ export async function handleGetUserState(client: Client, message: any, room: VLM
     if (!user) {
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
-    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       const userState = await SceneManager.getUserStateByScene(sceneId, message.key);
       room.clients.forEach((c) => {
@@ -313,7 +313,7 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
     if (!user) {
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
-    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       const userState = await SceneManager.setUserStateByScene(sceneId, message.key, message.value)
       room.clients.forEach((c) => {
@@ -614,15 +614,17 @@ export async function handleClaimGiveaway(client: Client, message: any, room: VL
         return false;
       }
 
-      const { success, reason } = await GiveawayManager.claimGiveawayItem({ user, sceneId: client.auth.session.sceneId, giveawayId: message.giveawayId });
+      const { success, reason } = await GiveawayManager.claimGiveawayItem({ session, user, sceneId: client.auth.session.sceneId, giveawayId: message.giveawayId });
       if (success) {
-        client.send("claim_giveaway_response", { success: true });
+        client.send("claim_giveaway_response", { responseType: Giveaway.ClaimResponseType.CLAIM_ACCEPTED, giveawayId: message.giveawayId });
       } else {
-        client.send("claim_giveaway_response", { success: false, reason });
+        client.send("claim_giveaway_response", { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason, giveawayId: message.giveawayId });
       }
     });
     return false;
   } catch (error) {
+    client.send("claim_giveaway_response", { responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR, error, giveawayId: message.giveawayId });
+
     return false;
   }
 }

@@ -41,18 +41,18 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 
 
-app.use("/_health", healthCheck);
-app.use("/auth", jsonParser, urlencodedParser, authController);
-app.use("/admin", jsonParser, urlencodedParser, adminController);
-app.use("/scene", jsonParser, urlencodedParser, sceneController);
-app.use("/session", jsonParser, urlencodedParser, sessionController);
-app.use("/user", jsonParser, urlencodedParser, userController);
-app.use("/event", jsonParser, urlencodedParser, eventController);
-app.use("/giveaway", jsonParser, urlencodedParser, giveawayController);
-app.use("/promotion", jsonParser, urlencodedParser, promotionController);
-app.use("/balance", jsonParser, urlencodedParser, balanceController);
-app.use("/media", mediaController); // No body-parser middleware applied to this route
+app.use("/api/_health", healthCheck);
+app.use("/api/auth", jsonParser, urlencodedParser, authController);
+app.use("/api/admin", jsonParser, urlencodedParser, adminController);
+app.use("/api/scene", jsonParser, urlencodedParser, sceneController);
+app.use("/api/session", jsonParser, urlencodedParser, sessionController);
+app.use("/api/user", jsonParser, urlencodedParser, userController);
+app.use("/api/event", jsonParser, urlencodedParser, eventController);
+app.use("/api/giveaway", jsonParser, urlencodedParser, giveawayController);
+app.use("/api/promotion", jsonParser, urlencodedParser, promotionController);
+app.use("/api/balance", jsonParser, urlencodedParser, balanceController);
+app.use("/api/media", mediaController); // No body-parser middleware applied to this route
 // app.use("/colyseus", monitor());
-app.use("/log", jsonParser, urlencodedParser, logController);
+app.use("/api/log", jsonParser, urlencodedParser, logController);
 
 export default app;

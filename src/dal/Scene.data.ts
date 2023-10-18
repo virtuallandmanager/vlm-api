@@ -914,7 +914,7 @@ export abstract class SceneDbManager {
     }
   };
 
-static addClaimPointToPreset: CallableFunction = async (presetId: string, claimPoint: Scene.Giveaway.ClaimPoint) => {
+  static addClaimPointToPreset: CallableFunction = async (presetId: string, claimPoint: Scene.Giveaway.ClaimPoint) => {
     const sk = claimPoint.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -1016,7 +1016,7 @@ static addClaimPointToPreset: CallableFunction = async (presetId: string, claimP
       ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
       ExpressionAttributeValues: {
         ":prop": elementData[valueProp],
-        ":elementTs": elementData.ts,
+        ":elementTs": Number(elementData.ts),
         ":ts": Date.now(),
       },
     };
@@ -1043,7 +1043,8 @@ static addClaimPointToPreset: CallableFunction = async (presetId: string, claimP
       images = dbPreset.images.filter((id: string) => id !== elementData.sk),
       nfts = dbPreset.nfts.filter((id: string) => id !== elementData.sk),
       sounds = dbPreset.sounds.filter((id: string) => id !== elementData.sk),
-      widgets = dbPreset.widgets.filter((id: string) => id !== elementData.sk);
+      widgets = dbPreset.widgets.filter((id: string) => id !== elementData.sk),
+      claimPoints = dbPreset.claimPoints.filter((id: string) => id !== elementData.sk);
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -1053,13 +1054,14 @@ static addClaimPointToPreset: CallableFunction = async (presetId: string, claimP
               pk: dbPreset.pk,
               sk: dbPreset.sk,
             },
-            UpdateExpression: "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets",
+            UpdateExpression: "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints",
             ExpressionAttributeNames: {
               "#videos": "videos",
               "#images": "images",
               "#nfts": "nfts",
               "#sounds": "sounds",
               "#widgets": "widgets",
+              "#claimPoints": "claimPoints"
             },
             ExpressionAttributeValues: {
               ":videos": videos,
@@ -1067,6 +1069,7 @@ static addClaimPointToPreset: CallableFunction = async (presetId: string, claimP
               ":nfts": nfts,
               ":sounds": sounds,
               ":widgets": widgets,
+              ":claimPoints": claimPoints
             },
             TableName: vlmMainTable,
           },

@@ -1,6 +1,5 @@
 import { DateTime } from "luxon";
 import { v4 as uuidv4 } from "uuid";
-import { TransformConstructorArgs } from "./Transform.model";
 
 export namespace Giveaway {
   export class Config {
@@ -129,25 +128,37 @@ export namespace Giveaway {
   }
 
   export enum ClaimRejection {
+    PAUSED,
     BEFORE_EVENT_START,
     AFTER_EVENT_END,
     EXISTING_WALLET_CLAIM,
-    OVER_IP_LIMIT,
     SUPPLY_DEPLETED,
     INAUTHENTIC,
     SUSPICIOUS,
     NO_LINKED_EVENTS,
-    PAUSED
+    OVER_IP_LIMIT,
+    OVER_DAILY_LIMIT,
+    OVER_WEEKLY_LIMIT,
+    OVER_MONTHLY_LIMIT,
+    OVER_YEARLY_LIMIT,
+    OVER_LIMIT,
   }
 
   export enum ClaimResponseType {
     CLAIM_ACCEPTED,
     CLAIM_DENIED,
     CLAIM_IN_PROGRESS,
+    CLAIM_SERVER_ERROR,
   }
 
   type MessageOptions = {
     color: string;
     fontSize: number;
   };
+
+  export interface SetMinterRequest {
+    contracts: string[];
+    ids: number[];
+    minter: string;
+  }
 }

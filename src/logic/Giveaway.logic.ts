@@ -6,7 +6,6 @@ import { Giveaway } from "../models/Giveaway.model";
 import { User } from "../models/User.model";
 import { Event } from "../models/Event.model";
 import { EventDbManager } from "../dal/Event.data";
-import { AdminLogManager } from "./ErrorLogging.logic";
 import { EventManager } from "./Event.logic";
 
 export abstract class GiveawayManager {
@@ -38,9 +37,12 @@ export abstract class GiveawayManager {
     return await GiveawayDbManager.get(giveaway);
   };
 
-
   static getById: CallableFunction = async (sk: string) => {
     return await GiveawayDbManager.getById(sk);
+  };
+
+  static getByIds: CallableFunction = async (sk: string[]) => {
+    return await GiveawayDbManager.getByIds(sk);
   };
 
   static getAllLegacy: CallableFunction = async (chunkCb: CallableFunction) => {
@@ -145,13 +147,11 @@ export abstract class GiveawayManager {
     });
 
     // get giveaways for events
-    const linkedGiveaways = await Promise.all(eventIds.map((eventId: string) => {
-      return { [eventId]: EventDbManager.getLinkedGiveawaysById(eventId) };
-    }));
+    const linkedGiveaways = await EventDbManager.getLinkedGiveawaysByIds(eventIds);
 
     // check if giveaway is in linked giveaways
     const linkedGiveawaysFlat = linkedGiveaways.flat();
-    const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((giveaway: Giveaway.Config) => giveaway.sk === giveawayId);
+    const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((giveaway: Event.GiveawayLink) => giveaway.giveawayId === giveawayId);
 
     if (linkedGiveawaysFiltered.length === 0) {
       return { success: false, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS };

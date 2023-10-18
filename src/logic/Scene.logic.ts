@@ -262,7 +262,29 @@ export abstract class SceneManager {
   // Generic Scene Element Operations //
   static getSceneElementById: CallableFunction = async (pk: string, sk: string) => {
     try {
-      return await GenericDbManager.get({ pk, sk });
+      const element = await GenericDbManager.get({ pk, sk });
+      switch (pk) {
+        case "vlm.scene.image":
+          return new Scene.Image.Config(element);
+        case "vlm.scene.image.instance":
+          return new Scene.Image.Instance(element);
+        case "vlm.scene.video":
+          return new Scene.Video.Config(element);
+        case "vlm.scene.video.instance":
+          return new Scene.Video.Instance(element);
+        case "vlm.scene.nft":
+          return new Scene.NFT.Config(element);
+        case "vlm.scene.sound":
+          return new Scene.Sound.Config(element);
+        case "vlm.scene.sound.instance":
+          return new Scene.Sound.Instance(element);
+        case "vlm.scene.widget":
+          return new Scene.Widget.Config(element);
+        case "vlm.scene.giveaway.claimpoint":
+          return new Scene.Giveaway.ClaimPoint(element);
+        default:
+          return element;
+      }
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.getSceneElementById" });
       return;

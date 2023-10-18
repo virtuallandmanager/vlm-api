@@ -39,6 +39,31 @@ export abstract class TransactionDbManager {
     }
   };
 
+  // TODO: Extend to allow for shared and dedicated minters
+  static getMinter: CallableFunction = async () => {
+    const params = {
+      TableName: vlmMainTable,
+      KeyConditionExpression: "#pk = :pk",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Accounting.Minter.pk,
+      },
+    };
+
+    try {
+      const walletRecord = await docClient.query(params).promise();
+      const minters = walletRecord.Items as Accounting.Minter[];
+      const activeMinter = minters.find((minter) => minter.active);
+      return activeMinter.address;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Transaction.data/getMinter",
+      });
+    }
+  };
+
   static updateTransactionStatus: CallableFunction = async (transactionSk: string, newStatus: string) => {
     try {
       await docClient.update({

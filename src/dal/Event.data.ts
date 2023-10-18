@@ -196,7 +196,7 @@ export abstract class EventDbManager {
 
     try {
       const linkRecords = await largeQuery(params);
-      const linkedGiveaways = await Promise.all(linkRecords.map((link: Event.SceneLink) => GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk })));
+      const linkedGiveaways = await Promise.all(linkRecords.map((link: Event.GiveawayLink) => GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk })));
       return linkedGiveaways;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -210,7 +210,7 @@ export abstract class EventDbManager {
   static getLinkedGiveawaysByIds: CallableFunction = async (sks: string[]) => {
     try {
       const giveawayLinks = await Promise.all(
-        sks.map((sk) => this.getLinkedGiveawaysById(sk))
+        sks.map(async (sk) => await this.getLinkedGiveawaysById(sk))
       );
 
       return giveawayLinks.flat();

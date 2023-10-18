@@ -108,14 +108,15 @@ export abstract class ScenePresetManager {
       return;
     }
     try {
-      const [videos, images, nfts, sounds, widgets] = await Promise.all([
+      const [videos, images, nfts, sounds, widgets, claimPoints] = await Promise.all([
         SceneElementManager.buildElements(Scene.Video.Config.pk, preset.videos),
         SceneElementManager.buildElements(Scene.Image.Config.pk, preset.images),
         SceneElementManager.buildElements(Scene.NFT.Config.pk, preset.nfts),
         SceneElementManager.buildElements(Scene.Sound.Config.pk, preset.sounds),
         SceneElementManager.buildElements(Scene.Widget.Config.pk, preset.widgets),
+        SceneElementManager.buildElements(Scene.Giveaway.ClaimPoint.pk, preset.claimPoints),
       ]);
-      return new Scene.Preset({ ...preset, videos, images, nfts, sounds, widgets });
+      return new Scene.Preset({ ...preset, videos, images, nfts, sounds, widgets, claimPoints });
     } catch (error) {
       AdminLogManager.logError(error, { from: "ScenePresetManager.buildScenePreset" });
       return;

@@ -52,6 +52,21 @@ export namespace Accounting {
     }
   }
 
+  export class Minter {
+    static pk: string = "vlm:minter";
+    pk?: string = Minter.pk;
+    sk?: string = uuidv4();
+    address: string;
+    active?: boolean = true;
+    createdAt?: number = DateTime.now().toUnixInteger();
+    ts?: EpochTimeStamp = Date.now();
+
+    constructor(config: Partial<Minter>) {
+      Object.assign(this, config);
+      this.sk = config?.sk || this.sk;
+      this.ts = config?.ts || this.ts;
+    }
+  }
 
   export enum TransactionType {
     CREDIT_PURCHASE = "credit_purchase",
@@ -62,6 +77,7 @@ export namespace Accounting {
     RENEW_SUBSCRIPTION = "renew_subscription",
     CANCEL_SUBSCRIPTION = "cancel_subscription",
     REFUND = "purchase_refund",
+    SET_MINTER_RIGHTS = "set_minter_rights",
   }
 
   export enum PaymentType {

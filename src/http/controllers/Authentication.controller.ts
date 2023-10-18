@@ -182,7 +182,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
         currency: "ETH",
         ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toMillis() : undefined,
       },
-      { displayName: user.displayName, hasConnectedWeb3: user.hasConnectedWeb3, lastIp: clientIp }
+      { displayName: user?.displayName, hasConnectedWeb3: user?.hasConnectedWeb3, lastIp: clientIp }
     );
 
     // get existing session

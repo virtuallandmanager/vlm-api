@@ -42,6 +42,7 @@ export namespace Scene {
     nfts?: string[] | NFT.Config[] = [];
     sounds?: string[] | Sound.Config[] = [];
     widgets?: string[] | Widget.Config[] = [];
+    claimPoints?: string[] | Giveaway.ClaimPoint[] = [];
     locale?: string = "en-US";
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
     ts?: EpochTimeStamp = Date.now();
@@ -57,6 +58,7 @@ export namespace Scene {
       this.sounds = config?.sounds || this.sounds;
       this.widgets = config?.widgets || this.widgets;
       this.locale = config?.locale || this.locale;
+      this.claimPoints = config?.claimPoints || this.claimPoints;
       this.createdAt = config?.createdAt || this.createdAt;
       this.ts = config?.ts || this.ts;
     }
@@ -540,46 +542,62 @@ export namespace Scene {
   }
 
   export namespace Giveaway {
+
     export class ClaimPoint {
       static pk: string = "vlm:scene:claimpoint"; // Partition Key
       pk?: string = ClaimPoint.pk; // Partition Key
       sk?: string; // Sort Key
       customId?: string;
-      name?: string;
+      parent?: string;
+      customRendering?: boolean;
+      name?: string = "New Claim Point";
       enabled?: boolean;
       giveawayId?: string;
       position?: TransformConstructorArgs;
-      rotation?: TransformConstructorArgs;
       scale?: TransformConstructorArgs;
+      rotation?: TransformConstructorArgs;
       withCollisions?: boolean;
-      type?: ClaimPointType;
-      mannequinType?: MannequinType;
-      parent?: string;
-      customRendering?: boolean;
+      properties?: ClaimPointProperties = defaultClaimPointProperties;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
       ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Partial<ClaimPoint> = {}) {
         this.sk = config.sk || this.sk; // Sort Key
         this.customId = config.customId || this.customId;
-        this.name = config.name;
+        this.parent = config.parent;
+        this.customRendering = config.customRendering;
+        this.name = config.name || this.name;
         this.enabled = config.enabled;
         this.giveawayId = config.giveawayId;
         this.position = config.position;
-        this.rotation = config.rotation;
         this.scale = config.scale;
+        this.rotation = config.rotation;
         this.withCollisions = config.withCollisions;
-        this.type = config.type;
-        this.mannequinType = config.mannequinType;
-        this.parent = config.parent;
-        this.customRendering = config.customRendering;
+        this.properties = config.properties || this.properties;
         this.createdAt = config.createdAt;
         this.ts = config.ts;
       }
     }
 
+    export interface ClaimPointProperties {
+      enableKiosk?: boolean;
+      enableSpin?: boolean;
+      type?: ClaimPointType;
+      imgSrc?: string;
+      modelSrc?: string;
+      mannequinType?: MannequinType;
+      hoverText?: string;
+      color1?: { r: number, g: number, b: number, a: number };
+      color2?: { r: number, g: number, b: number, a: number };
+      color3?: { r: number, g: number, b: number, a: number };
+      kioskImgSrc?: string;
+      itemYOffset?: number;
+      itemScale?: number;
+    }
+
     export enum ClaimPointType {
-      IMAGE,
+      MARKETPLACE_IMAGE,
+      CUSTOM_IMAGE,
       MODEL,
       MANNEQUIN,
     };
@@ -588,6 +606,22 @@ export namespace Scene {
       MALE,
       FEMALE,
       MATCH_PLAYER
+    };
+
+    export const defaultClaimPointProperties: ClaimPointProperties = {
+      enableKiosk: true,
+      enableSpin: false,
+      type: ClaimPointType.CUSTOM_IMAGE,
+      imgSrc: "",
+      modelSrc: "",
+      mannequinType: MannequinType.MATCH_PLAYER,
+      hoverText: "Claim Item",
+      color1: { r: 255, g: 255, b: 255, a: 1 },
+      color2: { r: 0, g: 0, b: 0, a: 1 },
+      color3: { r: 150, g: 180, b: 255, a: 0.5 },
+      kioskImgSrc: "",
+      itemYOffset: 0,
+      itemScale: 1
     };
 
   }
