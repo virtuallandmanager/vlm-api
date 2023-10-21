@@ -17,6 +17,7 @@ import { OrganizationManager } from "../../logic/Organization.logic";
 import { Organization } from "../../models/Organization.model";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { SceneManager } from "../../logic/Scene.logic";
+import { deepEqual } from "assert";
 
 router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
@@ -164,7 +165,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       });
     }
 
-    await runChecks(req, parcelArr);
+    await runChecks(req, parcelArr, sceneId);
     serverAuthenticated = true;
   } catch (error: unknown) {
 
@@ -184,6 +185,11 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       },
       { displayName: user?.displayName, hasConnectedWeb3: user?.hasConnectedWeb3, lastIp: clientIp }
     );
+
+    if (dbUser.hasConnectedWeb3 !== user.hasConnectedWeb3) {
+      dbUser.hasConnectedWeb3 = user.hasConnectedWeb3;
+      await AnalyticsManager.updateUser(dbUser);
+    }
 
     // get existing session
     const existingSession = await SessionManager.getAnalyticsSession(dbUser.sk);

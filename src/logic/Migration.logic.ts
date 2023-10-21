@@ -67,7 +67,7 @@ export abstract class MigrationManager {
     }
     const ids: string[] = [];
     await instances.forEach(async (videoInstance: LegacyVideoInstanceConfig) => {
-      const instanceRecord = await SceneElementManager.createSceneElementInstance({ element: "video", instance: true, elementData, instanceData: new Scene.Video.Instance(videoInstance) });
+      const instanceRecord = await SceneElementManager.addInstanceToElement({ element: "video", instance: true, elementData, instanceData: new Scene.Video.Instance(videoInstance) });
       ids.push(instanceRecord.sk);
     });
     return ids;
@@ -234,7 +234,7 @@ export abstract class MigrationManager {
 
       const newClaim = new Giveaway.Claim({
         to: claim.wallet,
-        analyticsRecord: newAnalyticsRecord.sk,
+        analyticsRecordId: newAnalyticsRecord.sk,
         eventId,
         clientIp: claim.clientIp,
         giveawayId,

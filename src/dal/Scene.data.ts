@@ -818,6 +818,53 @@ export abstract class SceneDbManager {
     }
   };
 
+  static addModelToPreset: CallableFunction = async (presetId: string, sceneModel: Scene.Model.Config) => {
+    const sk = sceneModel.sk;
+    const params: DocumentClient.TransactWriteItemsInput = {
+      TransactItems: [
+        {
+          Update: {
+            Key: {
+              pk: Scene.Preset.pk,
+              sk: presetId,
+            },
+            UpdateExpression: "SET #models = list_append(if_not_exists(#models, :empty_list), :modelIds)",
+            ExpressionAttributeNames: {
+              "#models": "models",
+            },
+            ExpressionAttributeValues: {
+              ":modelIds": [sk],
+              ":empty_list": [],
+            },
+            TableName: vlmMainTable,
+          },
+        },
+        {
+          Put: {
+            Item: {
+              ...sceneModel,
+              ts: Date.now(),
+            },
+            TableName: vlmMainTable,
+          },
+        },
+      ],
+    };
+
+    try {
+      await docClient.transactWrite(params).promise();
+      const elementData = await GenericDbManager.get(sceneModel);
+      const scenePreset = await this.getPreset(presetId);
+
+      return { scenePreset, elementData };
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Scene.data/addModelToPreset",
+      });
+      return;
+    }
+  };
+
   static addSoundToPreset: CallableFunction = async (presetId: string, sceneSound: Scene.Sound.Config) => {
     const sk = sceneSound.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
@@ -1044,7 +1091,8 @@ export abstract class SceneDbManager {
       nfts = dbPreset.nfts.filter((id: string) => id !== elementData.sk),
       sounds = dbPreset.sounds.filter((id: string) => id !== elementData.sk),
       widgets = dbPreset.widgets.filter((id: string) => id !== elementData.sk),
-      claimPoints = dbPreset.claimPoints.filter((id: string) => id !== elementData.sk);
+      claimPoints = dbPreset.claimPoints.filter((id: string) => id !== elementData.sk),
+      models = dbPreset.models.filter((id: string) => id !== elementData.sk);
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -1054,14 +1102,15 @@ export abstract class SceneDbManager {
               pk: dbPreset.pk,
               sk: dbPreset.sk,
             },
-            UpdateExpression: "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints",
+            UpdateExpression: "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints, #models = :models",
             ExpressionAttributeNames: {
               "#videos": "videos",
               "#images": "images",
               "#nfts": "nfts",
               "#sounds": "sounds",
               "#widgets": "widgets",
-              "#claimPoints": "claimPoints"
+              "#claimPoints": "claimPoints",
+              "#models": "models"
             },
             ExpressionAttributeValues: {
               ":videos": videos,
@@ -1069,7 +1118,8 @@ export abstract class SceneDbManager {
               ":nfts": nfts,
               ":sounds": sounds,
               ":widgets": widgets,
-              ":claimPoints": claimPoints
+              ":claimPoints": claimPoints,
+              ":models": models
             },
             TableName: vlmMainTable,
           },

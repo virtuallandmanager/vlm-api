@@ -1,8 +1,10 @@
 import { Request } from "express";
 import dcl from "decentraland-crypto-middleware";
 import { denyListedIPS, TESTS_ENABLED, Metadata } from "../utils";
-import { checkCoords, checkPlayer } from "./verifyOnMap";
+import { checkCoords, checkPlayer, checkSceneParcels } from "./verifyOnMap";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
+import { SceneManager } from "../../logic/Scene.logic";
+import { Metaverse } from "../../models/Metaverse.model";
 
 export function checkOrigin(req: Request) {
   try {
@@ -40,7 +42,7 @@ export function checkBannedIPs(req: Request) {
   return denyListedIPS.includes(ip);
 }
 
-export async function runChecks(req: Request & dcl.DecentralandSignatureData<Metadata>, parcel?: number[]) {
+export async function runChecks(req: Request & dcl.DecentralandSignatureData<Metadata>, parcel?: number[], sceneId?: string) {
   const metadata = req.authMetadata;
   const userAddress = req.auth;
   const coordinates = metadata.parcel.split(",").map((item: string) => {
@@ -49,13 +51,16 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   let base = metadata.realm.domain || metadata.realm.hostname || "";
 
   if (!base) {
-    AdminLogManager.logExternalError("NOTICED MISSING DCL METADATA!",  req.body );
+    AdminLogManager.logExternalError("NOTICED MISSING DCL METADATA!", req.body);
     return;
   } else if (TESTS_ENABLED) {
     // return;
   } else {
     base = ensureHttps(base);
   }
+
+  const scene = await SceneManager.getSceneById(sceneId);
+  const locationParcels = scene?.locations.map((location: Metaverse.Location) => location.parcels).flat();
 
   // check that the request comes from a decentraland domain
   const validOrigin = TESTS_ENABLED || checkOrigin(req);
@@ -79,10 +84,10 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
   }
 
   // validate that the player is in a valid location for this operation - if a parcel is provided
-  const validPos: boolean = TESTS_ENABLED || parcel?.length ? checkCoords(coordinates, parcel) : true;
+  const validPos: boolean = parcel?.length ? checkCoords(coordinates, parcel) && checkSceneParcels(locationParcels, coordinates, parcel) : true;
 
   if (!validPos) {
-    AdminLogManager.logExternalError("NOTICED INVALID PARCEL POSITION!",  req.body );
+    AdminLogManager.logExternalError("NOTICED INVALID PARCEL POSITION!", req.body);
     throw new Error("INVALID PARCEL POSITION");
   }
 }

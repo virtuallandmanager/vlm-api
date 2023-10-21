@@ -128,13 +128,13 @@ export abstract class GiveawayManager {
     const existingClaim = await GiveawayManager.checkForExistingClaim({ session, user, sceneId, giveawayId });
 
     if (existingClaim) {
-      return { success: false, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM };
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM };
     }
 
     // find events for sceneId
     const events = await EventDbManager.getLinkedEventsBySceneId(sceneId);
     if (events.length === 0) {
-      return { success: false, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS };
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS };
     }
 
     const eventIds = events.map((event: Event.Config) => event.sk);
@@ -154,24 +154,24 @@ export abstract class GiveawayManager {
     const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((giveaway: Event.GiveawayLink) => giveaway.giveawayId === giveawayId);
 
     if (linkedGiveawaysFiltered.length === 0) {
-      return { success: false, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS };
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS };
     }
 
     // check if giveaway is paused
     const giveaway = linkedGiveawaysFiltered[0];
     if (giveaway.paused) {
-      return { success: false, reason: Giveaway.ClaimRejection.PAUSED };
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.PAUSED };
     }
 
     const now = DateTime.now().toUnixInteger();
     const event = events.find((event: Event.Config) => event.sk === giveaway.eventId);
     // check if event has not yet started
     if (event.eventStart > now) {
-      return { success: false, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START };
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START };
     }
     // check if event is over
     if (event.eventEnd < now) {
-      return { success: false, reason: Giveaway.ClaimRejection.AFTER_EVENT_END };
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.AFTER_EVENT_END };
     }
 
     const analyticsAction = new Analytics.Session.Action({
@@ -192,13 +192,18 @@ export abstract class GiveawayManager {
       to: session.connectedWallet,
       clientIp: session.clientIp,
       sceneId,
+      analyticsRecordId: analyticsAction.sk,
+      transactionId: transaction.sk,
       eventId: eventIds[0],
+      userId: user.sk,
       giveawayId: giveawayId,
     });
 
+    transaction.claimId = claim.sk;
+
     await this.addClaim(analyticsAction, claim, transaction);
 
-    return { success: true };
+    return { responseType: Giveaway.ClaimResponseType.CLAIM_ACCEPTED };
   };
 
 }

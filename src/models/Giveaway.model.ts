@@ -54,26 +54,30 @@ export namespace Giveaway {
     pk?: string = Claim.pk;
     sk?: string = uuidv4();
     to: string;
-    clientIp?: string;
-    sceneId?: string;
+    userId?: string;
+    clientIp: string;
+    sceneId: string;
     eventId: string;
     giveawayId: string;
-    transactionId?: string;
+    transactionId: string;
     claimTs?: number;
     queued?: boolean = false;
-    analyticsRecord?: string;
+    analyticsRecordId: string;
+    complete: boolean = false;
     ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Partial<Claim> = {}) {
       this.sk = config?.sk || this.sk;
       this.to = config?.to;
+      this.userId = config?.userId;
       this.clientIp = config?.clientIp;
       this.eventId = config?.eventId;
       this.giveawayId = config?.giveawayId;
       this.sceneId = config?.sceneId;
-      this.claimTs = config?.claimTs;
-      this.analyticsRecord = config?.analyticsRecord;
-      this.ts = config?.ts;
+      this.claimTs = config?.claimTs || this.ts;
+      this.analyticsRecordId = config?.analyticsRecordId;
+      this.complete = config?.complete || this.complete;
+      this.ts = config?.ts || this.ts;
     }
   }
 

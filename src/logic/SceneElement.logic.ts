@@ -81,31 +81,13 @@ export abstract class SceneElementManager {
           return await this.addSoundToPreset(message);
         case "widget":
           return await this.addWidgetToPreset(message);
-        case "claimPoint":
+        case "claimpoint":
           return await this.addClaimPointToPreset(message);
+        case "model":
+          return await this.addModelToPreset(message);
       }
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneElementManager.createSceneElement" });
-      return;
-    }
-  };
-
-  static createSceneElementInstance: CallableFunction = async (message: VLMSceneMessage) => {
-    try {
-      switch (message.element) {
-        case "video":
-          return await this.addInstanceToElement(message);
-        case "image":
-          return await this.addImageToPreset(message);
-        case "nft":
-          return await this.addNftToPreset(message);
-        case "sound":
-          return await this.addSoundToPreset(message);
-        case "widget":
-          return await this.addWidgetToPreset(message);
-      }
-    } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneElementManager.createSceneElementInstance" });
       return;
     }
   };
@@ -137,6 +119,16 @@ export abstract class SceneElementManager {
       return await SceneDbManager.addNftToPreset(message.scenePreset.sk, nft);
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneElementManager.addVideoToPreset" });
+      return;
+    }
+  };
+
+  static addModelToPreset: CallableFunction = async (message: VLMSceneMessage) => {
+    try {
+      const model = new Scene.Model.Config(message.elementData);
+      return await SceneDbManager.addModelToPreset(message.scenePreset.sk, model);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneElementManager.addModelToPreset" });
       return;
     }
   };
@@ -208,6 +200,9 @@ export abstract class SceneElementManager {
           break;
         case "nft":
           message.instanceData.pk = Scene.NFT.Instance.pk;
+          break;
+        case "model":
+          message.instanceData.pk = Scene.Model.Instance.pk;
           break;
         case "sound":
           message.instanceData.pk = Scene.Sound.Instance.pk;

@@ -81,7 +81,6 @@ export class VLMScene extends Room<VLMSceneState> {
         }
       }
     }
-
     this.state.streamIndex += this.state.batchSize;
   }
 
@@ -122,7 +121,7 @@ export class VLMScene extends Room<VLMSceneState> {
 
       return auth;
     } catch (error) {
-      console.log(error);
+      AdminLogManager.logError(error, { from: "VLMScene.onAuth" });
     }
   }
 
@@ -136,9 +135,13 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async connectHostUser(client: Client, session: User.Session.Config) {
-    const user = await UserManager.getById(session.userId);
-    await handleHostJoined(client, { session, user }, this);
-    return user;
+    if (session?.userId) {
+      const user = await UserManager.getById(session.userId);
+      await handleHostJoined(client, { session, user }, this);
+      return user;
+    } else {
+      client.leave();
+    }
   }
 
   async getHlsContent(url: string): Promise<boolean> {
@@ -191,15 +194,13 @@ export class VLMScene extends Room<VLMSceneState> {
 
   async onLeave(client: Client) {
     try {
-      console.log(client);
-      if (!client.auth.user) {
+      if (client?.auth && !client?.auth?.user) {
         client.auth.user = await UserManager.getById(client.auth.session.userId);
       }
       console.log(client.auth?.user?.displayName || "Unknown User", "left!");
       await handleSessionEnd(client, null, this);
     } catch (error) {
-      console.log(error)
-
+      AdminLogManager.logError(error, { from: "VLMScene.onLeave" });
     }
   }
 }

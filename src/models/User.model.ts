@@ -64,6 +64,7 @@ export namespace User {
     registeredAt?: number;
     hideDemoScene?: boolean = false;
     roles?: Roles[];
+    hasConnectedWeb3?: boolean = false;
 
     constructor(config: Config) {
       super(config);
@@ -77,6 +78,7 @@ export namespace User {
       this.avatar = config.avatar || this.avatar;
       this.roles = config.roles;
       this.lastIp = config.clientIp || config.lastIp;
+      this.hasConnectedWeb3 = !!config.connectedWallet;
     }
   }
 

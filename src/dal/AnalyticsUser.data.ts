@@ -27,7 +27,7 @@ export abstract class AnalyticsUserDbManager {
   static obtainByWallet: CallableFunction = async (analyticsUserConfig: Analytics.User.Account) => {
     let existingUser, newUser;
     try {
-      existingUser = await this.getByWallet(analyticsUserConfig);
+      existingUser = await this.getByWallet(analyticsUserConfig.connectedWallet);
 
       if (existingUser && existingUser == analyticsUserConfig) {
         return existingUser;
@@ -70,8 +70,7 @@ export abstract class AnalyticsUserDbManager {
     }
   };
 
-  static getByWallet = async (analyticsUser: Analytics.User.Account) => {
-    const { pk, connectedWallet } = analyticsUser;
+  static getByWallet = async (connectedWallet: string) => {
 
     const params = {
       TableName: vlmMainTable,
@@ -82,7 +81,7 @@ export abstract class AnalyticsUserDbManager {
         "#connectedWallet": "connectedWallet",
       },
       ExpressionAttributeValues: {
-        ":pk": pk,
+        ":pk": Analytics.User.Account.pk,
         ":connectedWallet": connectedWallet,
       },
     };
@@ -98,7 +97,7 @@ export abstract class AnalyticsUserDbManager {
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "AnalyticsUser.data/getByWallet",
-        analyticsUser,
+        connectedWallet,
       });
       return;
     }

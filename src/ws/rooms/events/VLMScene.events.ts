@@ -17,8 +17,9 @@ import { AnalyticsManager } from "../../../logic/Analytics.logic";
 import { SceneSettingsManager } from "../../../logic/SceneSettings.logic";
 import { GiveawayManager } from "../../../logic/Giveaway.logic";
 import { Giveaway } from "../../../models/Giveaway.model";
+import { UserManager } from "../../../logic/User.logic";
 
-type ElementName = "image" | "video" | "nft" | "sound" | "widget" | "claimPoint";
+type ElementName = "image" | "video" | "nft" | "model" | "sound" | "widget" | "claimpoint";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
 type Settings = "moderation";
 type Property = "enabled" | "liveSrc" | "imageSrc" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency" | "contactAddres" | "tokenId";
@@ -89,7 +90,7 @@ export function bindEvents(room: VLMScene) {
     scene_video_update: handleSceneVideoUpdate,
     scene_sound_locator: handleToggleSoundLocators,
 
-    claim_giveaway: handleClaimGiveaway,
+    giveaway_claim: handleGiveawayClaim,
   };
 
   Object.keys(eventHandlers).forEach((eventType) => {
@@ -135,22 +136,29 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
           location.location === userLocation.location &&
           location.coordinates[0] === userLocation.coordinates[0] &&
           location.coordinates[1] === userLocation.coordinates[1] &&
-          location?.parcels?.length == userLocation?.parcels?.length;
+          location?.parcels?.length == userLocation?.parcels?.length
         return equal
       });
 
-      const worldHasBeenAdded = existingSceneLocations?.length
+      const worldHasBeenAdded = existingSceneLocations?.length,
+        locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) => deepEqual(location.integrationData, userLocation.integrationData));
+
 
       if (scene && !worldHasBeenAdded) {
+        // add new location
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...scene.locations, userLocation] });
-      } else if (scene && worldHasBeenAdded) {
-        const locations = scene.locations.filter((location: Metaverse.Location) => {
-          const equal = existingSceneLocations.includes(location);
-          return !equal
+      } else if (scene && worldHasBeenAdded && locationWithUpdatedVersion > -1) {
+        // replace existing location
+        const locations = scene.locations.filter((location: Metaverse.Location, i: number) => {
+          return i !== locationWithUpdatedVersion;
+
         });
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...locations, userLocation] });
-      } else {
+      } else if (scene.locations.length < 1) {
+        // add first location
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [userLocation] });
+      } else if (!scene || !worldHasBeenAdded) {
+        AdminLogManager.logError("Unexpected location/version condition", { scene, userLocation });
       }
 
       client.send("session_started", { session: dbSession, user });
@@ -595,8 +603,11 @@ export function handleSceneVideoUpdate(client: Client, message: any, room: VLMSc
   }
 }
 
-export function handleToggleSoundLocators(client: Client, message: any, room: VLMScene) {
+export async function handleToggleSoundLocators(client: Client, message: any, room: VLMScene) {
   // Logic for scene_video_update message
+  const wallet = client.auth.user.connectedWallet || client.auth.session.connectedWallet;
+  const analyticsUser = await AnalyticsManager.obtainUserByWallet({ address: wallet }, client.auth.user);
+  message.user = analyticsUser;
   try {
     return true;
   } catch (error) {
@@ -604,26 +615,22 @@ export function handleToggleSoundLocators(client: Client, message: any, room: VL
   }
 }
 
-export async function handleClaimGiveaway(client: Client, message: any, room: VLMScene) {
-  // Logic for claim_giveaway message
+export async function handleGiveawayClaim(client: Client, message: { sk: string, giveawayId: string, sceneId: string, sessionToken: string }, room: VLMScene) {
+  // Logic for giveaway_claim message
   try {
     await analyticsAuthMiddleware(client, { sessionToken: message.sessionToken, sceneId: message.sceneId }, async ({ session, user }) => {
-
       if (!session || !user) {
-        client.send("claim_giveaway_response", { success: false, reason: Giveaway.ClaimRejection.INAUTHENTIC });
+        client.send("giveaway_claim_response", { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.INAUTHENTIC });
         return false;
       }
 
-      const { success, reason } = await GiveawayManager.claimGiveawayItem({ session, user, sceneId: client.auth.session.sceneId, giveawayId: message.giveawayId });
-      if (success) {
-        client.send("claim_giveaway_response", { responseType: Giveaway.ClaimResponseType.CLAIM_ACCEPTED, giveawayId: message.giveawayId });
-      } else {
-        client.send("claim_giveaway_response", { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason, giveawayId: message.giveawayId });
-      }
+      const { responseType, reason } = await GiveawayManager.claimGiveawayItem({ session, user, sceneId: client.auth.session.sceneId, giveawayId: message.giveawayId });
+      client.send("giveaway_claim_response", { responseType, reason, giveawayId: message.giveawayId, sk: message.sk });
+
     });
     return false;
   } catch (error) {
-    client.send("claim_giveaway_response", { responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR, error, giveawayId: message.giveawayId });
+    client.send("giveaway_claim_response", { responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR, error, giveawayId: message.giveawayId, sk: message.sk });
 
     return false;
   }

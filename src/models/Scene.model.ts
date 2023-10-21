@@ -17,6 +17,7 @@ export namespace Scene {
     presets?: Array<string | Preset> = [];
     settings?: Array<string | Setting> = [];
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    packageVersion?: string = "";
     ts?: EpochTimeStamp = Date.now();
 
     constructor(config?: Config) {
@@ -28,6 +29,7 @@ export namespace Scene {
       this.scenePreset = config?.scenePreset || this.presets[0] || "";
       this.settings = config?.settings || this.settings;
       this.createdAt = config?.createdAt || this.createdAt;
+      this.packageVersion = config?.packageVersion || this.packageVersion;
       this.ts = config?.ts || this.ts;
     }
   }
@@ -43,6 +45,7 @@ export namespace Scene {
     sounds?: string[] | Sound.Config[] = [];
     widgets?: string[] | Widget.Config[] = [];
     claimPoints?: string[] | Giveaway.ClaimPoint[] = [];
+    models?: string[] | Model.Config[] = [];
     locale?: string = "en-US";
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
     ts?: EpochTimeStamp = Date.now();
@@ -55,10 +58,12 @@ export namespace Scene {
       this.videos = config?.videos || this.videos;
       this.images = config?.images || this.images;
       this.nfts = config?.nfts || this.nfts;
+      this.models = config?.models || this.models;
       this.sounds = config?.sounds || this.sounds;
       this.widgets = config?.widgets || this.widgets;
       this.locale = config?.locale || this.locale;
       this.claimPoints = config?.claimPoints || this.claimPoints;
+      this.models = config?.models || this.models;
       this.createdAt = config?.createdAt || this.createdAt;
       this.ts = config?.ts || this.ts;
     }
@@ -420,6 +425,67 @@ export namespace Scene {
     }
   }
 
+  export namespace Model {
+    export class Config extends Element {
+      static pk?: string = "vlm:scene:model"; // Partition Key
+      pk?: string = Config.pk; // Partition Key
+      sk?: string = uuidv4();
+      customId?: string;
+      customRendering?: boolean;
+      parent?: string;
+      name?: string;
+      modelSrc?: string;
+      instances?: string[] | Instance[] = [];
+      enabled?: boolean;
+      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+      ts?: EpochTimeStamp = Date.now();
+
+      constructor(config: Config = {}) {
+        super();
+        this.sk = config.sk || this.sk; // Sort Key
+        this.enabled = config.enabled;
+        this.customId = config.customId || this.customId;
+        this.customRendering = config.customRendering;
+        this.name = config.name;
+        this.instances = config.instances;
+        this.parent = config.parent;
+        this.modelSrc = config.modelSrc;
+        this.createdAt = config.createdAt;
+        this.ts = config.ts;
+      }
+    }
+
+    export class Instance {
+      static pk: string = "vlm:scene:model:instance"; // Partition Key
+      pk?: string = Instance.pk; // Partition Key
+      sk?: string = uuidv4();
+      customId?: string;
+      name?: string;
+      enabled?: boolean;
+      position?: TransformConstructorArgs;
+      rotation?: TransformConstructorArgs;
+      scale?: TransformConstructorArgs;
+      parent?: string;
+      customRendering?: boolean;
+      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+      ts?: EpochTimeStamp = Date.now();
+
+      constructor(config: Instance = {}) {
+        this.sk = config.sk || this.sk; // Sort Key
+        this.customId = config.customId || this.customId;
+        this.name = config.name;
+        this.enabled = config.enabled;
+        this.position = config.position;
+        this.rotation = config.rotation;
+        this.scale = config.scale;
+        this.parent = config.parent;
+        this.customRendering = config.customRendering;
+        this.createdAt = config.createdAt;
+        this.ts = config.ts;
+      }
+    }
+  }
+
   export namespace Sound {
     export enum SourceType {
       CLIP,
@@ -433,30 +499,28 @@ export namespace Scene {
       sk?: string = uuidv4();
       customId?: string;
       customRendering?: boolean;
-      name?: string;
-      audioPath?: string;
-      instances?: string[] | Instance[] = [];
       parent?: string;
+      name?: string;
+      volume?: number = 1;
+      audioSrc?: string;
+      instances?: string[] | Instance[] = [];
       sourceType?: SourceType = SourceType.CLIP;
-      loop?: boolean;
       enabled?: boolean;
-      isTransparent?: boolean;
-      withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
       ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
         this.sk = config.sk || this.sk; // Sort Key
+        this.enabled = config.enabled;
         this.customId = config.customId || this.customId;
         this.customRendering = config.customRendering;
         this.name = config.name;
+        this.volume = config.volume || this.volume;
         this.instances = config.instances;
+        this.audioSrc = config.audioSrc;
         this.parent = config.parent;
         this.sourceType = config.sourceType || this.sourceType;
-        this.loop = config.loop;
-        this.enabled = config.enabled;
-        this.withCollisions = config.withCollisions;
         this.createdAt = config.createdAt;
         this.ts = config.ts;
       }

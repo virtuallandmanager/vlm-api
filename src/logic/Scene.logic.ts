@@ -54,9 +54,9 @@ export abstract class SceneManager {
     }
   };
 
-  static getSceneById: CallableFunction = async (scene: Scene.Config) => {
+  static getSceneById: CallableFunction = async (sceneId: string) => {
     try {
-      return await SceneDbManager.getById(scene);
+      return await SceneDbManager.getById(sceneId);
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.getSceneById" });
     }

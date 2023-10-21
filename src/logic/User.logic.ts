@@ -6,6 +6,7 @@ import { UserDbManager } from "../dal/User.data";
 import { UserWalletDbManager } from "../dal/UserWallet.data";
 import { User } from "../models/User.model";
 import { BaseWallet } from "../models/Wallet.model";
+import { AnalyticsManager } from "./Analytics.logic";
 
 export abstract class UserManager {
   static create: CallableFunction = async (vlmUser: User.Account) => {
@@ -40,6 +41,10 @@ export abstract class UserManager {
     const userWallet = await UserWalletDbManager.obtain(wallet);
     const user = new User.Account({ sk: userWallet.userId, connectedWallet: userWallet.sk });
     const dbUser = await UserDbManager.obtain(user);
+    if (dbUser.hasConnectedWeb3 !== user.hasConnectedWeb3) {
+      dbUser.hasConnectedWeb3 = user.hasConnectedWeb3;
+      await UserDbManager.put(dbUser);
+    }
     return dbUser;
   };
 
@@ -47,7 +52,7 @@ export abstract class UserManager {
     return await UserDbManager.obtain(user);
   };
 
-  
+
   static obtainBalances: CallableFunction = async (user: User.Account) => {
     return await UserDbManager.obtainBalances(user);
   };
