@@ -129,11 +129,22 @@ export namespace Scene {
       const sceneId = scene.sk;
       this.settings = [
         new Setting({ sceneId, type: SettingType.LOCALIZATION, settingName: "Main Locale", settingValue: locale || "en-US" }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Banned Wearables", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Banned Users", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allowed Wearables", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allowed Users", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allow Web3 Only", settingValue: false }),
+        new Setting({
+          sceneId, type: SettingType.MODERATION, settingName: "Moderation Settings", settingValue: {
+            allowCertainUsers: false,
+            allowCertainWearables: false,
+            banCertainUsers: false,
+            banCertainWearables: false,
+            bannedWearables: [],
+            bannedUsers: [],
+            allowedWearables: [],
+            allowedUsers: [],
+            allowWeb3Only: false,
+            banActions: [],
+            allowActions: [],
+            banWallType: null,
+          } as ModerationSettings
+        }),
       ];
     }
   }

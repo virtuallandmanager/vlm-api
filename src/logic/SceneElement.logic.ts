@@ -180,6 +180,21 @@ export abstract class SceneElementManager {
     }
   };
 
+  static quickUpdateSceneElement: CallableFunction = async (message: VLMSceneMessage) => {
+    try {
+      if (message.property) {
+        return await SceneDbManager.updateSceneElementProperty(message, { skipPreset: true });
+      } else {
+        message.elementData.pk = message.elementData.pk || `vlm:scene:${message.element}`;
+        const elementData = await GenericDbManager.put(message.elementData);
+        return { elementData };
+      }
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneElementManager.updateElement" });
+      return;
+    }
+  };
+
   static removeSceneElement: CallableFunction = async (message: VLMSceneMessage) => {
     try {
       return await SceneDbManager.removeSceneElement(message);

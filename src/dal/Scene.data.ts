@@ -549,14 +549,13 @@ export abstract class SceneDbManager {
 
     try {
       await docClient.transactWrite(params).promise();
-      const scene = await this.get(sceneConfig),
-        sceneSettings: Scene.Setting[] = [];
+      const sceneSettings: Scene.Setting[] = [];
 
       for (let i = 0; i < sks.length; i++) {
         const preset = await this.getSetting(sks[i]);
         sceneSettings.push(preset);
       }
-      return { scene, sceneSettings };
+      return sceneSettings;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/addSettingsToScene",
@@ -1041,7 +1040,7 @@ export abstract class SceneDbManager {
     }
   };
 
-  static updateSceneElementProperty: CallableFunction = async (message: VLMSceneMessage) => {
+  static updateSceneElementProperty: CallableFunction = async (message: VLMSceneMessage, options?: { skipPreset: boolean }) => {
     let { elementData, property, scenePreset } = message;
 
     let valueProp;
@@ -1071,7 +1070,7 @@ export abstract class SceneDbManager {
     try {
       await daxClient.update(params).promise();
       elementData = await GenericDbManager.get(elementData);
-      scenePreset = await this.getPreset(message.scenePreset.sk);
+      scenePreset = options.skipPreset ? null : await this.getPreset(message.scenePreset.sk);
       return { scenePreset, elementData };
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {

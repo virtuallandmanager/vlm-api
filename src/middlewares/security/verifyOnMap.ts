@@ -47,7 +47,6 @@ export async function checkPlayer(playerId: string, server: string, parcel: numb
 // check coordinates against a single parcel - within a margin of error
 export function checkCoords(coords: number[], parcel: number[]) {
   try {
-    console.log(coords, parcel);
     const validMargin = (p: number, c: number) => Math.abs(p - c) <= MARGIN_OF_ERROR;
     return validMargin(coords[0], parcel[0]) && validMargin(coords[1], parcel[1]);
   } catch (error) {

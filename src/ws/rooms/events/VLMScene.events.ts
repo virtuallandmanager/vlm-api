@@ -17,7 +17,6 @@ import { AnalyticsManager } from "../../../logic/Analytics.logic";
 import { SceneSettingsManager } from "../../../logic/SceneSettings.logic";
 import { GiveawayManager } from "../../../logic/Giveaway.logic";
 import { Giveaway } from "../../../models/Giveaway.model";
-import { UserManager } from "../../../logic/User.logic";
 
 type ElementName = "image" | "video" | "nft" | "model" | "sound" | "widget" | "claimpoint";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
@@ -128,7 +127,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         userLocation = session.location,
         scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [userLocation] })),
         scenePreset,
-        giveaways;
+        sceneSettings;
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal = deepEqual(location, userLocation) ||
@@ -181,9 +180,11 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
           }
         }
 
-        giveaways = await SceneManager.getGiveawaysForScene(scene);
+        sceneSettings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings);
+        const moderationSettings = sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION);
 
-        client.send("scene_preset_update", { action: "init", scenePreset, giveaways });
+
+        client.send("scene_preset_update", { action: "init", scenePreset, sceneSettings: { moderation: moderationSettings } });
       }
     });
     return false;
@@ -401,6 +402,16 @@ export function handleSceneCreate(client: Client, message: any, room: VLMScene) 
   }
 }
 
+export async function handleSceneElementUpdate(client: Client, message: any, room: VLMScene) {
+  // Logic for scene_element_update message
+  try {
+    await SceneElementManager.quickUpdateSceneElement(message);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export async function handleSceneLoadRequest(client: Client, message: { sceneId: string; scene?: Scene.Config }, room: VLMScene) {
   // Logic for scene_load message
   try {
@@ -554,6 +565,8 @@ export async function handleSettingUpdate(client: Client, message: VLMSceneMessa
       await SceneSettingsManager.addSettingsToScene(scene, [sceneSetting]);
       HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "create", element: "scene", property: "setting", id: message.id }, message.sceneData);
     }
+    message.user = (({ displayName, sk, connectedWallet }) => ({ displayName, sk, connectedWallet }))({ ...client.auth.session, ...client.auth.user, });
+    console.log(message)
     return true;
   } catch (error) {
     return false;

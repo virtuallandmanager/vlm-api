@@ -2,10 +2,7 @@ import { GenericDbManager } from "../dal/Generic.data";
 import { Scene } from "../models/Scene.model";
 import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
-import { SceneManager } from "./Scene.logic";
-import { SceneSettingsManager } from "./SceneSettings.logic";
 import { SceneElementManager } from "./SceneElement.logic";
-import { HistoryManager } from "./History.logic";
 
 export abstract class ScenePresetManager {
   // Scene Preset Operations //
