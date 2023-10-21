@@ -7,7 +7,6 @@ import { UserManager } from "../../logic/User.logic";
 import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/security/auth";
 import { bindEvents, handleAnalyticsUserJoined, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
 import { Session } from "../../models/Session.model";
-import { AnalyticsManager } from "../../logic/Analytics.logic";
 import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
 import { ArraySchema } from "@colyseus/schema";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
@@ -16,7 +15,7 @@ import https from "https";
 export class VLMScene extends Room<VLMSceneState> {
   onCreate(options: any) {
     bindEvents(this);
-    this.setState(new VLMSceneState());
+    this.setState(new VLMSceneState(options.sceneId));
     this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000);
   }
 
@@ -52,7 +51,7 @@ export class VLMScene extends Room<VLMSceneState> {
       // Gradually increase batch size from 1 to 20 as the number of streams goes from 5 to 100
       this.state.batchSize = Math.ceil(((this.state.streams.length - 4) / (100 - 4)) * (20 - 1) + 1);
     } else {
-      console.warn("There are more than 100 streams. Consider revising the logic.");
+      AdminLogManager.logErrorToDiscord(`There are more than 100 streams in scene ${this.state.sceneId}. Warn scene owner of performance issues.`);
       return;
     }
     this.state.streams = this.removeDuplicates(this.state.streams);
@@ -82,7 +81,6 @@ export class VLMScene extends Room<VLMSceneState> {
         }
       }
     }
-
     this.state.streamIndex += this.state.batchSize;
   }
 
@@ -95,27 +93,35 @@ export class VLMScene extends Room<VLMSceneState> {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
           auth.user = user;
-          console.log(`Got user info and session`)
+          if (!auth.session || !auth.user) {
+            client.leave();
+            return;
+          }
         });
         const response = await this.connectAnalyticsUser(client, auth.session, auth.user);
         auth.session = response.session;
-        console.log('Set user and session', auth)
-      } else {
+      } else if (sessionConfig.host) {
         await userAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
           auth.session = session;
           auth.user = user;
+          if (!auth.session || !auth.user) {
+            client.leave();
+            return;
+          }
           auth.session.sceneId = sessionConfig.sceneId;
         });
         const user = await this.connectHostUser(client, auth.session);
         if (user) {
           auth.user = user;
         }
+      } else {
+        AdminLogManager.logError("Invalid session type detected", { sessionConfig });
       }
       client.auth = auth;
 
       return auth;
     } catch (error) {
-      console.log(error);
+      AdminLogManager.logError(error, { from: "VLMScene.onAuth" });
     }
   }
 
@@ -130,9 +136,13 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async connectHostUser(client: Client, session: User.Session.Config) {
-    const user = await UserManager.getById(session.userId);
-    await handleHostJoined(client, { session, user }, this);
-    return user;
+    if (session?.userId) {
+      const user = await UserManager.getById(session.userId);
+      await handleHostJoined(client, { session, user }, this);
+      return user;
+    } else {
+      client.leave();
+    }
   }
 
   async getHlsContent(url: string): Promise<boolean> {
@@ -185,15 +195,13 @@ export class VLMScene extends Room<VLMSceneState> {
 
   async onLeave(client: Client) {
     try {
-      console.log(client);
-      if (!client.auth.user) {
+      if (client?.auth && !client?.auth?.user) {
         client.auth.user = await UserManager.getById(client.auth.session.userId);
       }
       console.log(client.auth?.user?.displayName || "Unknown User", "left!");
       await handleSessionEnd(client, null, this);
     } catch (error) {
-      console.log(error)
-
+      AdminLogManager.logError(error, { from: "VLMScene.onLeave" });
     }
   }
 }

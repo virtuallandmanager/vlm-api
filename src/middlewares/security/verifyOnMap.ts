@@ -5,6 +5,9 @@ import { fetch } from "cross-fetch";
 
 // validate that the player is active in a catalyst server, and in the indicated coordinates, or within a margin of error
 export async function checkPlayer(playerId: string, server: string, parcel: number[], attempts: number = 0): Promise<boolean> {
+
+  return true;
+  // DCL broke the peer API with the addition of the main realm, so this is disabled for now.
   let url = ensureHttps(server + "/comms/peers/");
 
   if (!server) {
@@ -48,6 +51,18 @@ export function checkCoords(coords: number[], parcel: number[]) {
     return validMargin(coords[0], parcel[0]) && validMargin(coords[1], parcel[1]);
   } catch (error) {
     AdminLogManager.logError(error, { text: "Failed to check coordinates!", from: "verifyOnMap/checkCoords" });
+    return false;
+  }
+}
+
+export function checkSceneParcels(parcels: string[], coordinate: number[], parcel: number[]) {
+  try {
+    // check if the parcel is in the list of parcels
+    const parcelString = parcel.join(",");
+    const coordinateString = coordinate.join(",");
+    return parcels.includes(parcelString) && parcels.includes(coordinateString);
+  } catch (error) {
+    AdminLogManager.logError(error, { text: "Failed to check scene parcels!", from: "verifyOnMap/checkSceneParcels" });
     return false;
   }
 }

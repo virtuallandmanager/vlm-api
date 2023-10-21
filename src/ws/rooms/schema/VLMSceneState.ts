@@ -18,6 +18,8 @@ export class SceneStream extends Schema {
 }
 
 export class VLMSceneState extends Schema {
+  @type("string")
+  sceneId: string;
   @type([SceneStream])
   streams = new ArraySchema<SceneStream>();
   @type({ map: "string" })
@@ -29,7 +31,8 @@ export class VLMSceneState extends Schema {
   @type("number")
   batchSize = 1;
 
-  constructor() {
+  constructor(sceneId: string) {
     super();
+    this.sceneId = sceneId;
   }
 }

@@ -6,13 +6,12 @@ export type BalanceConfig = {
 };
 
 export enum BalanceType {
-  GIFT,
-  ANALYTICS,
-  AIRDROP,
-  ATTENDANCE_TOKEN,
+  AIRDROP = "airdrop",
+  ATTENDANCE = "attendance",
+  ANALYTICS = "analytics",
 }
 
-export const PromoBalances = {
-  user: [{ type: BalanceType.AIRDROP, value: 1000 }],
-  organization: [{ type: BalanceType.AIRDROP, value: 1000 }],
+export const InitialBalances = {
+  user: [{ type: BalanceType.AIRDROP, value: 0 }, { type: BalanceType.ATTENDANCE, value: 0 }, { type: BalanceType.ANALYTICS, value: 0 }],
+  organization: [{ type: BalanceType.AIRDROP, value: 0 }, { type: BalanceType.ATTENDANCE, value: 0 }, { type: BalanceType.ANALYTICS, value: 0 }],
 };

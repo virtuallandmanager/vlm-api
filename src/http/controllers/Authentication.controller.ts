@@ -17,6 +17,7 @@ import { OrganizationManager } from "../../logic/Organization.logic";
 import { Organization } from "../../models/Organization.model";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { SceneManager } from "../../logic/Scene.logic";
+import { deepEqual } from "assert";
 
 router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
@@ -164,7 +165,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       });
     }
 
-    await runChecks(req, parcelArr);
+    await runChecks(req, parcelArr, sceneId);
     serverAuthenticated = true;
   } catch (error: unknown) {
 
@@ -182,10 +183,18 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
         currency: "ETH",
         ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toMillis() : undefined,
       },
-      { displayName: user.displayName, hasConnectedWeb3: user.hasConnectedWeb3 }
+      { displayName: user?.displayName, hasConnectedWeb3: user?.hasConnectedWeb3, lastIp: clientIp }
     );
 
-    const session = new Analytics.Session.Config({
+    if (dbUser.hasConnectedWeb3 !== user.hasConnectedWeb3) {
+      dbUser.hasConnectedWeb3 = user.hasConnectedWeb3;
+      await AnalyticsManager.updateUser(dbUser);
+    }
+
+    // get existing session
+    const existingSession = await SessionManager.getAnalyticsSession(dbUser.sk);
+
+    const session = existingSession || new Analytics.Session.Config({
       userId: dbUser.sk,
       connectedWallet: dbUser.connectedWallet,
       location,
@@ -194,6 +203,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       device: subPlatform,
       serverAuthenticated,
       sessionStart: Date.now(),
+      hasConnectedWeb3: user.hasConnectedWeb3,
       ttl: environment === "prod" ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
     });
     await SessionManager.getIpData(session);

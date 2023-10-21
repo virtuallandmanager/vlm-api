@@ -12,12 +12,13 @@ import { AdminLogManager } from "../../../logic/ErrorLogging.logic";
 import { SceneStream } from "../schema/VLMSceneState";
 import { HistoryManager } from "../../../logic/History.logic";
 import { Metaverse } from "../../../models/Metaverse.model";
-import { VLMPortable } from "../VLMPortable";
 import { deepEqual } from "../../../helpers/data";
 import { AnalyticsManager } from "../../../logic/Analytics.logic";
 import { SceneSettingsManager } from "../../../logic/SceneSettings.logic";
+import { GiveawayManager } from "../../../logic/Giveaway.logic";
+import { Giveaway } from "../../../models/Giveaway.model";
 
-type ElementName = "image" | "video" | "nft" | "sound" | "widget";
+type ElementName = "image" | "video" | "nft" | "model" | "sound" | "widget" | "claimpoint";
 type Action = "init" | "create" | "update" | "delete" | "trigger";
 type Settings = "moderation";
 type Property = "enabled" | "liveSrc" | "imageSrc" | "enableLiveStream" | "playlist" | "volume" | "emission" | "offType" | "offImage" | "transform" | "collider" | "parent" | "customId" | "clickEvent" | "transparency" | "contactAddres" | "tokenId";
@@ -90,6 +91,8 @@ export function bindEvents(room: VLMScene) {
     scene_setting_update: handleSettingUpdate,
     scene_video_update: handleSceneVideoUpdate,
     scene_sound_locator: handleToggleSoundLocators,
+
+    giveaway_claim: handleGiveawayClaim,
   };
 
   Object.keys(eventHandlers).forEach((eventType) => {
@@ -126,7 +129,8 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       }),
         userLocation = session.location,
         scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [userLocation] })),
-        scenePreset;
+        scenePreset,
+        sceneSettings;
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal = deepEqual(location, userLocation) ||
@@ -134,25 +138,32 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
           location.location === userLocation.location &&
           location.coordinates[0] === userLocation.coordinates[0] &&
           location.coordinates[1] === userLocation.coordinates[1] &&
-          location?.parcels?.length == userLocation?.parcels?.length;
+          location?.parcels?.length == userLocation?.parcels?.length
         return equal
       });
 
-      const worldHasBeenAdded = existingSceneLocations?.length
+      const worldHasBeenAdded = existingSceneLocations?.length,
+        locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) => deepEqual(location.integrationData, userLocation.integrationData));
+
 
       if (scene && !worldHasBeenAdded) {
+        // add new location
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...scene.locations, userLocation] });
-      } else if (scene && worldHasBeenAdded) {
-        const locations = scene.locations.filter((location: Metaverse.Location) => {
-          const equal = existingSceneLocations.includes(location);
-          return !equal
+      } else if (scene && worldHasBeenAdded && locationWithUpdatedVersion > -1) {
+        // replace existing location
+        const locations = scene.locations.filter((location: Metaverse.Location, i: number) => {
+          return i !== locationWithUpdatedVersion;
+
         });
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [...locations, userLocation] });
-      } else {
+      } else if (scene.locations.length < 1) {
+        // add first location
         await SceneManager.updateSceneProperty({ scene, prop: "locations", val: [userLocation] });
+      } else if (!scene || !worldHasBeenAdded) {
+        AdminLogManager.logError("Unexpected location/version condition", { scene, userLocation });
       }
 
-      client.send("session_started", { session: dbSession });
+      client.send("session_started", { session: dbSession, user });
 
       if (scene?.scenePreset) {
         scenePreset = await ScenePresetManager.getScenePresetById(scene.scenePreset);
@@ -172,7 +183,11 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
           }
         }
 
-        client.send("scene_preset_update", { action: "init", scenePreset });
+        sceneSettings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings);
+        const moderationSettings = sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION);
+
+
+        client.send("scene_preset_update", { action: "init", scenePreset, sceneSettings: { moderation: moderationSettings } });
       }
     });
     return false;
@@ -224,12 +239,12 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
   }
 }
 
-export async function handleHostJoined(client: Client, message: any, room: VLMScene | VLMPortable) {
+export async function handleHostJoined(client: Client, message: any, room: VLMScene) {
   // Logic for host_joined message
   try {
     const { user } = message;
     // Find the client who triggered the message
-    const triggeringClient = room.clients.find((c) => c.sessionId === client.sessionId);
+    const triggeringClient = room.clients.find((c: Client) => c.sessionId === client.sessionId);
 
     // Iterate over all clients and send the message to each client except the triggering client
     room.clients.forEach((c) => {
@@ -239,7 +254,7 @@ export async function handleHostJoined(client: Client, message: any, room: VLMSc
     });
 
     HistoryManager.addUpdate(message.user, message.session.sceneId, { action: "accessed scene in VLM" });
-    console.log("Host User Joined: ", user.displayName, user.connectedWallet);
+    console.log("Host User Joined: ", user?.displayName, user?.connectedWallet);
     return false;
   } catch (error) {
     return false;
@@ -294,11 +309,11 @@ export async function handleUserMessage(client: Client, message: any, room: VLMS
     if (!user) {
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
-    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async ({ session, user }) => {
       message.from = session.connectedWallet;
-      message.fromDisplayName = user.displayName;
-      const sterileMessage = { from: session.connectedWallet, fromDisplayName: user.displayName, id: message.id, data: message.data };
+      message.fromDisplayName = user?.displayName;
+      const sterileMessage = { from: session.connectedWallet, fromDisplayName: user?.displayName, id: message.id, data: message.data };
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId)
           c.send("user_message", sterileMessage);
@@ -318,7 +333,7 @@ export async function handleGetUserState(client: Client, message: any, room: VLM
     if (!user) {
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
-    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       const userState = await SceneManager.getUserStateByScene(sceneId, message.key);
       room.clients.forEach((c) => {
@@ -340,7 +355,7 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
     if (!user) {
       user = await AnalyticsManager.getUserById(client.auth.session.userId);
     }
-    console.log(`Received message from ${JSON.stringify(user.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       const userState = await SceneManager.setUserStateByScene(sceneId, message.key, message.value)
       room.clients.forEach((c) => {
@@ -420,6 +435,16 @@ export function handleSceneCreate(client: Client, message: any, room: VLMScene) 
   }
 }
 
+export async function handleSceneElementUpdate(client: Client, message: any, room: VLMScene) {
+  // Logic for scene_element_update message
+  try {
+    await SceneElementManager.quickUpdateSceneElement(message);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export async function handleSceneLoadRequest(client: Client, message: { sceneId: string; scene?: Scene.Config }, room: VLMScene) {
   // Logic for scene_load message
   try {
@@ -448,7 +473,7 @@ export async function handleSceneAddPresetRequest(client: Client, message: { sce
   try {
     const { user } = client.auth;
     const { scene, preset } = await ScenePresetManager.addPresetToScene(message.scene);
-    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "create", element: "scene", property: "preset" }, message.scene);
+    HistoryManager.addUpdate(client.auth.user, client.auth.sceneId, { action: "create", element: "scene", property: "preset" }, message.scene);
     client.send("scene_add_preset_response", { user, scene, preset });
     return false;
   } catch (error) {
@@ -473,8 +498,18 @@ export async function handleSceneChangePreset(client: Client, message: VLMSceneM
   // Logic for scene_change_preset message
   try {
     const { user } = client.auth;
-    const scene = await SceneManager.changeScenePreset(message.sceneData, message.scenePreset.sk),
-      preset = scene.presets.find((scenePreset: Scene.Preset) => scenePreset.sk == scene.scenePreset);
+    const existingScene = await SceneManager.getSceneById(message.sceneData.sk);
+    const scene = await SceneManager.changeScenePreset(message.sceneData, message.id);
+    let preset = existingScene.presets.find((scenePreset: Scene.Preset | string) => {
+      if (typeof scenePreset === "string") {
+        return scenePreset === message.id;
+      } else {
+        return scenePreset.sk === message.id;
+      }
+    });
+    if (typeof preset === "string") {
+      preset = await ScenePresetManager.getScenePresetById(preset);
+    }
     HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "update", element: "scene", property: "preset", from: message.sceneData.scenePreset, to: preset.sk }, scene);
     room.broadcast("scene_change_preset", { user, scene, preset });
     return false;
@@ -531,7 +566,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
 
     if (message.element === "video" && message.elementData.instances.length > 0) {
       const filteredPresetVideos = room.state.streams.filter((stream: SceneStream) => stream.sceneId !== client.auth.session.sceneId && stream.presetId !== message.scenePreset.sk);
-      const presetVideos = message.scenePreset.videos;
+      const presetVideos = message.scenePreset.videos as Scene.Video.Config[];
       room.state.streams.length = 0;
       room.state.streams.push(...filteredPresetVideos);
       presetVideos.forEach((video: Scene.Video.Config) => {
@@ -563,6 +598,8 @@ export async function handleSettingUpdate(client: Client, message: VLMSceneMessa
       await SceneSettingsManager.addSettingsToScene(scene, [sceneSetting]);
       HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "create", element: "scene", property: "setting", id: message.id }, message.sceneData);
     }
+    message.user = (({ displayName, sk, connectedWallet }) => ({ displayName, sk, connectedWallet }))({ ...client.auth.session, ...client.auth.user, });
+    console.log(message)
     return true;
   } catch (error) {
     return false;
@@ -612,11 +649,35 @@ export function handleSceneVideoUpdate(client: Client, message: any, room: VLMSc
   }
 }
 
-export function handleToggleSoundLocators(client: Client, message: any, room: VLMScene) {
+export async function handleToggleSoundLocators(client: Client, message: any, room: VLMScene) {
   // Logic for scene_video_update message
+  const wallet = client.auth.user.connectedWallet || client.auth.session.connectedWallet;
+  const analyticsUser = await AnalyticsManager.obtainUserByWallet({ address: wallet }, client.auth.user);
+  message.user = analyticsUser;
   try {
     return true;
   } catch (error) {
+    return false;
+  }
+}
+
+export async function handleGiveawayClaim(client: Client, message: { sk: string, giveawayId: string, sceneId: string, sessionToken: string }, room: VLMScene) {
+  // Logic for giveaway_claim message
+  try {
+    await analyticsAuthMiddleware(client, { sessionToken: message.sessionToken, sceneId: message.sceneId }, async ({ session, user }) => {
+      if (!session || !user) {
+        client.send("giveaway_claim_response", { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.INAUTHENTIC });
+        return false;
+      }
+
+      const { responseType, reason } = await GiveawayManager.claimGiveawayItem({ session, user, sceneId: client.auth.session.sceneId, giveawayId: message.giveawayId });
+      client.send("giveaway_claim_response", { responseType, reason, giveawayId: message.giveawayId, sk: message.sk });
+
+    });
+    return false;
+  } catch (error) {
+    client.send("giveaway_claim_response", { responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR, error, giveawayId: message.giveawayId, sk: message.sk });
+
     return false;
   }
 }

@@ -34,6 +34,15 @@ export abstract class SceneSettingsManager {
     }
   };
 
+  static getSceneSettingsByIds: CallableFunction = async (sks: string[]) => {
+    try {
+      return await Promise.all(sks.map(async (sk: string) => await GenericDbManager.get({ pk: Scene.Setting.pk, sk }))) as Scene.Setting;
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneSettingsManager.getSceneSettingByIds" });
+      return;
+    }
+  };
+
   static updateSceneSetting: CallableFunction = async (sceneConfig: Scene.Config, sceneSetting: Scene.Setting) => {
     try {
       if (!sceneConfig?.settings?.includes(sceneSetting.sk)) {

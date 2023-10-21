@@ -123,7 +123,7 @@ export async function userAuthMiddleware(client: Client, message: { sessionToken
     next({ session, user });
     return;
   }
-  next();
+  next({ session, user: null});
 }
 
 export async function alchemyWebhook(req: Request, res: Response, next: NextFunction) {

@@ -17,6 +17,7 @@ export namespace Scene {
     presets?: Array<string | Preset> = [];
     settings?: Array<string | Setting> = [];
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    packageVersion?: string = "";
     ts?: EpochTimeStamp = Date.now();
 
     constructor(config?: Config) {
@@ -28,6 +29,7 @@ export namespace Scene {
       this.scenePreset = config?.scenePreset || this.presets[0] || "";
       this.settings = config?.settings || this.settings;
       this.createdAt = config?.createdAt || this.createdAt;
+      this.packageVersion = config?.packageVersion || this.packageVersion;
       this.ts = config?.ts || this.ts;
     }
   }
@@ -42,6 +44,8 @@ export namespace Scene {
     nfts?: string[] | NFT.Config[] = [];
     sounds?: string[] | Sound.Config[] = [];
     widgets?: string[] | Widget.Config[] = [];
+    claimPoints?: string[] | Giveaway.ClaimPoint[] = [];
+    models?: string[] | Model.Config[] = [];
     locale?: string = "en-US";
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
     ts?: EpochTimeStamp = Date.now();
@@ -54,9 +58,12 @@ export namespace Scene {
       this.videos = config?.videos || this.videos;
       this.images = config?.images || this.images;
       this.nfts = config?.nfts || this.nfts;
+      this.models = config?.models || this.models;
       this.sounds = config?.sounds || this.sounds;
       this.widgets = config?.widgets || this.widgets;
       this.locale = config?.locale || this.locale;
+      this.claimPoints = config?.claimPoints || this.claimPoints;
+      this.models = config?.models || this.models;
       this.createdAt = config?.createdAt || this.createdAt;
       this.ts = config?.ts || this.ts;
     }
@@ -113,7 +120,7 @@ export namespace Scene {
     pk?: string;
     sk?: string = uuidv4();
     name?: string;
-    ts?: EpochTimeStamp;
+    ts?: EpochTimeStamp = Date.now();
   }
 
   export class DefaultSettings {
@@ -122,11 +129,22 @@ export namespace Scene {
       const sceneId = scene.sk;
       this.settings = [
         new Setting({ sceneId, type: SettingType.LOCALIZATION, settingName: "Main Locale", settingValue: locale || "en-US" }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Banned Wearables", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Banned Users", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allowed Wearables", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allowed Users", settingValue: [] }),
-        new Setting({ sceneId, type: SettingType.MODERATION, settingName: "Allow Web3 Only", settingValue: false }),
+        new Setting({
+          sceneId, type: SettingType.MODERATION, settingName: "Moderation Settings", settingValue: {
+            allowCertainUsers: false,
+            allowCertainWearables: false,
+            banCertainUsers: false,
+            banCertainWearables: false,
+            bannedWearables: [],
+            bannedUsers: [],
+            allowedWearables: [],
+            allowedUsers: [],
+            allowWeb3Only: false,
+            banActions: [],
+            allowActions: [],
+            banWallType: null,
+          } as ModerationSettings
+        }),
       ];
     }
   }
@@ -140,7 +158,7 @@ export namespace Scene {
     startTime?: EpochTimeStamp;
     endTime?: EpochTimeStamp;
     permissions?: Permissions;
-    ts?: EpochTimeStamp;
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config?: Invite) {
       if (!config) {
@@ -197,7 +215,7 @@ export namespace Scene {
       volume?: number = 1;
       withCollisions?: boolean = true;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -236,7 +254,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -285,7 +303,7 @@ export namespace Scene {
       isTransparent?: boolean;
       withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -325,7 +343,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -363,7 +381,7 @@ export namespace Scene {
       isTransparent?: boolean;
       withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -399,7 +417,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -410,6 +428,67 @@ export namespace Scene {
         this.rotation = config.rotation;
         this.scale = config.scale;
         this.withCollisions = config.withCollisions;
+        this.parent = config.parent;
+        this.customRendering = config.customRendering;
+        this.createdAt = config.createdAt;
+        this.ts = config.ts;
+      }
+    }
+  }
+
+  export namespace Model {
+    export class Config extends Element {
+      static pk?: string = "vlm:scene:model"; // Partition Key
+      pk?: string = Config.pk; // Partition Key
+      sk?: string = uuidv4();
+      customId?: string;
+      customRendering?: boolean;
+      parent?: string;
+      name?: string;
+      modelSrc?: string;
+      instances?: string[] | Instance[] = [];
+      enabled?: boolean;
+      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+      ts?: EpochTimeStamp = Date.now();
+
+      constructor(config: Config = {}) {
+        super();
+        this.sk = config.sk || this.sk; // Sort Key
+        this.enabled = config.enabled;
+        this.customId = config.customId || this.customId;
+        this.customRendering = config.customRendering;
+        this.name = config.name;
+        this.instances = config.instances;
+        this.parent = config.parent;
+        this.modelSrc = config.modelSrc;
+        this.createdAt = config.createdAt;
+        this.ts = config.ts;
+      }
+    }
+
+    export class Instance {
+      static pk: string = "vlm:scene:model:instance"; // Partition Key
+      pk?: string = Instance.pk; // Partition Key
+      sk?: string = uuidv4();
+      customId?: string;
+      name?: string;
+      enabled?: boolean;
+      position?: TransformConstructorArgs;
+      rotation?: TransformConstructorArgs;
+      scale?: TransformConstructorArgs;
+      parent?: string;
+      customRendering?: boolean;
+      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+      ts?: EpochTimeStamp = Date.now();
+
+      constructor(config: Instance = {}) {
+        this.sk = config.sk || this.sk; // Sort Key
+        this.customId = config.customId || this.customId;
+        this.name = config.name;
+        this.enabled = config.enabled;
+        this.position = config.position;
+        this.rotation = config.rotation;
+        this.scale = config.scale;
         this.parent = config.parent;
         this.customRendering = config.customRendering;
         this.createdAt = config.createdAt;
@@ -431,30 +510,28 @@ export namespace Scene {
       sk?: string = uuidv4();
       customId?: string;
       customRendering?: boolean;
-      name?: string;
-      audioPath?: string;
-      instances?: string[] | Instance[] = [];
       parent?: string;
+      name?: string;
+      volume?: number = 1;
+      audioSrc?: string;
+      instances?: string[] | Instance[] = [];
       sourceType?: SourceType = SourceType.CLIP;
-      loop?: boolean;
       enabled?: boolean;
-      isTransparent?: boolean;
-      withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
         this.sk = config.sk || this.sk; // Sort Key
+        this.enabled = config.enabled;
         this.customId = config.customId || this.customId;
         this.customRendering = config.customRendering;
         this.name = config.name;
+        this.volume = config.volume || this.volume;
         this.instances = config.instances;
+        this.audioSrc = config.audioSrc;
         this.parent = config.parent;
         this.sourceType = config.sourceType || this.sourceType;
-        this.loop = config.loop;
-        this.enabled = config.enabled;
-        this.withCollisions = config.withCollisions;
         this.createdAt = config.createdAt;
         this.ts = config.ts;
       }
@@ -475,7 +552,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -507,7 +584,7 @@ export namespace Scene {
       value?: number | string | Object | Array<unknown> | boolean;
       range?: [number, number];
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp;
+      ts?: EpochTimeStamp = Date.now();
 
       constructor(config: Config = {}) {
         super();
@@ -537,6 +614,91 @@ export namespace Scene {
       text: string;
       value: string;
     };
+  }
+
+  export namespace Giveaway {
+
+    export class ClaimPoint {
+      static pk: string = "vlm:scene:claimpoint"; // Partition Key
+      pk?: string = ClaimPoint.pk; // Partition Key
+      sk?: string; // Sort Key
+      customId?: string;
+      parent?: string;
+      customRendering?: boolean;
+      name?: string = "New Claim Point";
+      enabled?: boolean;
+      giveawayId?: string;
+      position?: TransformConstructorArgs;
+      scale?: TransformConstructorArgs;
+      rotation?: TransformConstructorArgs;
+      withCollisions?: boolean;
+      properties?: ClaimPointProperties = defaultClaimPointProperties;
+      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
+      ts?: EpochTimeStamp = Date.now();
+
+      constructor(config: Partial<ClaimPoint> = {}) {
+        this.sk = config.sk || this.sk; // Sort Key
+        this.customId = config.customId || this.customId;
+        this.parent = config.parent;
+        this.customRendering = config.customRendering;
+        this.name = config.name || this.name;
+        this.enabled = config.enabled;
+        this.giveawayId = config.giveawayId;
+        this.position = config.position;
+        this.scale = config.scale;
+        this.rotation = config.rotation;
+        this.withCollisions = config.withCollisions;
+        this.properties = config.properties || this.properties;
+        this.createdAt = config.createdAt;
+        this.ts = config.ts;
+      }
+    }
+
+    export interface ClaimPointProperties {
+      enableKiosk?: boolean;
+      enableSpin?: boolean;
+      type?: ClaimPointType;
+      imgSrc?: string;
+      modelSrc?: string;
+      mannequinType?: MannequinType;
+      hoverText?: string;
+      color1?: { r: number, g: number, b: number, a: number };
+      color2?: { r: number, g: number, b: number, a: number };
+      color3?: { r: number, g: number, b: number, a: number };
+      kioskImgSrc?: string;
+      itemYOffset?: number;
+      itemScale?: number;
+    }
+
+    export enum ClaimPointType {
+      MARKETPLACE_IMAGE,
+      CUSTOM_IMAGE,
+      MODEL,
+      MANNEQUIN,
+    };
+
+    export enum MannequinType {
+      MALE,
+      FEMALE,
+      MATCH_PLAYER
+    };
+
+    export const defaultClaimPointProperties: ClaimPointProperties = {
+      enableKiosk: true,
+      enableSpin: false,
+      type: ClaimPointType.CUSTOM_IMAGE,
+      imgSrc: "",
+      modelSrc: "",
+      mannequinType: MannequinType.MATCH_PLAYER,
+      hoverText: "Claim Item",
+      color1: { r: 255, g: 255, b: 255, a: 1 },
+      color2: { r: 0, g: 0, b: 0, a: 1 },
+      color3: { r: 150, g: 180, b: 255, a: 0.5 },
+      kioskImgSrc: "",
+      itemYOffset: 0,
+      itemScale: 1
+    };
+
   }
 
   export type Instance = Video.Instance | Image.Instance | NFT.Instance | Sound.Instance;

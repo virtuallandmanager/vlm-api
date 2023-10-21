@@ -2,10 +2,7 @@ import { GenericDbManager } from "../dal/Generic.data";
 import { Scene } from "../models/Scene.model";
 import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
-import { SceneManager } from "./Scene.logic";
-import { SceneSettingsManager } from "./SceneSettings.logic";
 import { SceneElementManager } from "./SceneElement.logic";
-import { HistoryManager } from "./History.logic";
 
 export abstract class ScenePresetManager {
   // Scene Preset Operations //
@@ -19,7 +16,7 @@ export abstract class ScenePresetManager {
   };
 
   static createInitialPreset: CallableFunction = async (scene: Scene.Config, sk?: string) => {
-    const firstPreset = new Scene.Preset({ name: "Signature Arrangement", sk });
+    const firstPreset = new Scene.Preset({ name: "Signature Arrangement", sk: sk || null });
     scene.scenePreset = firstPreset.sk;
     const addPresetsResponse = await this.addPresetsToScene(scene, [firstPreset]);
     scene = addPresetsResponse.scene;
@@ -108,14 +105,16 @@ export abstract class ScenePresetManager {
       return;
     }
     try {
-      const [videos, images, nfts, sounds, widgets] = await Promise.all([
+      const [videos, images, nfts, models, sounds, widgets, claimPoints] = await Promise.all([
         SceneElementManager.buildElements(Scene.Video.Config.pk, preset.videos),
         SceneElementManager.buildElements(Scene.Image.Config.pk, preset.images),
         SceneElementManager.buildElements(Scene.NFT.Config.pk, preset.nfts),
+        SceneElementManager.buildElements(Scene.Model.Config.pk, preset.models),
         SceneElementManager.buildElements(Scene.Sound.Config.pk, preset.sounds),
         SceneElementManager.buildElements(Scene.Widget.Config.pk, preset.widgets),
+        SceneElementManager.buildElements(Scene.Giveaway.ClaimPoint.pk, preset.claimPoints),
       ]);
-      return new Scene.Preset({ ...preset, videos, images, nfts, sounds, widgets });
+      return new Scene.Preset({ ...preset, videos, images, nfts, models, sounds, widgets, claimPoints });
     } catch (error) {
       AdminLogManager.logError(error, { from: "ScenePresetManager.buildScenePreset" });
       return;

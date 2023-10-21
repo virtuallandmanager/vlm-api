@@ -5,6 +5,8 @@ import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
 import { SceneSettingsManager } from "./SceneSettings.logic";
 import { ScenePresetManager } from "./ScenePreset.logic";
+import { GiveawayManager } from "./Giveaway.logic";
+import { DateTime } from "luxon";
 
 export abstract class SceneManager {
   // Base Scene Operations //
@@ -53,9 +55,9 @@ export abstract class SceneManager {
     }
   };
 
-  static getSceneById: CallableFunction = async (scene: Scene.Config) => {
+  static getSceneById: CallableFunction = async (sceneId: string) => {
     try {
-      return await SceneDbManager.getById(scene);
+      return await SceneDbManager.getById(sceneId);
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.getSceneById" });
     }
@@ -87,15 +89,20 @@ export abstract class SceneManager {
     }
   };
 
-  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, scenePreset: Scene.Preset) => {
+  static changeScenePreset: CallableFunction = async (sceneConfig: Scene.Config, presetId: string) => {
     try {
-      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: scenePreset.sk }),
+      const sceneStub = await this.updateSceneProperty({ scene: sceneConfig, prop: "scenePreset", val: presetId }),
         scene = await this.buildScene(sceneStub);
 
       return scene;
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.changeScenePreset" });
     }
+  };
+
+  static getGiveawaysForScene: CallableFunction = async (scene: Scene.Config) => {
+    const giveaways = await GiveawayManager.getGiveawaysForSceneEvents(scene.sk);
+    return giveaways;
   };
   ////
 
@@ -112,7 +119,18 @@ export abstract class SceneManager {
       // create the first preset if one doesn't exist in this scene
       if (!scene.presets || !scene.presets.length) {
         scene = await ScenePresetManager.createInitialPreset(scene);
+      }
+
+      if (scene.presets.every((preset) => typeof preset === "string")) {
+        presetsLoaded = false;
+      } else {
         presetsLoaded = true;
+      }
+
+      if (!scene.scenePreset && !presetsLoaded) {
+        scene.scenePreset = scene.presets[0];
+      } else if (!scene.scenePreset && presetsLoaded && typeof scene.presets[0] !== "string") {
+        scene.scenePreset = scene.scenePreset || scene.presets[0].sk;
       }
 
       if (!presetsLoaded) {
@@ -162,34 +180,19 @@ export abstract class SceneManager {
   };
 
   static fillInSettingIds: CallableFunction = async (scene: Scene.Config) => {
-    const settingArr: string[] = (scene.settings as string[]) || [],
-      settingIds: string[] = [],
-      missingSettingIds: string[] = [];
+    if (scene.settings.length > new Scene.DefaultSettings(scene).settings.length) {
+      scene.settings.forEach((setting: string | Scene.Setting) => {
+        if (typeof setting === "string") {
+          GenericDbManager.put({ pk: Scene.Setting.pk, sk: setting, ttl: DateTime.now().toUnixInteger() });
+        } else {
+          GenericDbManager.put({ pk: Scene.Setting.pk, sk: setting.sk, ttl: DateTime.now().toUnixInteger() });
+        }
+      });
 
-    for (let i = 0; i < settingArr.length; i++) {
-      const sk: string = scene.settings[i] as string,
-        sceneSetting = await SceneSettingsManager.getSceneSettingById(sk);
-      if (sceneSetting && sceneSetting.settingName) {
-        settingIds.push(sk);
-      } else {
-        missingSettingIds.push(sk);
-      }
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////
-    // i forget why i thought this would ever be necessary... keep it and log exceptions I guess?
-    if (missingSettingIds.length) {
-      AdminLogManager.logWarning("Had to fill in missing scene settings", { scene });
-    }
-    /////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // add the default scene settings if there are no settings for this scene
-    if (!settingArr?.length || missingSettingIds.length) {
-      const defaultSettings = new Scene.DefaultSettings(scene);
       await SceneManager.updateSceneProperty({ scene, prop: "settings", val: [] });
-      await SceneSettingsManager.addSettingsToScene(scene, defaultSettings.settings);
-
-      scene.settings = defaultSettings.settings;
+      scene.settings = await SceneSettingsManager.addSettingsToScene(scene, new Scene.DefaultSettings(scene).settings) as Scene.Setting[];
+    } else {
+      scene.settings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings) as Scene.Setting[];
     }
   };
   //
@@ -245,7 +248,29 @@ export abstract class SceneManager {
   // Generic Scene Element Operations //
   static getSceneElementById: CallableFunction = async (pk: string, sk: string) => {
     try {
-      return await GenericDbManager.get({ pk, sk });
+      const element = await GenericDbManager.get({ pk, sk });
+      switch (pk) {
+        case "vlm.scene.image":
+          return new Scene.Image.Config(element);
+        case "vlm.scene.image.instance":
+          return new Scene.Image.Instance(element);
+        case "vlm.scene.video":
+          return new Scene.Video.Config(element);
+        case "vlm.scene.video.instance":
+          return new Scene.Video.Instance(element);
+        case "vlm.scene.nft":
+          return new Scene.NFT.Config(element);
+        case "vlm.scene.sound":
+          return new Scene.Sound.Config(element);
+        case "vlm.scene.sound.instance":
+          return new Scene.Sound.Instance(element);
+        case "vlm.scene.widget":
+          return new Scene.Widget.Config(element);
+        case "vlm.scene.giveaway.claimpoint":
+          return new Scene.Giveaway.ClaimPoint(element);
+        default:
+          return element;
+      }
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.getSceneElementById" });
       return;

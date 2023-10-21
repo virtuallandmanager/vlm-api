@@ -1,5 +1,5 @@
 import { OrganizationDbManager } from "../dal/Organization.data";
-import { PromoBalances } from "../models/Balance.model";
+import { InitialBalances } from "../models/Balance.model";
 import { Organization } from "../models/Organization.model";
 import { User } from "../models/User.model";
 
@@ -55,6 +55,6 @@ export abstract class OrganizationManager {
   };
 
   static initBalances: CallableFunction = (organization: Organization.Account) => {
-    return PromoBalances.organization.map((balanceConfig) => new Organization.Balance({ orgId: organization.sk, ...balanceConfig }));
+    return InitialBalances.organization.map((balanceConfig) => new Organization.Balance({ orgId: organization.sk, ...balanceConfig }));
   };
 }

@@ -6,7 +6,7 @@ export namespace History {
     pk?: string = Config.pk;
     sk?: string = uuidv4(); //shares SK with whatever it's storing a history for
     updates?: string[] | Update[] = [];
-    ts?: number = Date.now();
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Config) {
       this.sk = config.sk || this.sk;
@@ -21,7 +21,7 @@ export namespace History {
     sk?: string = uuidv4();
     historyId?: string;
     root?: Object;
-    ts?: number = Date.now();
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Root) {
       this.sk = config.sk || this.sk;
@@ -44,7 +44,7 @@ export namespace History {
     property?: string;
     from?: unknown;
     to?: unknown;
-    ts?: number = Date.now();
+    ts?: EpochTimeStamp = Date.now();
 
     constructor(config: Update) {
       this.sk = config?.sk || this.sk;

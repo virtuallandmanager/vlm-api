@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import requestIp from "request-ip";
 import cors, { CorsOptions } from "cors";
+// import { monitor } from "@colyseus/monitor";
 import healthCheck from "./healthCheck";
 import userController from "./http/controllers/User.controller";
 import authController from "./http/controllers/Authentication.controller";
@@ -11,6 +12,9 @@ import sessionController from "./http/controllers/Session.controller";
 import eventController from "./http/controllers/Event.controller";
 import mediaController from "./http/controllers/Media.controller";
 import logController from "./http/controllers/Log.controller";
+import giveawayController from "./http/controllers/Giveaway.controller";
+import balanceController from "./http/controllers/Balance.controller";
+import promotionController from "./http/controllers/Promotion.controller";
 
 // Create Express server
 const app = express();
@@ -44,7 +48,11 @@ app.use("/scene", jsonParser, urlencodedParser, sceneController);
 app.use("/session", jsonParser, urlencodedParser, sessionController);
 app.use("/user", jsonParser, urlencodedParser, userController);
 app.use("/event", jsonParser, urlencodedParser, eventController);
+app.use("/giveaway", jsonParser, urlencodedParser, giveawayController);
+app.use("/promotion", jsonParser, urlencodedParser, promotionController);
+app.use("/balance", jsonParser, urlencodedParser, balanceController);
 app.use("/media", mediaController); // No body-parser middleware applied to this route
+// app.use("/colyseus", monitor());
 app.use("/log", jsonParser, urlencodedParser, logController);
 
 export default app;

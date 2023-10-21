@@ -3,14 +3,16 @@ import { Scene as BaseScene } from "./Scene.model";
 import { Organization } from "./Organization.model";
 import { DateTime } from "luxon";
 import { Metaverse } from "./Metaverse.model";
+import { Giveaway } from "./Giveaway.model";
 
 export namespace Event {
   export class Config {
-    static pk: string = "vlm:event:config"; // Partition Key
-    pk?: string = Config.pk; // Partition Key
+    static pk: string = "vlm:event"; // Partition Key
+    pk?: string = Config?.pk; // Partition Key
     sk?: string = uuidv4(); // Sort Key
     userId?: string;
-    name: string;
+    name?: string = "New Event";
+    description?: string;
     createdAt?: number = DateTime.now().toUnixInteger();
     timeZone?: string = "UTC";
     eventStart: number;
@@ -19,21 +21,22 @@ export namespace Event {
     location?: string;
     locationUrl?: string;
     worlds?: Array<Metaverse.World>;
-    claimLimits?: Giveaway.ClaimLimits; // caps total number of giveaway claims allowed
+    claimLimits?: Giveaway.ClaimLimits = {}; // caps total number of giveaway claims allowed for this event
 
     constructor(config: Event.Config) {
-      this.sk = config.sk || this.sk;
-      this.userId = config.userId;
-      this.name = config.name;
-      this.createdAt = config.createdAt || this.createdAt;
-      this.timeZone = config.timeZone;
-      this.eventStart = config.eventStart;
-      this.eventEnd = config.eventEnd;
-      this.imageSrc = config.imageSrc;
-      this.location = config.location;
-      this.locationUrl = config.locationUrl;
-      this.worlds = config.worlds;
-      this.claimLimits = config.claimLimits;
+      this.sk = config?.sk || this.sk;
+      this.userId = config?.userId;
+      this.name = config?.name;
+      this.description = config?.description;
+      this.createdAt = config?.createdAt || this.createdAt;
+      this.timeZone = config?.timeZone;
+      this.eventStart = config?.eventStart;
+      this.eventEnd = config?.eventEnd;
+      this.imageSrc = config?.imageSrc;
+      this.location = config?.location;
+      this.locationUrl = config?.locationUrl;
+      this.worlds = config?.worlds;
+      this.claimLimits = config?.claimLimits || this.claimLimits;
     }
   }
 
@@ -44,9 +47,9 @@ export namespace Event {
     eventId: string;
     sceneId: string;
 
-    constructor(event: Config, scene: BaseScene.Config) {
-      this.eventId = event.sk;
-      this.sceneId = scene.sk;
+    constructor({ eventId, sceneId, event, scene }: { eventId?: string, sceneId?: string, event?: Config, scene?: BaseScene.Config }) {
+      this.eventId = eventId || event?.sk;
+      this.sceneId = sceneId || scene?.sk;
     }
   }
 
@@ -57,9 +60,9 @@ export namespace Event {
     eventId: string;
     orgId: string;
 
-    constructor(event: Config, scene: Organization.Account) {
-      this.eventId = event.sk;
-      this.orgId = scene.sk;
+    constructor({ eventId, orgId, event, org }: { eventId?: string, orgId?: string, event?: Config, org?: Organization.Account }) {
+      this.eventId = eventId || event?.sk;
+      this.orgId = orgId || org?.sk;
     }
   }
 
@@ -70,100 +73,9 @@ export namespace Event {
     eventId: string;
     giveawayId: string;
 
-    constructor(eventId: string, giveawayId: string) {
-      this.eventId = eventId;
-      this.giveawayId = giveawayId;
-    }
-  }
-
-  export namespace Giveaway {
-    export class Config {
-      static pk: string = "vlm:event:giveaway:config";
-      pk: string = Config.pk;
-      sk: string = uuidv4();
-      name: string;
-      startBuffer: number = 0;
-      endBuffer: number = 0;
-      claimLimits: ClaimLimits = { total: 0 };
-      claimCount: number = 0;
-      eventId: string;
-      items: Array<string> | Array<Giveaway.Config>;
-      ts?: number = Date.now();
-
-      constructor(config: Config) {
-        this.sk = config.sk || this.sk;
-        this.name = config.name || this.name;
-        this.startBuffer = config.startBuffer || this.startBuffer;
-        this.endBuffer = config.endBuffer || this.claimCount;
-        this.claimLimits = config.claimLimits || this.claimLimits;
-        this.claimCount = config.claimCount || this.claimCount;
-        this.eventId = config.eventId;
-        this.items = config.items;
-        this.ts = config.ts;
-      }
-    }
-
-    export type ClaimLimits = {
-      total?: number;
-      hourly?: number;
-      daily?: number;
-      weekly?: number;
-      monthly?: number;
-      yearly?: number;
-      perUser?: number;
-      perIp?: number;
-    };
-
-    export class Claim {
-      static pk: string = "vlm:event:giveaway:claim";
-      pk?: string = Claim.pk;
-      sk?: string = uuidv4();
-      to: string;
-      clientIp?: string;
-      sceneId?: string;
-      eventId: string;
-      giveawayId: string;
-      transactionId?: string;
-      claimTs?: number;
-      ts?: number = Date.now();
-
-      constructor(config: Claim) {
-        this.sk = config.sk || this.sk;
-        this.to = config.to;
-        this.clientIp = config.clientIp;
-        this.sceneId = config.sceneId;
-        this.eventId = config.eventId;
-        this.giveawayId = config.giveawayId;
-        this.sceneId = config.sceneId;
-        this.claimTs = config.claimTs;
-        this.ts = config.ts;
-      }
-    }
-
-    export class Item {
-      static pk: string = "vlm:event:giveaway:item";
-      pk: string = Item.pk;
-      sk?: string = uuidv4();
-      name?: string;
-      chain: number | string;
-      contractAddress: string;
-      itemId?: number | string;
-      claimLimits: ClaimLimits = { total: 0, perUser: 1, perIp: 3 };
-      claimCount: number;
-      imageUrl?: string;
-      ts?: number = Date.now();
-
-      constructor(config: Item) {
-        this.sk = config.sk || this.sk;
-        this.name = config.name;
-        this.chain = config.chain;
-        this.contractAddress = config.contractAddress;
-        this.itemId = config.itemId;
-        this.claimLimits = config.claimLimits;
-        this.claimCount = config.claimCount;
-        this.imageUrl = config.imageUrl;
-        this.ts = config.ts;
-      }
+    constructor({ eventId, giveawayId, event, giveaway }: { eventId?: string, giveawayId?: string, event?: Config, giveaway?: Giveaway.Config }) {
+      this.eventId = eventId || event?.sk;
+      this.giveawayId = giveawayId || giveaway?.sk;
     }
   }
 }

@@ -93,7 +93,7 @@ export abstract class SessionDbManager {
     };
     try {
       const sessionRecord = await daxClient.get(params).promise();
-      return sessionRecord.Item;
+      return sessionRecord.Item as Analytics.Session.Config | User.Session.Config;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Session.data/get",

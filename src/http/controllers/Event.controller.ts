@@ -1,25 +1,16 @@
 import express, { Request, Response } from "express";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { v4 as uuidv4 } from "uuid";
-import { s3 } from "../../dal/common.data";
-import mime from "mime";
-import { OrganizationManager } from "../../logic/Organization.logic";
 import { authMiddleware } from "../../middlewares/security/auth";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { UserManager } from "../../logic/User.logic";
 import { User } from "../../models/User.model";
-import { ImageManager } from "../../logic/Image.logic";
-import { Organization } from "../../models/Organization.model";
-import { S3 } from "aws-sdk";
 import { Event } from "../../models/Event.model";
 import { EventManager } from "../../logic/Event.logic";
-import { GiveawayManager } from "../../logic/Giveaway.logic";
 import { EventDbManager } from "../../dal/Event.data";
 import { GiveawayDbManager } from "../../dal/Giveaway.data";
 import { Giveaway } from "../../models/Giveaway.model";
 const router = express.Router();
 
-router.get("/cards", authMiddleware, async (req: Request, res: Response) => {
+router.get("/all", authMiddleware, async (req: Request, res: Response) => {
   try {
     if (!req.session.userId) {
       return res.status(400).json({
@@ -28,15 +19,19 @@ router.get("/cards", authMiddleware, async (req: Request, res: Response) => {
     }
 
     const user = await UserManager.getById(req.session.userId),
-      events = await EventManager.getEventsForUser(user);
+      events = await EventManager.getEventsForUser(user),
+      giveawayLinks = await EventManager.getLinkedGiveaways(events),
+      sceneLinks = await EventManager.getLinkedScenes(events);
 
     return res.status(200).json({
       text: "Successfully authenticated.",
       events: events || [],
+      giveawayLinks: giveawayLinks || [],
+      sceneLinks: sceneLinks || [],
     });
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {
-      from: "Authentication.controller/cards",
+      from: "Event.controller/all",
     });
     return res.status(500).json({
       text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
@@ -58,7 +53,137 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {
-      from: "Organization.controller/create",
+      from: "Event.controller/create",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
+router.post("/link/scenes", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { sceneLinkIds, eventId } = req.body;
+
+    const sceneLinks = await EventManager.linkScenes(eventId, sceneLinkIds);
+
+    return res.status(200).json({
+      text: "Successfully linked scenes.",
+      sceneLinks: sceneLinks,
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Event.controller/link/scenes",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
+router.post("/link/giveaways", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { giveawayLinkIds, eventId } = req.body;
+
+    const giveawayLinks = await EventManager.linkGiveaways(eventId, giveawayLinkIds);
+
+    return res.status(200).json({
+      text: "Successfully linked giveaways.",
+      giveawayLinks: giveawayLinks,
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Event.controller/link/giveaways",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error
+    });
+  }
+});
+
+router.post("/link/scene", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { sceneId, eventId } = req.body;
+
+    const sceneLink = await EventManager.linkScene(eventId, sceneId);
+
+    return res.status(200).json({
+      text: "Successfully linked scene.",
+      sceneLink,
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Event.controller/link/scene",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
+
+router.post("/link/giveaway", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { giveawayId, eventId } = req.body;
+
+    const giveawayLink = await EventManager.linkGiveaway(eventId, giveawayId);
+
+    return res.status(200).json({
+      text: "Successfully linked giveaway.",
+      giveawayLink,
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Event.controller/link/scene",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
+router.post("/unlink/scene", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { sceneId, eventId } = req.body;
+
+    const linkId = await EventManager.unlinkScene(eventId, sceneId);
+
+    return res.status(200).json({
+      text: "Successfully linked scene.",
+      success: true,
+      linkId
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Event.controller/link/scene",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
+
+router.post("/unlink/giveaway", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { giveawayId, eventId } = req.body;
+
+    const linkId = await EventManager.unlinkGiveaway(eventId, giveawayId);
+
+    return res.status(200).json({
+      text: "Successfully linked giveaway.",
+      success: true,
+      linkId
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Event.controller/link/scene",
     });
     return res.status(500).json({
       text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
@@ -69,13 +194,20 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
 
 router.post("/update", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userOrgInfo = req.body.userOrgInfo;
+    const eventConfig = req.body.event;
 
-    const organization = await OrganizationManager.update(userOrgInfo);
+    const existingEvent = await EventManager.getById(eventConfig.sk);
+    if (!existingEvent) {
+      return res.status(400).json({
+        text: "Bad Request.",
+      });
+    }
+
+    const event = await EventManager.update(eventConfig);
 
     return res.status(200).json({
       text: "Successfully updated organization.",
-      organization,
+      event,
     });
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {
@@ -122,27 +254,18 @@ router.get("/:eventId", authMiddleware, async (req: Request, res: Response) => {
     }
 
     const user = await UserManager.getById(req.session.userId),
-      event: Event.Config = await EventManager.getById(req.params.eventId),
-      giveaways: Event.Giveaway.Config[] = await EventManager.getGiveawaysForEvent(event);
-
-    for (const giveaway of giveaways) {
-      if (giveaway?.items) {
-        const giveawayItems = [...giveaway.items];
-        const fullGiveawayItems = await GiveawayManager.getItemsForGiveaway(giveawayItems);
-        giveaway.items = fullGiveawayItems;
-      }
-    }
+      event: Event.Config = await EventManager.getById(req.params.eventId);
 
     if (event.userId !== user.sk && UserManager.getAdminLevel(user) <= User.Roles.VLM_ADMIN) {
       return res.status(401).json({
-        nachos: "Mmmmm...Ahh, got hungry, forgot error message.",
+        nachos: "Mmmmm...oops, got hungry, forgot error message.",
         text: "Ok seriously, you gotta login again or something.",
       });
     }
 
     return res.status(200).json({
       text: "Found event.",
-      event: { ...event, giveaways },
+      event,
     });
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {

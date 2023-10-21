@@ -81,29 +81,13 @@ export abstract class SceneElementManager {
           return await this.addSoundToPreset(message);
         case "widget":
           return await this.addWidgetToPreset(message);
+        case "claimpoint":
+          return await this.addClaimPointToPreset(message);
+        case "model":
+          return await this.addModelToPreset(message);
       }
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneElementManager.createSceneElement" });
-      return;
-    }
-  };
-
-  static createSceneElementInstance: CallableFunction = async (message: VLMSceneMessage) => {
-    try {
-      switch (message.element) {
-        case "video":
-          return await this.addInstanceToElement(message);
-        case "image":
-          return await this.addImageToPreset(message);
-        case "nft":
-          return await this.addNftToPreset(message);
-        case "sound":
-          return await this.addSoundToPreset(message);
-        case "widget":
-          return await this.addWidgetToPreset(message);
-      }
-    } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneElementManager.createSceneElementInstance" });
       return;
     }
   };
@@ -139,6 +123,16 @@ export abstract class SceneElementManager {
     }
   };
 
+  static addModelToPreset: CallableFunction = async (message: VLMSceneMessage) => {
+    try {
+      const model = new Scene.Model.Config(message.elementData);
+      return await SceneDbManager.addModelToPreset(message.scenePreset.sk, model);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneElementManager.addModelToPreset" });
+      return;
+    }
+  };
+
   static addSoundToPreset: CallableFunction = async (message: VLMSceneMessage) => {
     try {
       const sound = new Scene.Sound.Config(message.elementData);
@@ -158,6 +152,16 @@ export abstract class SceneElementManager {
       return;
     }
   };
+
+  static addClaimPointToPreset: CallableFunction = async (message: VLMSceneMessage) => {
+    try {
+      const claimPoint = new Scene.Giveaway.ClaimPoint(message.elementData);
+      return await SceneDbManager.addClaimPointToPreset(message.scenePreset.sk, claimPoint);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneElementManager.addClaimPointToPreset" });
+      return;
+    }
+  };
   //
 
   static updateSceneElement: CallableFunction = async (message: VLMSceneMessage) => {
@@ -169,6 +173,21 @@ export abstract class SceneElementManager {
         const elementData = await GenericDbManager.put(message.elementData);
         const scenePreset = await SceneDbManager.getPreset(message.scenePreset.sk);
         return { scenePreset, elementData };
+      }
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneElementManager.updateElement" });
+      return;
+    }
+  };
+
+  static quickUpdateSceneElement: CallableFunction = async (message: VLMSceneMessage) => {
+    try {
+      if (message.property) {
+        return await SceneDbManager.updateSceneElementProperty(message, { skipPreset: true });
+      } else {
+        message.elementData.pk = message.elementData.pk || `vlm:scene:${message.element}`;
+        const elementData = await GenericDbManager.put(message.elementData);
+        return { elementData };
       }
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneElementManager.updateElement" });
@@ -196,6 +215,9 @@ export abstract class SceneElementManager {
           break;
         case "nft":
           message.instanceData.pk = Scene.NFT.Instance.pk;
+          break;
+        case "model":
+          message.instanceData.pk = Scene.Model.Instance.pk;
           break;
         case "sound":
           message.instanceData.pk = Scene.Sound.Instance.pk;

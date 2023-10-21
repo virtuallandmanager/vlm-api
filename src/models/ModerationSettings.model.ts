@@ -8,8 +8,8 @@ export type ModerationSettings = {
   allowWeb3Only?: boolean;
   allowedWearables?: NFT[];
   bannedWearables?: NFT[];
-  bannedUsers?: { name: string; connectedWallet: string }[];
-  allowedUsers?: { name: string; connectedWallet: string }[];
+  bannedUsers?: { displayName: string; connectedWallet: string }[];
+  allowedUsers?: { displayName: string; connectedWallet: string }[];
   banActions?: EBanActions[];
   allowActions?: EAllowActions[];
   banWallType?: EBanWallType;

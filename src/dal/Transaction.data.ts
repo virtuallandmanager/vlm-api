@@ -39,6 +39,50 @@ export abstract class TransactionDbManager {
     }
   };
 
+  // TODO: Extend to allow for shared and dedicated minters
+  static getMinter: CallableFunction = async () => {
+    const params = {
+      TableName: vlmMainTable,
+      KeyConditionExpression: "#pk = :pk",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+      },
+      ExpressionAttributeValues: {
+        ":pk": Accounting.Minter.pk,
+      },
+    };
+
+    try {
+      const walletRecord = await docClient.query(params).promise();
+      const minters = walletRecord.Items as Accounting.Minter[];
+      const activeMinter = minters.find((minter) => minter.active);
+      return activeMinter.address;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Transaction.data/getMinter",
+      });
+    }
+  };
+
+  static updateTransactionStatus: CallableFunction = async (transactionSk: string, newStatus: string) => {
+    try {
+      await docClient.update({
+        TableName: vlmMainTable,
+        Key: { pk: Accounting.Transaction.pk, sk: transactionSk },
+        UpdateExpression: "SET #status = :newStatus",
+        ExpressionAttributeNames: {
+          "#status": "status"
+        },
+        ExpressionAttributeValues: {
+          ":newStatus": newStatus
+        }
+      }).promise();
+    } catch (error) {
+      AdminLogManager.logError(error, `Failed to update transaction status: ${JSON.stringify(error)}`);
+      throw error; // Or handle the error as needed
+    }
+  };
+
   static put: CallableFunction = async (wallet: BaseWallet) => {
     const params = {
       TableName: vlmMainTable,
