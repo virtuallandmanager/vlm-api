@@ -388,7 +388,8 @@ export abstract class GiveawayDbManager {
 
       // Record a failed transaction
       await GenericDbManager.put({ ...allocation, status: Accounting.TransactionStatus.FAILED });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 

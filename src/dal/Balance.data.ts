@@ -70,7 +70,7 @@ export abstract class BalanceDbManager {
         await this.put(newBalance);
         return newBalance;
       } else if (balancesOfType.length > 1) {
-        throw new Error("Balance error: More than one balance of the same type was found for this user.");
+        return new Error("Balance error: More than one balance of the same type was found for this user.");
       } else {
         return balancesOfType[0];
       }
@@ -97,7 +97,7 @@ export abstract class BalanceDbManager {
         await this.put(newBalance);
         return newBalance;
       } else if (balancesOfType.length > 1) {
-        throw new Error("Balance error: More than one balance of the same type was found for this organization.");
+        return new Error("Balance error: More than one balance of the same type was found for this organization.");
       } else {
         return balancesOfType[0];
       }
@@ -284,7 +284,7 @@ export abstract class BalanceDbManager {
       return this.get(fromBalance);
     } catch (error) {
       console.error('Transaction failed:', error);
-      throw new Error('Transaction failed');
+      return;
     }
   };
 

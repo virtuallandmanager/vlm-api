@@ -20,6 +20,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/obtain",
         analyticsUserConfig,
       });
+      console.log(error);
       return;
     }
   };
@@ -43,6 +44,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/obtain",
         analyticsUserConfig,
       });
+      console.log(error);
       return;
     }
   };
@@ -66,6 +68,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/get",
         analyticsUser,
       });
+      console.log(error);
       return;
     }
   };
@@ -99,6 +102,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/getByWallet",
         connectedWallet,
       });
+      console.log(error);
       return;
     }
   }
@@ -120,6 +124,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/getById",
         sk,
       });
+      console.log(error);
       return;
     }
   };
@@ -141,6 +146,7 @@ export abstract class AnalyticsUserDbManager {
         from: "AnalyticsUser.data/put",
         analyticsUser,
       });
+      console.log(error);
       return;
     }
   };

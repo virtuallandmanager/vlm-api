@@ -99,7 +99,8 @@ export abstract class SessionDbManager {
         from: "Session.data/get",
         session,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 

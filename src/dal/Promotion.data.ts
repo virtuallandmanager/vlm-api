@@ -23,7 +23,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/getClaimIdsForUser",
         userId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -38,7 +39,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/getClaimIdsForOrg",
         orgId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -56,7 +58,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/obtainClaimAggregateForUser",
         userId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -74,7 +77,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/obtainClaimAggregateForOrg",
         orgId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -87,7 +91,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/getClaimIdsForUser",
         userId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -105,7 +110,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/obtain",
         promo,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -137,7 +143,8 @@ export abstract class PromotionDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Promotion.data/getActive",
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -172,7 +179,8 @@ export abstract class PromotionDbManager {
         userId,
         promoId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -198,7 +206,8 @@ export abstract class PromotionDbManager {
         orgId,
         promoId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -220,7 +229,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/getPromoById",
         sk,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -285,7 +295,8 @@ export abstract class PromotionDbManager {
 
       // Record a failed transaction
       await TransactionDbManager.put({ ...transaction, status: Accounting.TransactionStatus.FAILED });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -310,7 +321,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/get",
         promotion,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -333,7 +345,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/get",
         promoId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -357,7 +370,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/getClaim",
         claim,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -378,7 +392,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/put",
         promotion,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 
@@ -403,7 +418,8 @@ export abstract class PromotionDbManager {
         from: "Promotion.data/put",
         promotion,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 }

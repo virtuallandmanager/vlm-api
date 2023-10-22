@@ -11,10 +11,6 @@ import { AnalyticsManager } from "../../logic/Analytics.logic";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
-  if (process.env.NODE_ENV === "production" && req.headers.referer !== "https://vlm.gg" && req.headers.referer !== "https://www.vlm.gg") {
-    console.log(req.headers.referer);
-  }
-
   const sessionToken = extractToken(req);
 
   // If the token is not present, return an error response

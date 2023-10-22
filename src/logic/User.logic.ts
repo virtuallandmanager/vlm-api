@@ -7,6 +7,7 @@ import { UserWalletDbManager } from "../dal/UserWallet.data";
 import { User } from "../models/User.model";
 import { BaseWallet } from "../models/Wallet.model";
 import { AnalyticsManager } from "./Analytics.logic";
+import { AdminLogManager } from "./ErrorLogging.logic";
 
 export abstract class UserManager {
   static create: CallableFunction = async (vlmUser: User.Account) => {
@@ -37,16 +38,22 @@ export abstract class UserManager {
   };
 
   static obtainUserByWallet: CallableFunction = async (walletConfig?: BaseWallet) => {
-    const wallet = new User.Wallet(walletConfig);
-    const userWallet = await UserWalletDbManager.obtain(wallet);
-    const user = new User.Account({ sk: userWallet.userId, connectedWallet: userWallet.sk });
-    const dbUser = await UserDbManager.obtain(user);
-    if (dbUser.hasConnectedWeb3 !== user.hasConnectedWeb3) {
-      dbUser.hasConnectedWeb3 = user.hasConnectedWeb3;
-      await UserDbManager.put(dbUser);
-    }
-    return dbUser;
-  };
+    try {
+      const wallet = new User.Wallet(walletConfig);
+      const userWallet = await UserWalletDbManager.obtain(wallet);
+      const user = new User.Account({ sk: userWallet.userId, connectedWallet: userWallet.sk });
+      const dbUser = await UserDbManager.obtain(user);
+      if (dbUser.hasConnectedWeb3 !== user.hasConnectedWeb3) {
+        dbUser.hasConnectedWeb3 = user.hasConnectedWeb3;
+        await UserDbManager.put(dbUser);
+      }
+      return dbUser;
+    } catch (error: any) {
+      AdminLogManager.logError(error, { from: "UserManager.obtainUserByWallet" });
+      console.log(error);
+      return;
+    };
+  }
 
   static obtain: CallableFunction = async (user: User.Account) => {
     return await UserDbManager.obtain(user);

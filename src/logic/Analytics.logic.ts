@@ -26,16 +26,16 @@ export abstract class AnalyticsManager {
   };
 
   static obtainUserByWallet: CallableFunction = async (walletConfig: BaseWallet, userConfig: Analytics.User.Config) => {
-    const existingHostUser = await UserManager.obtainUserByWallet(walletConfig);
-    if (existingHostUser) {
-      const matchedAnalyticsUser = await AnalyticsUserDbManager.obtain(new Analytics.User.Account(existingHostUser));
-      return matchedAnalyticsUser;
+    try {
+      const wallet = new Analytics.User.Wallet(walletConfig);
+      const dbWallet = await UserWalletDbManager.obtain(wallet);
+      const user = new Analytics.User.Account({ connectedWallet: dbWallet.sk, ...userConfig });
+      const dbUser = await AnalyticsUserDbManager.obtainByWallet(user);
+      return dbUser;
+    } catch (error: any) {
+      console.log(error);
+      return;
     }
-    const wallet = new Analytics.User.Wallet(walletConfig);
-    const dbWallet = await UserWalletDbManager.obtain(wallet);
-    const user = new Analytics.User.Account({ connectedWallet: dbWallet.sk, ...userConfig });
-    const dbUser = await AnalyticsUserDbManager.obtainByWallet(user);
-    return dbUser;
   };
 
   static obtainUser: CallableFunction = async (userConfig?: Analytics.User.Config) => {

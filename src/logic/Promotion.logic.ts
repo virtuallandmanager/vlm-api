@@ -28,7 +28,8 @@ export abstract class PromotionManager {
         userId,
         promoId,
       });
-      throw error;
+      console.log(error);
+      return;
     }
   };
 

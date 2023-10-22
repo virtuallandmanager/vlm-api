@@ -11,21 +11,39 @@ import { UserManager } from "./User.logic";
 
 export abstract class SessionManager {
   static initAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
-    const session = new Analytics.Session.Config(config);
-    return await SessionDbManager.create(session, { minutes: 10 });
+    try {
+      const session = new Analytics.Session.Config(config);
+      return await SessionDbManager.create(session, { minutes: 10 });
+    } catch (error: any) {
+      AdminLogManager.logError("Failed to initialize analytics session", config);
+      console.log(error);
+      return;
+    }
   };
 
   static startAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
-    const recentSession = await SessionDbManager.getRecentAnalyticsSession(config.userId);
-    if (recentSession) {
-      await SessionDbManager.revive(recentSession);
+    try {
+      const recentSession = await SessionDbManager.getRecentAnalyticsSession(config.userId);
+      if (recentSession) {
+        await SessionDbManager.revive(recentSession);
+      }
+      return recentSession || await SessionDbManager.start(new Analytics.Session.Config(config));
+    } catch (error: any) {
+      AdminLogManager.logError("Failed to start analytics session", config);
+      console.log(error);
+      return;
     }
-    return recentSession || await SessionDbManager.start(new Analytics.Session.Config(config));
   };
 
   static getAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
-    const session = new Analytics.Session.Config(config);
-    await SessionDbManager.get(session);
+    try {
+      const session = new Analytics.Session.Config(config);
+      return await SessionDbManager.get(session);
+    } catch (error) {
+      AdminLogManager.logError("Failed to get analytics session", config);
+      console.log(error);
+      return;
+    }
   };
 
   static endAnalyticsSession: CallableFunction = async (session: Analytics.Session.Config) => {
@@ -37,48 +55,71 @@ export abstract class SessionManager {
       } else {
         AdminLogManager.logError("Session failed to end", session);
       }
-    } catch (error) {
+    } catch (error: any) {
       AdminLogManager.logError("Session failed to end", session);
+      console.log(error);
+      return;
     }
-    return;
   };
 
   static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
-    const action = new Analytics.Session.Action(config);
-    return await SessionDbManager.logAnalyticsAction(action);
+    try {
+      const action = new Analytics.Session.Action(config);
+      return await SessionDbManager.logAnalyticsAction(action);
+    } catch (error) {
+      AdminLogManager.logError("Failed to log analytics action", config);
+      console.log(error);
+      return;
+    }
   };
 
   static storePreSession: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config) => {
-    return await SessionDbManager.create(session, { minutes: 10 });
+    try {
+      return await SessionDbManager.create(session, { minutes: 10 });
+    } catch (error) {
+      AdminLogManager.logError("Failed to store pre-session", session);
+    }
   };
 
   static startVLMSession: CallableFunction = async (config: User.Session.Config) => {
-    const session = new User.Session.Config(config);
-    const user = await UserManager.getById(session.userId);
-    const updatedUser = new User.Account({ ...user, lastIp: session.clientIp });
-    await UserManager.updateIp(updatedUser);
-    await SessionDbManager.start(session);
-    return session;
+    try {
+      const session = new User.Session.Config(config);
+      const user = await UserManager.getById(session.userId);
+      const updatedUser = new User.Account({ ...user, lastIp: session.clientIp });
+      await UserManager.updateIp(updatedUser);
+      await SessionDbManager.start(session);
+      return session;
+    } catch (error) {
+      AdminLogManager.logError("Failed to store pre-session", config);
+      console.log(error);
+      return;
+    }
   };
 
   static getVLMSession: CallableFunction = async (config: User.Session.Config) => {
-    if (config.sk) {
-      const session = new User.Session.Config(config);
-      return await SessionDbManager.get(session);
-    } else {
-      const activeSessions = await SessionDbManager.activeVLMSessionsByUserId(config.userId);
+    try {
+      if (config.sk) {
+        const session = new User.Session.Config(config);
+        return await SessionDbManager.get(session);
+      } else {
+        const activeSessions = await SessionDbManager.activeVLMSessionsByUserId(config.userId);
 
-      if (!activeSessions.length) {
-        return;
-      }
-
-      const chosenSession = await SessionDbManager.get(activeSessions[0]);
-      await activeSessions.forEach(async (session: User.Session.Config, i: number) => {
-        if (i > 0) {
-          await this.endVLMSession(session);
+        if (!activeSessions.length) {
+          return;
         }
-      });
-      return chosenSession;
+
+        const chosenSession = await SessionDbManager.get(activeSessions[0]);
+        await activeSessions.forEach(async (session: User.Session.Config, i: number) => {
+          if (i > 0) {
+            await this.endVLMSession(session);
+          }
+        });
+        return chosenSession;
+      }
+    } catch (error) {
+      AdminLogManager.logError("Failed to get VLM session", config);
+      console.log(error);
+      return;
     }
   };
 
@@ -90,13 +131,23 @@ export abstract class SessionManager {
       } else {
         return;
       }
-    } catch (error) { }
+    } catch (error) {
+      AdminLogManager.logError("Failed to end VLM session", config);
+      console.log(error);
+      return;
+    }
   };
 
   static renew: CallableFunction = async (session: User.Session.Config) => {
-    SessionManager.issueUserSessionToken(session);
-    SessionManager.issueSignatureToken(session);
-    return await SessionDbManager.renew(session);
+    try {
+      SessionManager.issueUserSessionToken(session);
+      SessionManager.issueSignatureToken(session);
+      return await SessionDbManager.renew(session);
+    } catch (error) {
+      AdminLogManager.logError("Failed to renew VLM session", session);
+      console.log(error);
+      return;
+    }
   };
 
   static issueUserSessionToken: CallableFunction = (session: User.Session.Config) => {
@@ -176,30 +227,38 @@ export abstract class SessionManager {
       return false;
     }
 
-    let dbSession = await SessionDbManager.get(decodedSession);
+    try {
+      let dbSession = await SessionDbManager.get(decodedSession);
 
-    if (!dbSession) {
-      AdminLogManager.logError("No Session Found", {
+      if (!dbSession) {
+        AdminLogManager.logError("No Session Found", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return false;
+      }
+
+      if (dbSession.sessionToken !== sessionToken) {
+        AdminLogManager.logWarning("Session Token Mismatch", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return;
+      } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
+        AdminLogManager.logInfo("Session Has Ended", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return;
+      } else {
+        return dbSession;
+      }
+    } catch (error) {
+      AdminLogManager.logError("Session Validation Failed", {
         from: "Session Validation Middleware",
         decodedSession,
       });
       return false;
-    }
-
-    if (dbSession.sessionToken !== sessionToken) {
-      AdminLogManager.logWarning("Session Token Mismatch", {
-        from: "Session Validation Middleware",
-        decodedSession,
-      });
-      return;
-    } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
-      AdminLogManager.logInfo("Session Has Ended", {
-        from: "Session Validation Middleware",
-        decodedSession,
-      });
-      return;
-    } else {
-      return dbSession;
     }
   };
 
@@ -211,30 +270,38 @@ export abstract class SessionManager {
       return false;
     }
 
-    let dbSession = await SessionDbManager.get(decodedSession);
+    try {
+      let dbSession = await SessionDbManager.get(decodedSession);
 
-    if (!dbSession) {
-      AdminLogManager.logError("No Session Found", {
+      if (!dbSession) {
+        AdminLogManager.logError("No Session Found", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return false;
+      }
+
+      if (dbSession.sessionToken !== sessionToken) {
+        AdminLogManager.logWarning("Session Token Mismatch", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return;
+      } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
+        AdminLogManager.logInfo("Session Has Ended", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return;
+      } else {
+        return dbSession;
+      }
+    } catch (error) {
+      AdminLogManager.logError("Session Validation Failed", {
         from: "Session Validation Middleware",
         decodedSession,
       });
       return false;
-    }
-
-    if (dbSession.sessionToken !== sessionToken) {
-      AdminLogManager.logWarning("Session Token Mismatch", {
-        from: "Session Validation Middleware",
-        decodedSession,
-      });
-      return;
-    } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
-      AdminLogManager.logInfo("Session Has Ended", {
-        from: "Session Validation Middleware",
-        decodedSession,
-      });
-      return;
-    } else {
-      return dbSession;
     }
   };
 
@@ -248,59 +315,69 @@ export abstract class SessionManager {
       return;
     }
 
-    if (!decodedSession) {
-      AdminLogManager.logError("No Session Decoded", {
-        from: "Signature Validation Middleware",
-        object: jwt.verify(signatureToken, process.env.JWT_SIGNATURE) as String,
-      });
-      return;
-    }
+    try {
+      if (!decodedSession) {
+        AdminLogManager.logError("No Session Decoded", {
+          from: "Signature Validation Middleware",
+          object: jwt.verify(signatureToken, process.env.JWT_SIGNATURE) as String,
+        });
+        return;
+      }
 
-    dbSession = await SessionDbManager.get(decodedSession);
-    if (!dbSession) {
-      AdminLogManager.logError("No Session Found", {
+      dbSession = await SessionDbManager.get(decodedSession);
+      if (!dbSession) {
+        AdminLogManager.logError("No Session Found", {
+          from: "Signature Validation Middleware",
+          decodedSession,
+        });
+        return;
+      }
+
+      if (dbSession.sessionEnd > DateTime.now().toUnixInteger()) {
+        AdminLogManager.logError("Session Already Ended.", {
+          from: "Signature Validation Middleware",
+          decodedSession,
+        });
+        return;
+      }
+
+      const initialAddress = dbSession?.connectedWallet, // the address that originally requested to connect
+        reportedAddress = signatureAccount, // the address that the client says signed the message
+        actualAddress = ethers.verifyMessage(
+          // who signed the message according to the cryptographic signature
+          signatureMessage,
+          signature
+        );
+
+      if (![initialAddress.toLowerCase(), reportedAddress.toLowerCase()].every((address) => address == actualAddress.toLowerCase())) {
+        AdminLogManager.logError("Signature/Session Address Mismatch", {
+          from: "Signature Validation Middleware",
+          decodedSession,
+          dbSession,
+          signatureAccount,
+        });
+        return;
+      }
+
+      if (dbSession.signatureToken !== signatureToken) {
+        AdminLogManager.logError("Signature Token Mismatch", {
+          from: "Signature Validation Middleware",
+          dbSession,
+          signatureToken,
+        });
+        return;
+      }
+
+      return dbSession;
+    } catch (error) {
+      AdminLogManager.logError("Signature Validation Failed", {
         from: "Signature Validation Middleware",
         decodedSession,
-      });
-      return;
-    }
-
-    if (dbSession.sessionEnd > DateTime.now().toUnixInteger()) {
-      AdminLogManager.logError("Session Already Ended.", {
-        from: "Signature Validation Middleware",
-        decodedSession,
-      });
-      return;
-    }
-
-    const initialAddress = dbSession?.connectedWallet, // the address that originally requested to connect
-      reportedAddress = signatureAccount, // the address that the client says signed the message
-      actualAddress = ethers.verifyMessage(
-        // who signed the message according to the cryptographic signature
-        signatureMessage,
-        signature
-      );
-
-    if (![initialAddress.toLowerCase(), reportedAddress.toLowerCase()].every((address) => address == actualAddress.toLowerCase())) {
-      AdminLogManager.logError("Signature/Session Address Mismatch", {
-        from: "Signature Validation Middleware",
-        decodedSession,
-        dbSession,
-        signatureAccount,
-      });
-      return;
-    }
-
-    if (dbSession.signatureToken !== signatureToken) {
-      AdminLogManager.logError("Signature Token Mismatch", {
-        from: "Signature Validation Middleware",
         dbSession,
         signatureToken,
       });
       return;
     }
-
-    return dbSession;
   };
 
   static validateRefreshToken: CallableFunction = async (config: { refreshToken: string; userId: string }) => {

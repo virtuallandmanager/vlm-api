@@ -12,6 +12,7 @@ export abstract class AdminLogManager {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.INFO);
     } catch (error: any) {
       this.logError(error, { from: "AdminLogManager.logInfo", metadata });
+      throw new Error(error);
     }
   };
   static logWarning = async (log: unknown, metadata: any, userInfo?: User.Account) => {
@@ -19,6 +20,7 @@ export abstract class AdminLogManager {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WARNING);
     } catch (error: any) {
       this.logError(error, { from: "AdminLogManager.logWarning", metadata });
+      throw new Error(error);
     }
   };
   static logError = async (log: unknown, metadata: any, userInfo?: User.Account, noCatch?: boolean) => {
@@ -33,6 +35,7 @@ export abstract class AdminLogManager {
         return;
       }
       this.logError(error, { from: "AdminLogManager.logError", metadata, failedOnce: true }, userInfo, true);
+      throw new Error(error);
     }
   };
   static logFatal = async (log: unknown, metadata: any, userInfo: User.Account) => {
@@ -40,6 +43,7 @@ export abstract class AdminLogManager {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.FATAL);
     } catch (error: any) {
       this.logError(error, { from: "AdminLogManager.logFatal", metadata });
+      throw new Error(error);
     }
   };
   static logWAT = async (log: unknown, metadata: any, userInfo?: User.Account) => {
@@ -47,6 +51,7 @@ export abstract class AdminLogManager {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WAT);
     } catch (error: any) {
       this.logError(error, { from: "AdminLogManager.logWAT", metadata });
+      throw new Error(error);
     }
   };
   static logExternalError = async (log: unknown, metadata: any, userInfo?: User.Account) => {
@@ -70,6 +75,7 @@ export abstract class AdminLogManager {
       `);
     } catch (error: any) {
       this.logError(error, { from: "AdminLogManager.logExternalError", metadata });
+      throw new Error(error);
     }
   };
 
@@ -80,7 +86,7 @@ export abstract class AdminLogManager {
         content,
       });
     } catch (error: any) {
-      throw `Failed to send Discord message: ${error}`;
+      throw new Error("Failed to log error to Discord.");
     }
   };
 }

@@ -79,7 +79,8 @@ export abstract class TransactionDbManager {
       }).promise();
     } catch (error) {
       AdminLogManager.logError(error, `Failed to update transaction status: ${JSON.stringify(error)}`);
-      throw error; // Or handle the error as needed
+      console.log(error);
+      return;
     }
   };
 
