@@ -184,11 +184,11 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         }
 
         sceneSettings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings);
-        const moderationSettings = sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION);
-
-
-        client.send("scene_preset_update", { action: "init", scenePreset, sceneSettings: { moderation: moderationSettings } });
+        sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION) };
       }
+
+      client.send("scene_preset_update", { action: "init", scenePreset, sceneSettings });
+
     });
     return false;
   } catch (error) {

@@ -15,6 +15,7 @@ export abstract class HistoryManager {
         element: state.pk,
         id: state.sk,
       };
+
     try {
       const history = new History.Config({ sk }),
         historyRoot = new History.Root({ sk, root: state }),
@@ -42,13 +43,17 @@ export abstract class HistoryManager {
     const { displayName } = user,
       userId = user.sk;
     try {
-      const history = await HistoryDbManager.get(new History.Config({ sk }));
-      let update;
+      let history = await HistoryDbManager.get(new History.Config({ sk })),
+        update;
+
+      if (!history) {
+        await HistoryManager.initHistory(user, { sk })
+      }
 
       if (history?.updates?.length === 0) {
         update = new History.Root({ sk, root: sceneData });
       } else if (!history) {
-        AdminLogManager.logError("History Log does not exist.", {
+        AdminLogManager.logError("History Log does not exist amd could not be created.", {
           text: "History log does not exist.",
           from: "History.logic/addUpdate",
         });

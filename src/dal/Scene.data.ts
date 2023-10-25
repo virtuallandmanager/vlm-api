@@ -41,7 +41,7 @@ export abstract class SceneDbManager {
 
     try {
       const sceneRecord = await daxClient.get(params).promise();
-      return sceneRecord.Item;
+      return sceneRecord.Item ? new Scene.Preset(sceneRecord.Item) : {};
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/getPreset",
@@ -383,7 +383,8 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addPresetsToScene: CallableFunction = async (sceneConfig: Scene.Config, scenePresets: Scene.Preset[]) => {
+  static addPresetsToScene: CallableFunction = async (sceneConfig: Scene.Config, presetConfig: Scene.Preset | Scene.Preset[]) => {
+    const scenePresets = Array.isArray(presetConfig) ? presetConfig : [presetConfig];
     const sks = scenePresets.map((preset: Scene.Preset) => preset.sk).filter((sk: string) => !sceneConfig?.presets?.includes(sk));
 
     let updateExpression = "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)";
@@ -549,13 +550,15 @@ export abstract class SceneDbManager {
 
     try {
       await docClient.transactWrite(params).promise();
-      const sceneSettings: Scene.Setting[] = [];
+      const scene = await this.get(sceneConfig),
+        settings: Scene.Setting[] = [];
 
       for (let i = 0; i < sks.length; i++) {
         const preset = await this.getSetting(sks[i]);
-        sceneSettings.push(preset);
+        settings.push(preset);
       }
-      return sceneSettings;
+
+      return { scene, settings };
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/addSettingsToScene",
@@ -1063,14 +1066,14 @@ export abstract class SceneDbManager {
       ExpressionAttributeValues: {
         ":prop": elementData[valueProp],
         ":elementTs": Number(elementData.ts),
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
     try {
       await daxClient.update(params).promise();
       elementData = await GenericDbManager.get(elementData);
-      scenePreset = options.skipPreset ? null : await this.getPreset(message.scenePreset.sk);
+      scenePreset = options?.skipPreset ? null : await this.getPreset(message.scenePreset.sk);
       return { scenePreset, elementData };
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -1106,19 +1109,19 @@ export abstract class SceneDbManager {
               "#videos": "videos",
               "#images": "images",
               "#nfts": "nfts",
+              "#models": "models",
               "#sounds": "sounds",
-              "#widgets": "widgets",
               "#claimPoints": "claimPoints",
-              "#models": "models"
+              "#widgets": "widgets",
             },
             ExpressionAttributeValues: {
               ":videos": videos,
               ":images": images,
               ":nfts": nfts,
+              ":models": models,
               ":sounds": sounds,
-              ":widgets": widgets,
               ":claimPoints": claimPoints,
-              ":models": models
+              ":widgets": widgets,
             },
             TableName: vlmMainTable,
           },

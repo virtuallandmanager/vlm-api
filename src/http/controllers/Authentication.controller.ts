@@ -181,7 +181,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       {
         address: user.userId,
         currency: "ETH",
-        ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toMillis() : undefined,
+        ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toUnixInteger() : undefined,
       },
       { displayName: user?.displayName, hasConnectedWeb3: user?.hasConnectedWeb3, lastIp: clientIp }
     );

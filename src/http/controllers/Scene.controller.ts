@@ -40,14 +40,10 @@ router.get("/cards", authMiddleware, async (req: Request, res: Response) => {
 router.post("/create", authMiddleware, async (req: Request, res: Response) => {
   try {
     const sceneConfig = req.body,
-      newScene = new Scene.Config(sceneConfig),
-      userAccount = await UserManager.getById(req.session.userId),
-      newSceneLink = new User.SceneLink({ sk: req.session.userId }, newScene),
-      scene = await SceneManager.createScene(newScene),
-      sceneLink = await SceneManager.createUserLink(newSceneLink),
-      fullScene = await SceneManager.buildScene(scene, req.body.locale);
+      user = await UserManager.getById(req.session.userId),
+      { sceneLink, fullScene } = await SceneManager.createSceneForUser(user, sceneConfig);
 
-    HistoryManager.initHistory(userAccount, fullScene);
+    HistoryManager.initHistory(user, fullScene);
 
     return res.status(200).json({
       text: "Successfully authenticated.",

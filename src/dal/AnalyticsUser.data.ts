@@ -41,7 +41,7 @@ export abstract class AnalyticsUserDbManager {
       return newUser;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "AnalyticsUser.data/obtain",
+        from: "AnalyticsUser.data/obtainByWallet",
         analyticsUserConfig,
       });
       console.log(error);

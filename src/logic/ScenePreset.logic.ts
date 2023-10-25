@@ -3,12 +3,14 @@ import { Scene } from "../models/Scene.model";
 import { SceneDbManager } from "../dal/Scene.data";
 import { AdminLogManager } from "./ErrorLogging.logic";
 import { SceneElementManager } from "./SceneElement.logic";
+import { SceneManager } from "./Scene.logic";
 
 export abstract class ScenePresetManager {
   // Scene Preset Operations //
-  static createScenePreset: CallableFunction = async (scenePreset: Scene.Preset) => {
+  static createScenePreset: CallableFunction = async (config: Scene.Preset) => {
     try {
-      return await GenericDbManager.put(scenePreset);
+      const scenePreset = new Scene.Preset(config);
+      return (await GenericDbManager.put(scenePreset)) as Scene.Setting;
     } catch (error) {
       AdminLogManager.logError(error, { from: "ScenePresetManager.createScenePreset" });
       return;
@@ -18,6 +20,7 @@ export abstract class ScenePresetManager {
   static createInitialPreset: CallableFunction = async (scene: Scene.Config, sk?: string) => {
     const firstPreset = new Scene.Preset({ name: "Signature Arrangement", sk: sk || null });
     scene.scenePreset = firstPreset.sk;
+    await SceneManager.updateSceneProperty({ scene, prop: "scenePreset", value: firstPreset.sk });
     const addPresetsResponse = await this.addPresetsToScene(scene, [firstPreset]);
     scene = addPresetsResponse.scene;
     scene.presets = addPresetsResponse.presets;
@@ -63,7 +66,7 @@ export abstract class ScenePresetManager {
     }
   };
 
-  static addPresetsToScene: CallableFunction = async (scene: Scene.Config, scenePresets: Scene.Preset[]) => {
+  static addPresetsToScene: CallableFunction = async (scene: Scene.Config, scenePresets: Scene.Preset | Scene.Preset[]) => {
     try {
       return await SceneDbManager.addPresetsToScene(scene, scenePresets);
     } catch (error) {

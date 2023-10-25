@@ -7,6 +7,7 @@ import { SceneSettingsManager } from "./SceneSettings.logic";
 import { ScenePresetManager } from "./ScenePreset.logic";
 import { GiveawayManager } from "./Giveaway.logic";
 import { DateTime } from "luxon";
+import { UserManager } from "./User.logic";
 
 export abstract class SceneManager {
   // Base Scene Operations //
@@ -35,7 +36,7 @@ export abstract class SceneManager {
       }
       return scene;
     } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneManager.createScene" });
+      AdminLogManager.logError(error, { from: "SceneManager.obtainScene" });
     }
   };
 
@@ -44,6 +45,28 @@ export abstract class SceneManager {
       return await SceneDbManager.put(scene);
     } catch (error) {
       AdminLogManager.logError(error, { from: "SceneManager.createScene" });
+    }
+  };
+
+  static createSceneForUser: CallableFunction = async (user: User.Account, sceneConfig?: Scene.Config) => {
+    try {
+      const newScene = new Scene.Config(sceneConfig),
+        initialPreset = new Scene.Preset({ name: "Signature Arrangement" }),
+        initialSettings = new Scene.DefaultSettings(newScene).settings,
+        newSceneLink = new User.SceneLink(user, newScene);
+      newScene.scenePreset = initialPreset.sk;
+      newScene.presets = [initialPreset.sk];
+      newScene.settings = initialSettings.map((setting) => setting.sk);
+      
+      const scene = await SceneManager.createScene(newScene),
+        { presets } = await ScenePresetManager.addPresetsToScene(scene, initialPreset),
+        { settings } = await SceneSettingsManager.addSettingsToScene(scene, initialSettings),
+        sceneLink = await SceneManager.createUserLink(newSceneLink),
+        fullScene = await SceneManager.buildScene(scene);
+
+      return { scene, sceneLink, fullScene, presets, settings };
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneManager.createSceneForUser" });
     }
   };
 
@@ -226,7 +249,7 @@ export abstract class SceneManager {
       const userState = await SceneDbManager.getSceneUserState(sceneId);
       return userState[key];
     } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneManager.getSceneElementById" });
+      AdminLogManager.logError(error, { from: "SceneManager.getUserStateByScene" });
       return;
     }
   };
@@ -239,7 +262,7 @@ export abstract class SceneManager {
       const userState = await SceneDbManager.getSceneUserState(sceneId);
       return await SceneDbManager.setSceneUserState(userState, key, value)
     } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneManager.getSceneElementById" });
+      AdminLogManager.logError(error, { from: "SceneManager.setUserStateByScene" });
       return;
     }
   };
@@ -258,6 +281,10 @@ export abstract class SceneManager {
           return new Scene.Video.Config(element);
         case "vlm.scene.video.instance":
           return new Scene.Video.Instance(element);
+        case "vlm.scene.model":
+          return new Scene.Model.Config(element);
+        case "vlm.scene.model.instance":
+          return new Scene.Model.Instance(element);
         case "vlm.scene.nft":
           return new Scene.NFT.Config(element);
         case "vlm.scene.sound":

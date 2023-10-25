@@ -199,7 +199,7 @@ export abstract class SceneElementManager {
     try {
       return await SceneDbManager.removeSceneElement(message);
     } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneElementManager.deleteSceneElement" });
+      AdminLogManager.logError({error, message}, { from: "SceneElementManager.removeSceneElement" });
       return;
     }
   };
