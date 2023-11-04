@@ -1,4 +1,4 @@
-import { docClient, vlmMainTable } from "./common.data";
+import { docClient, vlmUpdatesTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { History } from "../models/History.model";
@@ -8,7 +8,7 @@ export abstract class HistoryDbManager {
     const { pk, sk } = history;
 
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmUpdatesTable,
       Key: {
         pk,
         sk,
@@ -29,7 +29,7 @@ export abstract class HistoryDbManager {
 
   static getById: CallableFunction = async (sk: string) => {
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmUpdatesTable,
       Key: {
         pk: History.Config.pk,
         sk,
@@ -64,7 +64,7 @@ export abstract class HistoryDbManager {
             pk: History.Config.pk,
             sk,
           },
-          TableName: vlmMainTable,
+          TableName: vlmUpdatesTable,
         },
       });
     });
@@ -94,7 +94,7 @@ export abstract class HistoryDbManager {
               ...config,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmUpdatesTable,
           },
         },
         {
@@ -104,7 +104,7 @@ export abstract class HistoryDbManager {
               ...root,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmUpdatesTable,
           },
         },
         {
@@ -114,7 +114,7 @@ export abstract class HistoryDbManager {
               ...update,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmUpdatesTable,
           },
         },
       ],
@@ -141,7 +141,7 @@ export abstract class HistoryDbManager {
               ...update,
               ts: Date.now(),
             },
-            TableName: vlmMainTable,
+            TableName: vlmUpdatesTable,
           },
         },
         {
@@ -159,7 +159,7 @@ export abstract class HistoryDbManager {
               ":updateId": [update.sk],
               ":empty_list": [],
             },
-            TableName: vlmMainTable,
+            TableName: vlmUpdatesTable,
           },
         },
       ],
@@ -178,7 +178,7 @@ export abstract class HistoryDbManager {
 
   static put: CallableFunction = async (history: History.Config) => {
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmUpdatesTable,
       Item: {
         ...history,
         ts: Date.now(),

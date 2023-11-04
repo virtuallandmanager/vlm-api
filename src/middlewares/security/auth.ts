@@ -15,7 +15,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
   // If the token is not present, return an error response
   if (!sessionToken) {
-    return res.status(401).json({ error: "Unauthorized: No session token was provided." });
+    return res.status(401).json({ error: "Unauthorized: No access token was provided." });
   }
 
   // Verify the token
@@ -88,14 +88,10 @@ export async function analyticsAuthMiddleware(client: Client, message: { session
   }
 
   if (session?.sessionToken && session?.sessionToken !== sessionToken) {
-    AdminLogManager.logWarning("Client tokens were mismatched over WebSocket connection", { client, message, session });
-    AdminLogManager.logWarning("Issued a suspicious session", { client, message, session });
-    client.send("authentication_error", { message: "Invalid token" });
-    const newBotSession = new Analytics.Session.BotConfig({ sessionToken, sceneId });
-    await SessionManager.initAnalyticsSession(newBotSession);
-    await SessionManager.startAnalyticsSession(newBotSession);
-    session = newBotSession;
+    const WAT = true;
+    AdminLogManager.logErrorToDiscord(JSON.stringify({ error: "Client tokens were mismatched over WebSocket connection", client, message, session }), WAT);
   }
+
   if (session) {
     const user = await AnalyticsManager.getUserById(session.userId);
     next({ session, user });
@@ -104,14 +100,18 @@ export async function analyticsAuthMiddleware(client: Client, message: { session
   next();
 }
 
-export async function userAuthMiddleware(client: Client, message: { sessionToken: string; sceneId: string }, next: ({ session, user }?: { session: User.Session.Config, user: User.Account }) => void) {
+export async function userAuthMiddleware(client: Client, message: { sessionToken: string; refreshToken: string; sceneId: string }, next: ({ session, user }?: { session: User.Session.Config, user: User.Account }) => void) {
   let session;
-  const { sessionToken, sceneId } = message;
+  const { sessionToken, refreshToken, sceneId } = message;
 
   // Perform token validation here
   if (sessionToken) {
     // Token is valid, allow access to the next message handling logic
     session = await SessionManager.validateUserSessionToken(sessionToken);
+  } else if (refreshToken) {
+    // Token is invalid or expired, check refresh token
+    session = await SessionManager.validateSessionRefreshToken(refreshToken);
+    session && await SessionManager.refreshSession(session);
   }
 
   if (session) {
@@ -119,7 +119,7 @@ export async function userAuthMiddleware(client: Client, message: { sessionToken
     next({ session, user });
     return;
   }
-  next({ session, user: null});
+  next({ session, user: null });
 }
 
 export async function alchemyWebhook(req: Request, res: Response, next: NextFunction) {

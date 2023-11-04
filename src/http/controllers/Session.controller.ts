@@ -1,13 +1,14 @@
 import express, { Request, Response } from "express";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { SessionManager } from "../../logic/Session.logic";
+
 const router = express.Router();
 
 router.get("/end", async (req: Request, res: Response) => {
   try {
     const { sessionData, pathId, pathSegments } = req.body;
     const session = await SessionManager.getAnalyticsSession(sessionData);
-    if (!session){
+    if (!session) {
       return res.status(400).json({
         text: "Invalid request.",
       });
@@ -28,5 +29,6 @@ router.get("/end", async (req: Request, res: Response) => {
     });
   }
 });
+
 
 export default router;

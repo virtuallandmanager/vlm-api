@@ -25,11 +25,37 @@ export abstract class SessionManager {
     try {
       const recentSession = await SessionDbManager.getRecentAnalyticsSession(config.userId);
       if (recentSession) {
-        await SessionDbManager.revive(recentSession);
+        await SessionDbManager.refresh(recentSession);
       }
       return recentSession || await SessionDbManager.start(new Analytics.Session.Config(config));
     } catch (error: any) {
       AdminLogManager.logError("Failed to start analytics session", config);
+      console.log(error);
+      return;
+    }
+  };
+
+  static startBotSession: CallableFunction = async (config: Analytics.Session.BotConfig) => {
+    try {
+      const recentSession = await SessionDbManager.getRecentAnalyticsSession(config.userId);
+      if (recentSession) {
+        await SessionDbManager.refresh(recentSession);
+      }
+      return recentSession || await SessionDbManager.start(new Analytics.Session.Config(config));
+    } catch (error: any) {
+      AdminLogManager.logError("Failed to start analytics session", config);
+      console.log(error);
+      return;
+    }
+  };
+
+  static refreshSession: CallableFunction = async (config: User.Session.Config) => {
+    try {
+      this.issueUserSessionToken(config);
+      this.issueSignatureToken(config);
+      return await SessionDbManager.refresh(config);
+    } catch (error: any) {
+      AdminLogManager.logError("Failed to refresh session", config);
       console.log(error);
       return;
     }
@@ -51,12 +77,12 @@ export abstract class SessionManager {
       if (session && session.pk && session.sk && !session.sessionEnd) {
         await SessionDbManager.end(session);
       } else if (session.sessionEnd) {
-        AdminLogManager.logError("Tried to end a session that is already over", session);
+        AdminLogManager.logError("Tried to end a session that is already over", session.sk);
       } else {
-        AdminLogManager.logError("Session failed to end", session);
+        AdminLogManager.logError("Session failed to end", session.sk);
       }
     } catch (error: any) {
-      AdminLogManager.logError("Session failed to end", session);
+      AdminLogManager.logError("Session failed to end", session.sk);
       console.log(error);
       return;
     }
@@ -77,7 +103,7 @@ export abstract class SessionManager {
     try {
       return await SessionDbManager.create(session, { minutes: 10 });
     } catch (error) {
-      AdminLogManager.logError("Failed to store pre-session", session);
+      AdminLogManager.logError("Failed to store pre-session", session.sk);
     }
   };
 
@@ -90,7 +116,7 @@ export abstract class SessionManager {
       await SessionDbManager.start(session);
       return session;
     } catch (error) {
-      AdminLogManager.logError("Failed to store pre-session", config);
+      AdminLogManager.logError("Failed to store pre-session", config.sk);
       console.log(error);
       return;
     }
@@ -151,18 +177,18 @@ export abstract class SessionManager {
   };
 
   static issueUserSessionToken: CallableFunction = (session: User.Session.Config) => {
-    session.expires = DateTime.now().plus({ hours: 12 }).toUnixInteger();
+    session.expires = DateTime.now().plus({ minutes: 30 }).toUnixInteger();
     session.sessionToken = jwt.sign(
       {
         pk: session.pk,
         sk: session.sk,
         userId: session.userId,
-        iat: Math.floor(Date.now() / 1000) - 30,
+        iat: DateTime.now().toUnixInteger(),
         nonce: Date.now(),
       },
       process.env.JWT_ACCESS,
       {
-        expiresIn: "6h",
+        expiresIn: "30m",
       }
     );
     return session.sessionToken;
@@ -175,7 +201,7 @@ export abstract class SessionManager {
         pk: session.pk,
         sk: session.sk,
         userId: session.userId,
-        iat: Math.floor(Date.now() / 1000) - 30,
+        iat: DateTime.now().toUnixInteger(),
         nonce: Date.now(),
       },
       process.env.JWT_ANALYTICS,
@@ -186,20 +212,21 @@ export abstract class SessionManager {
     return session.sessionToken;
   };
 
-  static issueRefreshToken: CallableFunction = (session: User.Session.Config | Analytics.Session.Config) => {
-    session.expires = DateTime.now().plus({ hours: 12 }).toUnixInteger();
-    session.sessionToken = jwt.sign(
+  static issueRefreshToken: CallableFunction = (session: User.Session.Config) => {
+    session.expires = DateTime.now().plus({ days: 14 }).toUnixInteger();
+    session.refreshToken = jwt.sign(
       {
+        sk: session.sk,
         userId: session.userId,
-        iat: Math.floor(Date.now() / 1000) - 30,
+        iat: DateTime.now().toUnixInteger(),
         nonce: Date.now(),
       },
       process.env.JWT_REFRESH,
       {
-        expiresIn: "24h",
+        expiresIn: "14d",
       }
     );
-    return session.sessionToken;
+    return session.refreshToken;
   };
 
   static issueSignatureToken: CallableFunction = (session: Analytics.Session.Config | User.Session.Config) => {
@@ -380,16 +407,46 @@ export abstract class SessionManager {
     }
   };
 
-  static validateRefreshToken: CallableFunction = async (config: { refreshToken: string; userId: string }) => {
-    const { refreshToken } = config;
+  static validateSessionRefreshToken: CallableFunction = async (refreshToken: string) => {
+    let decodedSession: Partial<User.Session.Config>;
     try {
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH) as BaseSession.Config;
-      if (decoded?.userId == config.userId) {
-        const user = await UserManager.getById(decoded.userId);
-        return user;
+      decodedSession = jwt.verify(refreshToken, process.env.JWT_REFRESH) as Partial<User.Session.Config>;
+    } catch (error) {
+      return false;
+    }
+
+    try {
+      let dbSession = await SessionDbManager.get({ pk: User.Session.Config.pk, ...decodedSession });
+
+      if (!dbSession) {
+        AdminLogManager.logError("No Session Found", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return false;
+      }
+
+      if (dbSession.refreshToken !== refreshToken) {
+        AdminLogManager.logWarning("Session Token Mismatch", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return;
+      } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
+        AdminLogManager.logInfo("Session Has Ended", {
+          from: "Session Validation Middleware",
+          decodedSession,
+        });
+        return;
+      } else {
+        return dbSession;
       }
     } catch (error) {
-      return;
+      AdminLogManager.logError("Session Validation Failed", {
+        from: "Session Validation Middleware",
+        decodedSession,
+      });
+      return false;
     }
   };
 

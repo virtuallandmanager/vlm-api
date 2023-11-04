@@ -4,6 +4,8 @@ import { OrganizationManager } from "../../logic/Organization.logic";
 import { authMiddleware, vlmAdminMiddleware } from "../../middlewares/security/auth";
 import { AdminManager } from "../../logic/Admin.logic";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
+import { MigrationDbManager } from "../../dal/Migration.data";
+import { vlmMainTable, vlmUpdatesTable } from "../../dal/common.data";
 const router = express.Router();
 
 router.get("/panel", authMiddleware, vlmAdminMiddleware, async (req: Request, res: Response) => {
@@ -123,5 +125,7 @@ router.post("/update", authMiddleware, vlmAdminMiddleware, async (req: Request, 
     });
   }
 });
+
+
 
 export default router;

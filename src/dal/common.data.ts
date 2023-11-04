@@ -52,7 +52,8 @@ export const vlmMainTable = process.env.NODE_ENV == "production" ? "vlm_main" : 
 export const vlmAnalyticsTable = process.env.NODE_ENV == "production" ? "vlm_analytics" : `vlm_analytics${process.env.DEV_TABLE_EXT}`;
 export const vlmLogTable = process.env.NODE_ENV == "production" ? "vlm_logs" : `vlm_logs${process.env.DEV_TABLE_EXT}`;
 export const vlmUpdatesTable = process.env.NODE_ENV == "production" ? "vlm_updates" : `vlm_updates${process.env.DEV_TABLE_EXT}`;
-export const vlmLandLegacyTable = "vlm_land";
+export const vlmUsersTable = process.env.NODE_ENV == "production" ? "vlm_users" : `vlm_users${process.env.DEV_TABLE_EXT}`;
+export const vlmSessionsTable = process.env.NODE_ENV == "production" ? "vlm_sessions" : `vlm_sessions${process.env.DEV_TABLE_EXT}`;
 
 export const batchQuery: CallableFunction = async (params: AWS.DynamoDB.QueryInput, allData: any[]) => {
   if (!allData) {

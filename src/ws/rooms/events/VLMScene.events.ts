@@ -66,7 +66,6 @@ export function bindEvents(room: VLMScene) {
     host_left: handleHostLeft,
 
     analytics_user_joined: handleAnalyticsUserJoined,
-    store_emote: handleStoreEmote,
 
     user_message: handleUserMessage,
     get_user_state: handleGetUserState,
@@ -93,6 +92,9 @@ export function bindEvents(room: VLMScene) {
     scene_sound_locator: handleToggleSoundLocators,
 
     giveaway_claim: handleGiveawayClaim,
+
+    request_player_position: handleRequestPlayerPosition,
+    send_player_position: handleSendPlayerPosition
   };
 
   Object.keys(eventHandlers).forEach((eventType) => {
@@ -230,7 +232,7 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
     const sceneClients = room.clients.filter((c) => c.auth.session.sceneId == session.sceneId && c.auth.user.sk != client.auth.user.sk);
     console.log(`sceneClients remaining for ${session.sceneId} - `, sceneClients);
     if (sceneClients.length < 1) {
-      room.state.streams = room.state.streams.filter((stream) => stream.sceneId != session.sceneId);
+      room.state.streams = room.state.streams.filter((stream) => room.state.sceneId != session.sceneId);
     }
 
     return false;
@@ -275,26 +277,8 @@ export async function handleAnalyticsUserJoined(client: Client, message: any, ro
   // Logic for analytics_user_joined message
   try {
     const { user } = message;
-    const triggeringClient = room.clients.find((c) => c.sessionId === client.sessionId);
-    if (room.state.emotes.has(user.sk)) {
-      message.emote = room.state.emotes.get(user.sk);
-    }
+    room.state.needsUpdate.push(user.sk);
     console.log("Analytics User Joined: ", user.displayName, user.connectedWallet);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-export async function handleStoreEmote(client: Client, message: any, room: VLMScene) {
-  // Logic for store_emote message
-  try {
-    const userId = client.auth.user.sk;
-    if (userId && message.emote) {
-      room.state.emotes.set(userId, message.emote);
-    } else {
-      room.state.emotes.delete(userId);
-    }
     return true;
   } catch (error) {
     return false;
@@ -473,7 +457,7 @@ export async function handleSceneAddPresetRequest(client: Client, message: { sce
   try {
     const { user } = client.auth;
     const { scene, preset } = await ScenePresetManager.addPresetToScene(message.scene);
-    HistoryManager.addUpdate(client.auth.user, client.auth.sceneId, { action: "create", element: "scene", property: "preset" }, message.scene);
+    HistoryManager.addUpdate(client.auth.user, client.auth.sceneId, { action: "created", element: "scene", property: "preset" }, message.scene);
     client.send("scene_add_preset_response", { user, scene, preset });
     return false;
   } catch (error) {
@@ -486,7 +470,7 @@ export async function handleSceneClonePresetRequest(client: Client, message: { p
   try {
     const { user } = client.auth;
     const { scene, preset } = await ScenePresetManager.clonePreset(message.scene, message.presetId);
-    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "clone", element: "scene", property: "preset", id: message.presetId }, message.scene);
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "cloned", element: "scene", property: "preset", id: message.presetId }, message.scene);
     client.send("scene_clone_preset_response", { user, scene, preset, presetId: message.presetId });
     return false;
   } catch (error) {
@@ -510,7 +494,7 @@ export async function handleSceneChangePreset(client: Client, message: VLMSceneM
     if (typeof preset === "string") {
       preset = await ScenePresetManager.getScenePresetById(preset);
     }
-    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "update", element: "scene", property: "preset", from: message.sceneData.scenePreset, to: preset.sk }, scene);
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "updated", element: "scene", property: "preset", from: message.sceneData.scenePreset, to: preset.sk }, scene);
     room.broadcast("scene_change_preset", { user, scene, preset });
     return false;
   } catch (error) {
@@ -565,20 +549,22 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
     }
 
     if (message.element === "video" && message.elementData.instances.length > 0) {
-      const filteredPresetVideos = room.state.streams.filter((stream: SceneStream) => stream.sceneId !== client.auth.session.sceneId && stream.presetId !== message.scenePreset.sk);
+      const filteredPresetVideos = room.state.streams.filter((stream: SceneStream) => stream.presetId !== message.scenePreset.sk);
       const presetVideos = message.scenePreset.videos as Scene.Video.Config[];
       room.state.streams.length = 0;
       room.state.streams.push(...filteredPresetVideos);
       presetVideos.forEach((video: Scene.Video.Config) => {
         if (!video.liveSrc || !video.enableLiveStream || !video.enabled) return;
-        const stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status: null, presetId: message.scenePreset.sk, sceneId: client.auth.session.sceneId });
+        const stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status: null, presetId: message.scenePreset.sk });
         room.state.streams.push(stream);
       });
     }
 
     message.user = (({ displayName, sk, connectedWallet }) => ({ displayName, sk, connectedWallet }))({ ...client.auth.session, ...client.auth.user, });
+    const historyAction = message.action === "create" ? "created" : message.action === "update" ? "updated" : "deleted";
+    const historyElement = message.instance ? `${message.element} instance` : message.element;
 
-    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: message.action, element: message.element, property: message.property || "preset", id: message.id });
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: historyAction, element: historyElement || "preset", id: message.id });
     return true;
   } catch (error) {
     console.log(error);
@@ -593,10 +579,10 @@ export async function handleSettingUpdate(client: Client, message: VLMSceneMessa
     const scene = await SceneManager.getSceneById(message.sceneData.sk);
     if (scene.settings.includes(sceneSetting.sk)) {
       await SceneSettingsManager.updateSceneSetting(scene, sceneSetting);
-      HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "update", element: "scene", property: "setting", id: message.id }, message.sceneData);
+      HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "updated", element: "scene", property: "setting", id: message.id }, message.sceneData);
     } else {
       await SceneSettingsManager.addSettingsToScene(scene, [sceneSetting]);
-      HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "create", element: "scene", property: "setting", id: message.id }, message.sceneData);
+      HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "created", element: "scene", property: "setting", id: message.id }, message.sceneData);
     }
     message.user = (({ displayName, sk, connectedWallet }) => ({ displayName, sk, connectedWallet }))({ ...client.auth.session, ...client.auth.user, });
     console.log(message)
@@ -608,7 +594,7 @@ export async function handleSettingUpdate(client: Client, message: VLMSceneMessa
 
 export function handleSceneDelete(client: Client, message: any, room: Room) {
   // Logic for scene_delete message
-  HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "delete", element: "scene", id: message.id });
+  HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "deleted", element: "scene", id: message.id });
   try {
     return false;
   } catch (error) {
@@ -620,16 +606,25 @@ export function handleModeratorMessage(client: Client, message: any, room: Room)
   try {
     // Logic for scene_moderator_message message
     console.log("Moderator Message: ", message)
-    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "sent moderator message", message })
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "sent", element: "moderator message", message })
     return true;
   } catch (error) {
     return false;
   }
 }
 
-export function handleModeratorCrash(client: Client, message: any, room: Room) {
+export function handleModeratorCrash(client: Client, message: { connectedWallet: string, displayName: string }, room: Room) {
   // Logic for scene_moderator_crash message
-  HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "nuked a user", message })
+  let property;
+  if (message.connectedWallet && message.displayName) {
+    property = `${message.displayName}(${message.connectedWallet})`;
+  } else if (message.displayName) {
+    property = message.displayName;
+  } else if (message.connectedWallet) {
+    property = message.connectedWallet;
+  }
+
+  HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: "nuked", element: "user", property, message })
   try {
     return true;
   } catch (error) {
@@ -681,3 +676,30 @@ export async function handleGiveawayClaim(client: Client, message: { sk: string,
     return false;
   }
 }
+
+export async function handleRequestPlayerPosition(client: Client, message: { userId?: string, connectedWallet?: string }, room: VLMScene) {
+  // Logic for request_player_position message
+  try {
+    const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk);
+    // const inWorldUser = room.clients.find((c) => c.auth.session.pk === Analytics.Session.Config.pk && c.auth.user.sk === message.userId || c.auth.user.connectedWallet === message.connectedWallet);
+    if (inWorldUser) {
+      inWorldUser.send("request_player_position", message);
+    } else {
+      client.send("send_player_position", null);
+    }
+    return false;
+  } catch (error) {
+    return false;
+  }
+};
+
+export async function handleSendPlayerPosition(client: Client, message: { userId?: string, connectedWallet?: string }, room: VLMScene) {
+  // Logic for send_player_position message
+  try {
+    room.clients.forEach((c) => { c.send("send_player_position", message) });
+    room.clients.find((c) => c.auth.session.pk === User.Session.Config.pk && c.auth.user.sk === message.userId || c.auth.user.connectedWallet === message.connectedWallet)?.send("send_player_position");
+    return false;
+  } catch (error) {
+    return false;
+  }
+};

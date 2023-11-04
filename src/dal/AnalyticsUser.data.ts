@@ -1,4 +1,4 @@
-import { docClient, vlmMainTable } from "./common.data";
+import { docClient, vlmAnalyticsTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Analytics } from "../models/Analytics.model";
 
@@ -53,7 +53,7 @@ export abstract class AnalyticsUserDbManager {
     const { pk, sk } = analyticsUser;
 
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       Key: {
         pk,
         sk,
@@ -76,7 +76,7 @@ export abstract class AnalyticsUserDbManager {
   static getByWallet = async (connectedWallet: string) => {
 
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       IndexName: "connectedWallet-index",
       KeyConditionExpression: "#pk = :pk and #connectedWallet = :connectedWallet",
       ExpressionAttributeNames: {
@@ -91,6 +91,7 @@ export abstract class AnalyticsUserDbManager {
 
     try {
       const analyticsUserRecord = await docClient.query(params).promise();
+      if (analyticsUserRecord.Items.length === 0) return;
       const analyticsUserPartial = new Analytics.User.Account(analyticsUserRecord.Items[0]);
       if (analyticsUserPartial) {
         return await this.get(analyticsUserPartial);
@@ -109,7 +110,7 @@ export abstract class AnalyticsUserDbManager {
 
   static getById = async (sk: string) => {
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       Key: {
         pk: Analytics.User.Account.pk,
         sk,
@@ -131,7 +132,7 @@ export abstract class AnalyticsUserDbManager {
 
   static put = async (analyticsUser: Analytics.User.Account) => {
     const params = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       Item: {
         ...analyticsUser,
         ts: Date.now(),

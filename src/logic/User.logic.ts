@@ -6,7 +6,6 @@ import { UserDbManager } from "../dal/User.data";
 import { UserWalletDbManager } from "../dal/UserWallet.data";
 import { User } from "../models/User.model";
 import { BaseWallet } from "../models/Wallet.model";
-import { AnalyticsManager } from "./Analytics.logic";
 import { AdminLogManager } from "./ErrorLogging.logic";
 
 export abstract class UserManager {

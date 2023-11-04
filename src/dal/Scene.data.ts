@@ -1,5 +1,5 @@
 import { User } from "../models/User.model";
-import { daxClient, docClient, vlmLandLegacyTable, vlmMainTable } from "./common.data";
+import { daxClient, docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { AttributeMap, DocumentClient } from "aws-sdk/clients/dynamodb";
 import { largeQuery } from "../helpers/data";
@@ -143,38 +143,6 @@ export abstract class SceneDbManager {
       });
       return;
     }
-  };
-
-  static getLegacy: CallableFunction = async (baseParcel: string) => {
-    var params = {
-      TableName: vlmLandLegacyTable,
-      IndexName: "vlm_land_baseParcel",
-      KeyConditionExpression: "#baseParcel = :baseParcel",
-      ExpressionAttributeNames: {
-        "#baseParcel": "baseParcel",
-      },
-      ExpressionAttributeValues: {
-        ":baseParcel": baseParcel,
-      },
-    };
-    const data = await docClient.query(params).promise();
-    const scene = data.Items.find((parcel: AttributeMap) => {
-      return `${parcel.x},${parcel.y}` == baseParcel;
-    });
-
-    return scene;
-  };
-
-  static getAllLegacy: CallableFunction = async () => {
-    var params = {
-      TableName: vlmLandLegacyTable,
-    };
-    const data = await docClient.scan(params).promise();
-    const scenes = data.Items.filter((parcel: AttributeMap) => {
-      return parcel.baseParcel && parcel.propertyName;
-    });
-
-    return scenes;
   };
 
   static getIdsForUser: CallableFunction = async (user: User.Account) => {

@@ -17,7 +17,6 @@ import { OrganizationManager } from "../../logic/Organization.logic";
 import { Organization } from "../../models/Organization.model";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { SceneManager } from "../../logic/Scene.logic";
-import { deepEqual } from "assert";
 
 router.get("/web3", async (req: Request, res: Response) => {
   const address = extractToken(req).toLowerCase(),
@@ -41,10 +40,11 @@ router.get("/web3", async (req: Request, res: Response) => {
       newSession = new User.Session.Config(sessionConfig);
       await SessionManager.getIpData(newSession);
       SessionManager.issueUserSessionToken(newSession);
+      SessionManager.issueRefreshToken(newSession);
       SessionManager.issueSignatureToken(newSession);
       await SessionManager.storePreSession(newSession);
     } else {
-      await SessionManager.renew(existingSession);
+      existingSession = await SessionManager.refreshSession(existingSession);
     }
 
     const session = existingSession || newSession;
@@ -72,7 +72,10 @@ router.post("/login", web3AuthMiddleware, async (req: Request, res: Response) =>
   try {
     if (!session.sessionStart) {
       await SessionManager.startVLMSession(session);
+    } else {
+      await SessionManager.refreshSession(session);
     }
+
 
     const user = await UserManager.obtain(
       new User.Account({
@@ -102,11 +105,18 @@ router.post("/login", web3AuthMiddleware, async (req: Request, res: Response) =>
   }
 });
 
-router.get("/restore", authMiddleware, async (req: Request, res: Response) => {
+router.get("/refresh", async (req: Request, res: Response) => {
   const clientIp = req.clientIp,
-    session = req.session;
+    refreshToken = extractToken(req);
 
   try {
+    let session = await SessionManager.validateSessionRefreshToken(refreshToken);
+    if (!session) {
+      return res.status(401).json({
+        text: "Invalid refresh token.",
+      });
+    }
+    session = await SessionManager.refreshSession(session);
     const user = await UserManager.obtain(
       new User.Account({
         sk: session.userId,

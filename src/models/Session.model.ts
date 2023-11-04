@@ -16,7 +16,8 @@ export namespace Session {
     sessionEnd?: EpochTimeStamp;
     ipData?: IPData;
     signatureToken?: string; // Granted for 3 minutes to allow for cryptographically signed login
-    sessionToken?: string; // Stored by client to allow login for 12h
+    refreshToken?: string; // Stored by client to allow refresh of session
+    sessionToken?: string; // Stored by client to allow login for 10m
     expires?: EpochTimeStamp;
     sceneId?: string;
     world?: Metaverse.Worlds;

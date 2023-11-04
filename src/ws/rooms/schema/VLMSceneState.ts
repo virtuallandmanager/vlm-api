@@ -10,9 +10,6 @@ export class SceneStream extends Schema {
   @type("string")
   presetId: string;
 
-  @type("string")
-  sceneId: string;
-
   @type("boolean")
   status: boolean;
 }
@@ -22,14 +19,14 @@ export class VLMSceneState extends Schema {
   sceneId: string;
   @type([SceneStream])
   streams = new ArraySchema<SceneStream>();
-  @type({ map: "string" })
-  emotes = new MapSchema<string>();
   @type("number")
   streamIndex = 0;
   @type("number")
   skipped = 0;
   @type("number")
   batchSize = 1;
+  @type(["string"])
+  needsUpdate: string[] = [];
 
   constructor(sceneId: string) {
     super();

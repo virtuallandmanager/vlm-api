@@ -56,7 +56,7 @@ export class VLMScene extends Room<VLMSceneState> {
     }
     this.state.streams = this.removeDuplicates(this.state.streams);
     console.log(`--- Checking Streams ---`);
-    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status} - ${stream.sceneId}`).join("\n ")}`);
+    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status} - ${this.state.sceneId}`).join("\n ")}`);
 
     if (this.state.streamIndex >= this.state.streams.length) {
       this.state.streamIndex = 0;
@@ -72,20 +72,16 @@ export class VLMScene extends Room<VLMSceneState> {
       if (status !== streamStatus) {
         stream.status = status;
         console.log(`Stream State Changed:`);
-        console.log(`Scene: ${stream.sceneId} | Stream: ${stream.url} | Status: ${status}`);
+        console.log(`Scene: ${this.state.sceneId} | Stream: ${stream.url} | Status: ${status}`);
         // Send a message to anyone in the room that has a matching sceneId
-        for (const [sessionId, client] of Object.entries(this.clients)) {
-          if (client.auth?.session.sceneId === stream.sceneId) {
-            client.send("scene_video_status", { sk: stream.sk, status, url: stream.url });
-          }
-        }
+        this.broadcast("scene_video_status", { sk: stream.sk, status, url: stream.url });
       }
     }
     this.state.streamIndex += this.state.batchSize;
   }
 
   async onAuth(client: Client, sessionConfig: Session.Config) {
-    const { sessionToken, sceneId } = sessionConfig;
+    const { sessionToken, refreshToken, sceneId } = sessionConfig;
     try {
       let auth: { session: Session.Config; user: Analytics.User.Account } = { session: sessionConfig, user: {} };
 
@@ -101,7 +97,7 @@ export class VLMScene extends Room<VLMSceneState> {
         const response = await this.connectAnalyticsUser(client, auth.session, auth.user);
         auth.session = response.session;
       } else if (sessionConfig.host) {
-        await userAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
+        await userAuthMiddleware(client, { sessionToken, refreshToken, sceneId }, ({ session, user }) => {
           auth.session = session;
           auth.user = user;
           if (!auth.session || !auth.user) {

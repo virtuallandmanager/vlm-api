@@ -4,11 +4,7 @@ import { User } from "../models/User.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { UserWalletDbManager } from "./UserWallet.data";
 import { VLMRecord } from "../models/VLM.model";
-import { GenericDbManager } from "./Generic.data";
 import { largeQuery } from "../helpers/data";
-import { SceneDbManager } from "./Scene.data";
-import { Scene } from "../models/Scene.model";
-import { BalanceDbManager } from "./Balance.data";
 
 export abstract class UserDbManager {
   static obtain: CallableFunction = async (user: User.Account) => {
