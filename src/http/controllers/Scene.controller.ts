@@ -9,6 +9,7 @@ import { Scene } from "../../models/Scene.model";
 import { User } from "../../models/User.model";
 import { AdminLogManager } from "../../logic/ErrorLogging.logic";
 import { HistoryManager } from "../../logic/History.logic";
+import { AnalyticsManager } from "../../logic/Analytics.logic";
 const router = express.Router();
 
 router.get("/cards", authMiddleware, async (req: Request, res: Response) => {
@@ -61,6 +62,30 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+router.post("/invite/user", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { connectedWallet } = req.body;
+
+    if (connectedWallet) {
+      await SceneManager.inviteUserByWallet(connectedWallet);
+    } else {
+      // TODO: invite user by email/web2 id
+    }
+
+    return res.status(200).json({
+      text: `Invite sent to ${connectedWallet}.`,
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "Scene.controller/invite/user",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
 router.get("/demo", authMiddleware, async (req: Request, res: Response) => {
   try {
     const scene = await SceneManager.getSceneById("00000000-0000-0000-0000-000000000000");
@@ -72,30 +97,6 @@ router.get("/demo", authMiddleware, async (req: Request, res: Response) => {
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {
       from: "Scene.controller/demo",
-    });
-    return res.status(500).json({
-      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
-      error,
-    });
-  }
-});
-
-router.get("/migrate", async (req: Request, res: Response) => {
-  // const { x, y } = req.params;
-  try {
-    const migrations: Decentraland.Scene.Config[] = [];
-    const legacyScenes = await SceneManager.getLegacyScenes();
-    await legacyScenes.forEach(async (legacyScene: LegacySceneConfig) => {
-      const migration = await MigrationManager.migrateLegacyScene(legacyScene);
-      migrations.push(migration);
-    });
-    return res.status(200).json({
-      text: "Successfully migrated!",
-      migrations,
-    });
-  } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
-      from: "Scene.controller/migrate",
     });
     return res.status(500).json({
       text: JSON.stringify(error) || "Something went wrong on the server. Try again.",

@@ -18,7 +18,7 @@ export namespace Scene {
     settings?: Array<string | Setting> = [];
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
     packageVersion?: string = "";
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config?: Config) {
       this.sk = config?.sk || this.sk;
@@ -48,7 +48,7 @@ export namespace Scene {
     models?: string[] | Model.Config[] = [];
     locale?: string = "en-US";
     createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config?: Preset, clone: boolean = false) {
       if (!clone && config) {
@@ -77,7 +77,7 @@ export namespace Scene {
     type?: SettingType;
     settingName?: string;
     settingValue?: unknown;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Setting) {
       this.sk = config.sk || this.sk;
@@ -94,7 +94,7 @@ export namespace Scene {
     pk?: string = UserState.pk;
     sk?: string;
     state?: { [id: string]: unknown };
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: UserState) {
       this.sk = config.sk;
@@ -120,7 +120,7 @@ export namespace Scene {
     pk?: string;
     sk?: string = uuidv4();
     name?: string;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
   }
 
   export class DefaultSettings {
@@ -151,14 +151,14 @@ export namespace Scene {
 
   export class Invite {
     static pk: string = "vlm:scene:invite";
-    pk?: string = Config.pk;
+    pk?: string = Invite.pk;
     sk?: string = uuidv4();
     userId?: string;
     sceneId?: string;
     startTime?: EpochTimeStamp;
     endTime?: EpochTimeStamp;
     permissions?: Permissions;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config?: Invite) {
       if (!config) {
@@ -206,6 +206,7 @@ export namespace Scene {
       emission?: number = 1;
       enableLiveStream?: boolean = false;
       instances?: string[] | Instance[] = [];
+      isLive?: boolean;
       liveSrc?: string = "";
       offType?: SourceType = SourceType.NONE;
       offImageSrc?: string = "";
@@ -214,8 +215,9 @@ export namespace Scene {
       enabled?: boolean = true;
       volume?: number = 1;
       withCollisions?: boolean = true;
+      castShadows?: boolean
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config = {}) {
         super();
@@ -227,6 +229,7 @@ export namespace Scene {
         this.emission = config.emission;
         this.enableLiveStream = config.enableLiveStream;
         this.instances = config.instances;
+        this.isLive = config.isLive;
         this.liveSrc = config.liveSrc;
         this.offType = config.offType;
         this.offImageSrc = config.offImageSrc;
@@ -235,6 +238,7 @@ export namespace Scene {
         this.enabled = config.enabled;
         this.volume = config.volume;
         this.withCollisions = config.withCollisions;
+        this.castShadows = config.castShadows;
         this.createdAt = config.createdAt;
         this.ts = config.ts;
       }
@@ -254,7 +258,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -292,6 +296,9 @@ export namespace Scene {
       clickEvent?: ClickEvent;
       emission?: number;
       imageSrc?: string;
+      bumpSrc?: string;
+      emissiveSrc?: string;
+      alphaSrc?: string;
       thumbnailSrc?: string;
       textureSrc?: string;
       height?: number | string;
@@ -302,8 +309,9 @@ export namespace Scene {
       enabled?: boolean;
       isTransparent?: boolean;
       withCollisions?: boolean;
+      castShadows?: boolean
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config = {}) {
         super();
@@ -324,6 +332,7 @@ export namespace Scene {
         this.parent = config.parent;
         this.enabled = config.enabled;
         this.withCollisions = config.withCollisions;
+        this.castShadows = config.castShadows;
         this.createdAt = config.createdAt;
         this.ts = config.ts;
       }
@@ -343,7 +352,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -381,7 +390,7 @@ export namespace Scene {
       isTransparent?: boolean;
       withCollisions?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config = {}) {
         super();
@@ -417,7 +426,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -437,6 +446,7 @@ export namespace Scene {
   }
 
   export namespace Model {
+    // models are called meshes in some integration packages
     export class Config extends Element {
       static pk?: string = "vlm:scene:model"; // Partition Key
       pk?: string = Config.pk; // Partition Key
@@ -449,7 +459,7 @@ export namespace Scene {
       instances?: string[] | Instance[] = [];
       enabled?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config = {}) {
         super();
@@ -479,7 +489,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -518,7 +528,7 @@ export namespace Scene {
       sourceType?: SourceType = SourceType.CLIP;
       enabled?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config = {}) {
         super();
@@ -552,7 +562,7 @@ export namespace Scene {
       parent?: string;
       customRendering?: boolean;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Instance = {}) {
         this.sk = config.sk || this.sk; // Sort Key
@@ -584,7 +594,7 @@ export namespace Scene {
       value?: number | string | Object | Array<unknown> | boolean;
       range?: [number, number];
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config = {}) {
         super();
@@ -634,7 +644,7 @@ export namespace Scene {
       withCollisions?: boolean;
       properties?: ClaimPointProperties = defaultClaimPointProperties;
       createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Partial<ClaimPoint> = {}) {
         this.sk = config.sk || this.sk; // Sort Key

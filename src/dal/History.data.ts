@@ -2,6 +2,7 @@ import { docClient, vlmUpdatesTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { History } from "../models/History.model";
+import { DateTime } from "luxon";
 
 export abstract class HistoryDbManager {
   static get: CallableFunction = async (history: History.Config) => {
@@ -71,7 +72,9 @@ export abstract class HistoryDbManager {
 
     try {
       const response = await docClient.transactGet(params).promise(),
-        historys = response.Responses.map((item) => item.Item as History.Config);
+        historys = response.Responses.map(
+          (item) => item.Item as History.Config
+        );
       return historys?.length ? historys : [];
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -82,8 +85,12 @@ export abstract class HistoryDbManager {
     }
   };
 
-  static initHistory: CallableFunction = async (config: History.Config, root: History.Root, update: History.Update) => {
-    const ts = Date.now();
+  static initHistory: CallableFunction = async (
+    config: History.Config,
+    root: History.Root,
+    update: History.Update
+  ) => {
+    const ts = DateTime.now().toUnixInteger();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -131,7 +138,10 @@ export abstract class HistoryDbManager {
     }
   };
 
-  static addUpdateToHistory: CallableFunction = async (history: History.Config, update: History.Update) => {
+  static addUpdateToHistory: CallableFunction = async (
+    history: History.Config,
+    update: History.Update
+  ) => {
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -139,7 +149,7 @@ export abstract class HistoryDbManager {
             // Add a history update
             Item: {
               ...update,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmUpdatesTable,
           },
@@ -151,7 +161,8 @@ export abstract class HistoryDbManager {
               pk: History.Config.pk,
               sk: history.sk,
             },
-            UpdateExpression: "set #updates = list_append(if_not_exists(#updates, :empty_list), :updateId)",
+            UpdateExpression:
+              "set #updates = list_append(if_not_exists(#updates, :empty_list), :updateId)",
             ExpressionAttributeNames: {
               "#updates": "updates",
             },
@@ -181,7 +192,7 @@ export abstract class HistoryDbManager {
       TableName: vlmUpdatesTable,
       Item: {
         ...history,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

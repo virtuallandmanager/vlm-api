@@ -28,6 +28,13 @@ export abstract class UserManager {
     return Math.max(...vlmUser.roles);
   };
 
+  static getInvites: CallableFunction = async (userId: string) => {
+    const orgInvites = await UserDbManager.getOrgInvites(userId),
+      sceneInvites = await UserDbManager.getSceneInvites(userId);
+
+    return { orgInvites, sceneInvites };
+  };
+
   static update: CallableFunction = async (vlmUser: User.Account) => {
     return await UserDbManager.put(vlmUser);
   };

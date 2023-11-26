@@ -5,6 +5,10 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { UserWalletDbManager } from "./UserWallet.data";
 import { VLMRecord } from "../models/VLM.model";
 import { largeQuery } from "../helpers/data";
+import { Scene } from "../models/Scene.model";
+import { GenericDbManager } from "./Generic.data";
+import { Organization } from "../models/Organization.model";
+import { DateTime } from "luxon";
 
 export abstract class UserDbManager {
   static obtain: CallableFunction = async (user: User.Account) => {
@@ -75,6 +79,66 @@ export abstract class UserDbManager {
     }
   };
 
+  static getSceneInvites: CallableFunction = async (userId: string) => {
+    try {
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: "userId-index",
+        ExpressionAttributeNames: {
+          "#pk": "pk",
+          "#userId": "userId",
+        },
+        ExpressionAttributeValues: {
+          ":pk": Scene.Invite.pk,
+          ":userId": userId,
+        },
+        KeyConditionExpression: "#pk = :pk and #userId = :userId",
+      };
+
+      const sceneInviteFragments = await largeQuery(params),
+        sceneInviteIds = sceneInviteFragments.map((sceneInvite: Scene.Invite) => sceneInvite.sk),
+        sceneInvites = await sceneInviteIds.map(async (sceneInvite: Scene.Invite) => await GenericDbManager.get({ pk: Scene.Invite.pk, sk: sceneInvite.sk }));
+
+      return sceneInvites;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "User.data/getSceneInvites",
+        userId,
+      });
+      return;
+    }
+  };
+
+  static getOrgInvites: CallableFunction = async (userId: string) => {
+    try {
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: "userId-index",
+        ExpressionAttributeNames: {
+          "#pk": "pk",
+          "#userId": "userId",
+        },
+        ExpressionAttributeValues: {
+          ":pk": Organization.Invite.pk,
+          ":userId": userId,
+        },
+        KeyConditionExpression: "#pk = :pk and #userId = :userId",
+      };
+
+      const orgInviteFragments = await largeQuery(params),
+        orgInviteIds = orgInviteFragments.map((orgInvite: Scene.Invite) => orgInvite.sk),
+        orgInvites = await orgInviteIds.map(async (orgInvite: Scene.Invite) => await GenericDbManager.get({ pk: Organization.Invite.pk, sk: orgInvite.sk }));
+
+      return orgInvites;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "User.data/getOrgInvites",
+        userId,
+      });
+      return;
+    }
+  };
+
   static getBalance: CallableFunction = async (user: User.Account) => {
     if (!user.sk) {
       const walletRecord = await UserWalletDbManager.get({
@@ -104,6 +168,7 @@ export abstract class UserDbManager {
       });
     }
   };
+
   static obtainBalance: CallableFunction = async (balance: User.Balance) => {
     let existingBalance, createdBalance;
     try {
@@ -120,6 +185,7 @@ export abstract class UserDbManager {
       });
     }
   };
+
   static getBalanceById: CallableFunction = async (sk: string) => {
     const params = {
       TableName: vlmMainTable,
@@ -181,7 +247,7 @@ export abstract class UserDbManager {
             // Add the balance id to the user's account
             Key: {
               ...userAccount,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             UpdateExpression: "SET #ts = :ts, #attr = list_append(#attr, :balanceIds)",
             ConditionExpression: "#ts = :userTs",
@@ -189,7 +255,7 @@ export abstract class UserDbManager {
             ExpressionAttributeValues: {
               ":balanceIds": balanceIds,
               ":userTs": userAccount.ts || 0,
-              ":ts": Date.now(),
+              ":ts": DateTime.now().toUnixInteger(),
               TableName: vlmMainTable,
             },
           },
@@ -204,7 +270,7 @@ export abstract class UserDbManager {
             // Add a connection from organization to user
             Item: {
               ...userBalance,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -233,7 +299,7 @@ export abstract class UserDbManager {
       ExpressionAttributeValues: {
         ":value": balance.value || 0,
         ":balanceTs": balance.ts || 0,
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
@@ -276,7 +342,7 @@ export abstract class UserDbManager {
       UpdateExpression: "set #ts = :ts, lastIp = :lastIp",
       ExpressionAttributeNames: { "#ts": "ts" },
       ExpressionAttributeValues: {
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
         ":lastIp": user.lastIp,
       },
     };
@@ -298,7 +364,7 @@ export abstract class UserDbManager {
       TableName: vlmMainTable,
       Item: {
         ...user,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -316,7 +382,7 @@ export abstract class UserDbManager {
       TableName: vlmMainTable,
       Item: {
         ...balance,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

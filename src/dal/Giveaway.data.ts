@@ -10,6 +10,7 @@ import { Giveaway } from "../models/Giveaway.model";
 import { BalanceDbManager } from "./Balance.data";
 import { Organization } from "../models/Organization.model";
 import { GenericDbManager } from "./Generic.data";
+import { DateTime } from "luxon";
 
 export abstract class GiveawayDbManager {
   static get: CallableFunction = async (giveawayConfig: Giveaway.Config) => {
@@ -158,7 +159,7 @@ export abstract class GiveawayDbManager {
   };
 
   static addClaim: CallableFunction = async (analyticsAction: Analytics.Session.Action, claim: Giveaway.Claim, transaction: Accounting.Transaction) => {
-    const ts = Date.now();
+    const ts = DateTime.now().toUnixInteger();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -210,7 +211,7 @@ export abstract class GiveawayDbManager {
       TableName: vlmMainTable,
       Item: {
         ...giveaway,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -234,7 +235,7 @@ export abstract class GiveawayDbManager {
         TableName: vlmMainTable,
         Item: {
           ...giveawayItem,
-          ts: Date.now(),
+          ts: DateTime.now().toUnixInteger(),
         }
       }
     };
@@ -281,7 +282,7 @@ export abstract class GiveawayDbManager {
       TableName: vlmMainTable,
       Item: {
         ...link,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -434,7 +435,7 @@ export abstract class GiveawayDbManager {
       TableName: vlmMainTable,
       Item: {
         ...claim,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

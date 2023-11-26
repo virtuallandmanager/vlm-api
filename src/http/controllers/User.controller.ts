@@ -29,6 +29,27 @@ router.post("/vlm/update", authMiddleware, async (req: Request, res: Response) =
   }
 });
 
+router.get("/notifications", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.session;
+
+    const invites = await UserManager.getInvites(userId);
+
+    return res.status(200).json({
+      text: "Successfully retrieved invites.",
+      ...invites,
+    });
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: "User.controller/invites",
+    });
+    return res.status(500).json({
+      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      error,
+    });
+  }
+});
+
 // set up a user who is connecting for the first time
 router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -58,7 +79,7 @@ router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
         real_tip: "Use the user/vlm/update endpoint.",
       });
     }
-    userInfo.registeredAt = Date.now();
+    userInfo.registeredAt = DateTime.now().toUnixInteger();
     userInfo = await UserManager.update(userInfo);
     userOrgs = await OrganizationManager.getUserOrgs(dbUser.sk, Organization.Roles.ORG_OWNER);
 

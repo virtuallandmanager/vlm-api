@@ -2,6 +2,7 @@ import { IDbItem, daxClient, docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { largeQuery } from "../helpers/data";
 import { VLMRecord } from "../models/VLM.model";
+import { DateTime } from "luxon";
 
 export abstract class GenericDbManager {
   static obtain: CallableFunction = async (dataConfig: IDbItem) => {
@@ -137,7 +138,7 @@ export abstract class GenericDbManager {
       TableName: vlmMainTable,
       Item: {
         ...dataConfig,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

@@ -1,6 +1,8 @@
 import { docClient, vlmAnalyticsTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Analytics } from "../models/Analytics.model";
+import { largeQuery } from "../helpers/data";
+import { DateTime } from "luxon";
 
 export abstract class AnalyticsUserDbManager {
   static obtain: CallableFunction = async (analyticsUserConfig: Analytics.User.Account) => {
@@ -130,12 +132,45 @@ export abstract class AnalyticsUserDbManager {
     }
   };
 
+  static getRecentSceneMetrics = async (sceneId: string) => {
+    const twentyFourHoursAgo = DateTime.now().minus({ hours: 24 }).toMillis();
+
+    const params = {
+      TableName: vlmAnalyticsTable,
+      IndexName: "sceneId-index",
+      KeyConditionExpression: "#pk = :pk and #sceneId = :sceneId",
+      FilterExpression: "#ts >= :twentyFourHoursAgo",
+      ExpressionAttributeNames: {
+        "#pk": "pk",
+        "#sceneId": "sceneId",
+        "#ts": "ts" 
+      },
+      ExpressionAttributeValues: {
+        ":pk": Analytics.Session.Action.pk,
+        ":sceneId": sceneId,
+        ":twentyFourHoursAgo": twentyFourHoursAgo
+      },
+    };
+
+    try {
+      const analyticsRecords = await largeQuery(params);
+      return analyticsRecords as Analytics.Session.Action[];
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "AnalyticsUser.data/getRecentSceneMetrics",
+        sceneId,
+      });
+      console.log(error);
+      return;
+    }
+  }
+
   static put = async (analyticsUser: Analytics.User.Account) => {
     const params = {
       TableName: vlmAnalyticsTable,
       Item: {
         ...analyticsUser,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

@@ -1,5 +1,5 @@
 export type BaseWallet = {
-  sk: string;
+  sk?: string;
   currency: SupportedCurrencies;
   address: string;
   userId?: string;

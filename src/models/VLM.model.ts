@@ -5,7 +5,7 @@ import { v4 as uuid } from "uuid";
 export class VLMRecord extends Object implements IsVLMRecord {
   pk?: string;
   sk?: string = uuid();
-  ts?: EpochTimeStamp = Date.now();
+  ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
   [k: string]: any;
 
   constructor(obj: object) {

@@ -117,7 +117,7 @@ export namespace User {
     userId?: string;
     type?: BalanceType;
     value?: number = 0;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Balance) {
       this.sk = `${config?.userId}:${config?.type}`;

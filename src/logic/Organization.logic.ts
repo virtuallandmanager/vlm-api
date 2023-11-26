@@ -1,7 +1,11 @@
+import { GenericDbManager } from "../dal/Generic.data";
 import { OrganizationDbManager } from "../dal/Organization.data";
+import { UserWalletDbManager } from "../dal/UserWallet.data";
 import { InitialBalances } from "../models/Balance.model";
 import { Organization } from "../models/Organization.model";
 import { User } from "../models/User.model";
+import { SupportedCurrencies } from "../models/Wallet.model";
+import { AdminLogManager } from "./ErrorLogging.logic";
 
 export abstract class OrganizationManager {
   static create: CallableFunction = async (userConfig: User.Config, orgConfig?: Organization.Config) => {
@@ -34,6 +38,26 @@ export abstract class OrganizationManager {
   };
 
   static getUserOrgs: CallableFunction = async (userId: string, roleFilter?: Organization.Roles) => {
+    const userOrgCons = await OrganizationDbManager.getUserConsByUserId(userId, roleFilter);
+    if (!userOrgCons.length) {
+      return [];
+    }
+    const userOrgIds = userOrgCons.map((userOrgCon: Organization.UserConnector) => userOrgCon.orgId);
+    const userOrgs = await OrganizationDbManager.getByIds(userOrgIds);
+    return userOrgs;
+  };
+
+  static inviteUserByWallet: CallableFunction = async (inviteConfig: Organization.Invite & { connectedWallet: string, currency: SupportedCurrencies }) => {
+    try {
+      const user = await UserWalletDbManager.obtain(new User.Wallet({ address: inviteConfig.connectedWallet, currency: inviteConfig.currency || "ETH" }));
+      const invite = new Organization.Invite({ ...inviteConfig, userId: user.userId });
+      return await GenericDbManager.put(invite);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "OrganizationManager.inviteUser" });
+    }
+  };
+
+  static getUserInvites: CallableFunction = async (userId: string, roleFilter?: Organization.Roles) => {
     const userOrgCons = await OrganizationDbManager.getUserConsByUserId(userId, roleFilter);
     if (!userOrgCons.length) {
       return [];

@@ -3,6 +3,7 @@ import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
 import { BaseWallet } from "../models/Wallet.model";
 import { GenericDbManager } from "./Generic.data";
+import { DateTime } from "luxon";
 
 export abstract class UserWalletDbManager {
   static obtain: CallableFunction = async (walletConfig: BaseWallet) => {
@@ -61,7 +62,7 @@ export abstract class UserWalletDbManager {
       TableName: vlmMainTable,
       Item: {
         ...wallet,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

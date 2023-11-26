@@ -18,7 +18,7 @@ export namespace Giveaway {
     items?: Array<string | Item> = [];
     allocatedCredits?: number = 0;
     createdAt?: number = DateTime.now().toUnixInteger();
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Partial<Config> = {}) {
       this.sk = config?.sk || this.sk;
@@ -64,7 +64,7 @@ export namespace Giveaway {
     queued?: boolean = false;
     analyticsRecordId: string;
     complete: boolean = false;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Partial<Claim> = {}) {
       this.sk = config?.sk || this.sk;
@@ -94,7 +94,7 @@ export namespace Giveaway {
     rarity?: string;
     category?: string;
     imageSrc?: string;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Partial<Item> = {}) {
       this.sk = config?.sk || this.sk;
@@ -120,7 +120,7 @@ export namespace Giveaway {
     messageOptions?: MessageOptions;
     type: ClaimResponseType;
     reason?: ClaimRejection;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Partial<ClaimResponse> = {}) {
       this.sk = config?.sk || this.sk;

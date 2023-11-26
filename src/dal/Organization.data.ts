@@ -3,6 +3,7 @@ import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Organization } from "../models/Organization.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { largeQuery } from "../helpers/data";
+import { DateTime } from "luxon";
 
 export abstract class OrganizationDbManager {
   static get: CallableFunction = async (org: Organization.Account) => {
@@ -72,7 +73,9 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  static getUserCon: CallableFunction = async (userCon: Organization.UserConnector) => {
+  static getUserCon: CallableFunction = async (
+    userCon: Organization.UserConnector
+  ) => {
     const params = {
       TableName: vlmMainTable,
       Key: {
@@ -112,7 +115,10 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  static getUserConsByUserId: CallableFunction = async (userId: string, roleFilter: Organization.Roles) => {
+  static getUserConsByUserId: CallableFunction = async (
+    userId: string,
+    roleFilter: Organization.Roles
+  ) => {
     const params: DocumentClient.QueryInput = {
       TableName: vlmMainTable,
       IndexName: "userId-index",
@@ -132,9 +138,13 @@ export abstract class OrganizationDbManager {
       if (!userConRecords?.length) {
         return [];
       }
-      const userConIds = userConRecords.map((fragment: { pk: string; sk: string }) => fragment.sk);
+      const userConIds = userConRecords.map(
+        (fragment: { pk: string; sk: string }) => fragment.sk
+      );
       const userCons = await this.getUserConsFromIds(userConIds);
-      return userCons.filter((userCon: Organization.UserConnector) => userCon.userRole === roleFilter);
+      return userCons.filter(
+        (userCon: Organization.UserConnector) => userCon.userRole === roleFilter
+      );
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Organization.data/getUserConsByUserId",
@@ -163,7 +173,9 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  static update: CallableFunction = async (organization: Organization.Account) => {
+  static update: CallableFunction = async (
+    organization: Organization.Account
+  ) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: organization.pk, sk: organization.sk },
@@ -172,7 +184,7 @@ export abstract class OrganizationDbManager {
       ExpressionAttributeNames: { "#ts": "ts" },
       ExpressionAttributeValues: {
         ":sessionTs": organization.ts,
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
@@ -188,7 +200,9 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  static updateBalance: CallableFunction = async (balance: Organization.Balance) => {
+  static updateBalance: CallableFunction = async (
+    balance: Organization.Balance
+  ) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: balance.pk, sk: balance.sk },
@@ -197,7 +211,7 @@ export abstract class OrganizationDbManager {
       ExpressionAttributeNames: { "#ts": "ts" },
       ExpressionAttributeValues: {
         ":sessionTs": balance.ts,
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
@@ -213,7 +227,9 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  static addMember: CallableFunction = async (orgUserCon: Organization.UserConnector) => {
+  static addMember: CallableFunction = async (
+    orgUserCon: Organization.UserConnector
+  ) => {
     const params: DocumentClient.PutItemInput = {
       TableName: vlmMainTable,
       Item: { ...orgUserCon },
@@ -231,7 +247,11 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  static init: CallableFunction = async (orgAccount: Organization.Account, orgUserCon: Organization.UserConnector, orgBalances: Organization.Balance[]) => {
+  static init: CallableFunction = async (
+    orgAccount: Organization.Account,
+    orgUserCon: Organization.UserConnector,
+    orgBalances: Organization.Balance[]
+  ) => {
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -239,7 +259,7 @@ export abstract class OrganizationDbManager {
             // Add an organization
             Item: {
               ...orgAccount,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -253,7 +273,7 @@ export abstract class OrganizationDbManager {
           // Add a connection from organization to user
           Item: {
             ...orgUserCon,
-            ts: Date.now(),
+            ts: DateTime.now().toUnixInteger(),
           },
           TableName: vlmMainTable,
         },
@@ -267,7 +287,7 @@ export abstract class OrganizationDbManager {
             // Add a connection from organization to user
             Item: {
               ...orgBalance,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -322,23 +342,23 @@ export abstract class OrganizationDbManager {
     }
   };
 
-  // static put: CallableFunction = async (organization: Organization.Account) => {
-  //   const params = {
-  //     TableName: vlmMainTable,
-  //     Item: {
-  //       ...organization,
-  //       ts: Date.now(),
-  //     },
-  //   };
+  static put: CallableFunction = async (organization: Organization.Account) => {
+    const params = {
+      TableName: vlmMainTable,
+      Item: {
+        ...organization,
+        ts: DateTime.now().toUnixInteger(),
+      },
+    };
 
-  //   try {
-  //     await docClient.put(params).promise();
-  //     return organization;
-  //   } catch (error) {
-  //     AdminLogManager.logError(JSON.stringify(error), {
-  //       from: "Organization.data/put",
-  //       Organization,
-  //     });
-  //   }
-  // };
+    try {
+      await docClient.put(params).promise();
+      return organization;
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: "Organization.data/put",
+        Organization,
+      });
+    }
+  };
 }

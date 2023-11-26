@@ -1,7 +1,7 @@
 import { User } from "../models/User.model";
 import { daxClient, docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { AttributeMap, DocumentClient } from "aws-sdk/clients/dynamodb";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { largeQuery } from "../helpers/data";
 import { Scene } from "../models/Scene.model";
 import { DateTime } from "luxon";
@@ -93,8 +93,12 @@ export abstract class SceneDbManager {
     }
   };
 
-  static setSceneUserState: CallableFunction = async (state: Scene.UserState, key: string, value: unknown) => {
-    const newState = { ...state, [key]: value }
+  static setSceneUserState: CallableFunction = async (
+    state: Scene.UserState,
+    key: string,
+    value: unknown
+  ) => {
+    const newState = { ...state, [key]: value };
     const params = {
       TableName: vlmMainTable,
       Key: {
@@ -106,15 +110,15 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { "#prop": "state", "#ts": "ts" },
       ExpressionAttributeValues: {
         ":prop": newState,
-        ":stateTs": state.ts || Date.now(),
-        ":ts": Date.now(),
+        ":stateTs": state.ts || DateTime.now().toUnixInteger(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
     try {
       await daxClient.update(params).promise();
       const fullState = await SceneDbManager.getSceneUserState(state.sk);
-      return fullState && fullState[key]
+      return fullState && fullState[key];
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/put",
@@ -162,7 +166,9 @@ export abstract class SceneDbManager {
       };
 
       const sceneLinks = await largeQuery(params),
-        sceneLinkIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sk),
+        sceneLinkIds = sceneLinks.map(
+          (sceneLink: User.SceneLink) => sceneLink.sk
+        ),
         ids = await SceneDbManager.getSceneIdsFromLinkIds(sceneLinkIds);
 
       if (user?.hideDemoScene) {
@@ -204,8 +210,12 @@ export abstract class SceneDbManager {
       });
 
       const response = await docClient.transactGet(params).promise(),
-        sceneLinks = response.Responses.map((item) => item.Item as User.SceneLink),
-        sceneIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sceneId);
+        sceneLinks = response.Responses.map(
+          (item) => item.Item as User.SceneLink
+        ),
+        sceneIds = sceneLinks.map(
+          (sceneLink: User.SceneLink) => sceneLink.sceneId
+        );
       return sceneIds;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
@@ -253,8 +263,12 @@ export abstract class SceneDbManager {
     }
   };
 
-  static initScene: CallableFunction = async (scene: Scene.Config, preset: Scene.Preset, sceneLink: User.SceneLink) => {
-    const ts = Date.now();
+  static initScene: CallableFunction = async (
+    scene: Scene.Config,
+    preset: Scene.Preset,
+    sceneLink: User.SceneLink
+  ) => {
+    const ts = DateTime.now().toUnixInteger();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -302,7 +316,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addPresetToScene: CallableFunction = async (sceneConfig: Scene.Config, scenePreset: Scene.Preset) => {
+  static addPresetToScene: CallableFunction = async (
+    sceneConfig: Scene.Config,
+    scenePreset: Scene.Preset
+  ) => {
     const sk = scenePreset.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -313,7 +330,8 @@ export abstract class SceneDbManager {
               pk: Scene.Config.pk,
               sk: sceneConfig.sk,
             },
-            UpdateExpression: "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)",
+            UpdateExpression:
+              "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)",
             ExpressionAttributeNames: {
               "#presets": "presets",
             },
@@ -329,7 +347,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...scenePreset,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -351,11 +369,19 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addPresetsToScene: CallableFunction = async (sceneConfig: Scene.Config, presetConfig: Scene.Preset | Scene.Preset[]) => {
-    const scenePresets = Array.isArray(presetConfig) ? presetConfig : [presetConfig];
-    const sks = scenePresets.map((preset: Scene.Preset) => preset.sk).filter((sk: string) => !sceneConfig?.presets?.includes(sk));
+  static addPresetsToScene: CallableFunction = async (
+    sceneConfig: Scene.Config,
+    presetConfig: Scene.Preset | Scene.Preset[]
+  ) => {
+    const scenePresets = Array.isArray(presetConfig)
+      ? presetConfig
+      : [presetConfig];
+    const sks = scenePresets
+      .map((preset: Scene.Preset) => preset.sk)
+      .filter((sk: string) => !sceneConfig?.presets?.includes(sk));
 
-    let updateExpression = "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)";
+    let updateExpression =
+      "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)";
     const expressionAttributeNames: { [key: string]: string } = {
       "#presets": "presets",
     };
@@ -365,7 +391,8 @@ export abstract class SceneDbManager {
     };
 
     if (!sceneConfig.scenePreset && sks.length > 0) {
-      updateExpression += ", #scenePreset = if_not_exists(#scenePreset, :firstPreset)";
+      updateExpression +=
+        ", #scenePreset = if_not_exists(#scenePreset, :firstPreset)";
       expressionAttributeNames["#scenePreset"] = "scenePreset";
       expressionAttributeValues[":firstPreset"] = sks[0];
     }
@@ -395,7 +422,7 @@ export abstract class SceneDbManager {
           // Create a scene preset
           Item: {
             ...preset,
-            ts: Date.now(),
+            ts: DateTime.now().toUnixInteger(),
           },
           TableName: vlmMainTable,
         },
@@ -421,7 +448,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static deletePreset: CallableFunction = async (sceneId: string, presetId: string) => {
+  static deletePreset: CallableFunction = async (
+    sceneId: string,
+    presetId: string
+  ) => {
     const scene = await SceneDbManager.getById(sceneId),
       sks = scene.presets.filter((sk: string) => sk !== presetId);
     const params: DocumentClient.TransactWriteItemsInput = {
@@ -478,8 +508,13 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addSettingsToScene: CallableFunction = async (sceneConfig: Scene.Config, sceneSettings: Scene.Setting[]) => {
-    const sks = sceneSettings.map((setting: Scene.Setting) => setting.sk).filter((sk: string) => !sceneConfig?.settings?.includes(sk));
+  static addSettingsToScene: CallableFunction = async (
+    sceneConfig: Scene.Config,
+    sceneSettings: Scene.Setting[]
+  ) => {
+    const sks = sceneSettings
+      .map((setting: Scene.Setting) => setting.sk)
+      .filter((sk: string) => !sceneConfig?.settings?.includes(sk));
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -489,7 +524,8 @@ export abstract class SceneDbManager {
               pk: Scene.Config.pk,
               sk: sceneConfig.sk,
             },
-            UpdateExpression: "SET #settings = list_append(if_not_exists(#settings, :empty_list), :settingIds)",
+            UpdateExpression:
+              "SET #settings = list_append(if_not_exists(#settings, :empty_list), :settingIds)",
             ExpressionAttributeNames: {
               "#settings": "settings",
             },
@@ -509,7 +545,7 @@ export abstract class SceneDbManager {
           // Add a scene preset
           Item: {
             ...setting,
-            ts: Date.now(),
+            ts: DateTime.now().toUnixInteger(),
           },
           TableName: vlmMainTable,
         },
@@ -535,7 +571,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addVideoToPreset: CallableFunction = async (presetId: string, sceneVideo: Scene.Video.Config) => {
+  static addVideoToPreset: CallableFunction = async (
+    presetId: string,
+    sceneVideo: Scene.Video.Config
+  ) => {
     const sk = sceneVideo.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -545,7 +584,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #videos = list_append(if_not_exists(#videos, :empty_list), :videoIds)",
+            UpdateExpression:
+              "SET #videos = list_append(if_not_exists(#videos, :empty_list), :videoIds)",
             ExpressionAttributeNames: {
               "#videos": "videos",
             },
@@ -560,7 +600,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneVideo,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -582,7 +622,9 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addInstanceToElement: CallableFunction = async (message: VLMSceneMessage) => {
+  static addInstanceToElement: CallableFunction = async (
+    message: VLMSceneMessage
+  ) => {
     const elementConfig = message.elementData,
       instanceConfig = message.instanceData;
 
@@ -594,7 +636,8 @@ export abstract class SceneDbManager {
               pk: elementConfig.pk,
               sk: elementConfig.sk,
             },
-            UpdateExpression: "SET #instances = list_append(if_not_exists(#instances, :empty_list), :instanceIds)",
+            UpdateExpression:
+              "SET #instances = list_append(if_not_exists(#instances, :empty_list), :instanceIds)",
             ExpressionAttributeNames: {
               "#instances": "instances",
             },
@@ -609,7 +652,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...instanceConfig,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -632,13 +675,17 @@ export abstract class SceneDbManager {
     }
   };
 
-  static removeInstanceFromElement: CallableFunction = async (message: VLMSceneMessage) => {
+  static removeInstanceFromElement: CallableFunction = async (
+    message: VLMSceneMessage
+  ) => {
     try {
       const elementConfig = message.elementData,
         instanceConfig = message.instanceData;
       const dbElement = await GenericDbManager.get(message.elementData),
         instanceIds = dbElement.instances as string[],
-        filteredInstanceIds = instanceIds.filter((id: string) => id !== message.instanceData.sk);
+        filteredInstanceIds = instanceIds.filter(
+          (id: string) => id !== message.instanceData.sk
+        );
 
       const params: DocumentClient.TransactWriteItemsInput = {
         TransactItems: [
@@ -694,7 +741,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addImageToPreset: CallableFunction = async (presetId: string, sceneImage: Scene.Image.Config) => {
+  static addImageToPreset: CallableFunction = async (
+    presetId: string,
+    sceneImage: Scene.Image.Config
+  ) => {
     const sk = sceneImage.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -704,7 +754,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #images = list_append(if_not_exists(#images, :empty_list), :imageIds)",
+            UpdateExpression:
+              "SET #images = list_append(if_not_exists(#images, :empty_list), :imageIds)",
             ExpressionAttributeNames: {
               "#images": "images",
             },
@@ -719,7 +770,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneImage,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -741,7 +792,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addNftToPreset: CallableFunction = async (presetId: string, sceneNft: Scene.NFT.Config) => {
+  static addNftToPreset: CallableFunction = async (
+    presetId: string,
+    sceneNft: Scene.NFT.Config
+  ) => {
     const sk = sceneNft.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -751,7 +805,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #nfts = list_append(if_not_exists(#nfts, :empty_list), :nftIds)",
+            UpdateExpression:
+              "SET #nfts = list_append(if_not_exists(#nfts, :empty_list), :nftIds)",
             ExpressionAttributeNames: {
               "#nfts": "nfts",
             },
@@ -766,7 +821,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneNft,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -788,7 +843,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addModelToPreset: CallableFunction = async (presetId: string, sceneModel: Scene.Model.Config) => {
+  static addModelToPreset: CallableFunction = async (
+    presetId: string,
+    sceneModel: Scene.Model.Config
+  ) => {
     const sk = sceneModel.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -798,7 +856,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #models = list_append(if_not_exists(#models, :empty_list), :modelIds)",
+            UpdateExpression:
+              "SET #models = list_append(if_not_exists(#models, :empty_list), :modelIds)",
             ExpressionAttributeNames: {
               "#models": "models",
             },
@@ -813,7 +872,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneModel,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -835,7 +894,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addSoundToPreset: CallableFunction = async (presetId: string, sceneSound: Scene.Sound.Config) => {
+  static addSoundToPreset: CallableFunction = async (
+    presetId: string,
+    sceneSound: Scene.Sound.Config
+  ) => {
     const sk = sceneSound.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -845,7 +907,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #sounds = list_append(if_not_exists(#sounds, :empty_list), :soundIds)",
+            UpdateExpression:
+              "SET #sounds = list_append(if_not_exists(#sounds, :empty_list), :soundIds)",
             ExpressionAttributeNames: {
               "#sounds": "sounds",
             },
@@ -861,7 +924,7 @@ export abstract class SceneDbManager {
             // Create a scene sound
             Item: {
               ...sceneSound,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -883,7 +946,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addWidgetToPreset: CallableFunction = async (presetId: string, sceneWidget: Scene.Widget.Config) => {
+  static addWidgetToPreset: CallableFunction = async (
+    presetId: string,
+    sceneWidget: Scene.Widget.Config
+  ) => {
     const sk = sceneWidget.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -893,7 +959,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #widgets = list_append(if_not_exists(#widgets, :empty_list), :widgetIds)",
+            UpdateExpression:
+              "SET #widgets = list_append(if_not_exists(#widgets, :empty_list), :widgetIds)",
             ExpressionAttributeNames: {
               "#widgets": "widgets",
             },
@@ -909,7 +976,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...sceneWidget,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -931,7 +998,10 @@ export abstract class SceneDbManager {
     }
   };
 
-  static addClaimPointToPreset: CallableFunction = async (presetId: string, claimPoint: Scene.Giveaway.ClaimPoint) => {
+  static addClaimPointToPreset: CallableFunction = async (
+    presetId: string,
+    claimPoint: Scene.Giveaway.ClaimPoint
+  ) => {
     const sk = claimPoint.sk;
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -941,7 +1011,8 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #claimPoints = list_append(if_not_exists(#claimPoints, :empty_list), :claimPointIds)",
+            UpdateExpression:
+              "SET #claimPoints = list_append(if_not_exists(#claimPoints, :empty_list), :claimPointIds)",
             ExpressionAttributeNames: {
               "#claimPoints": "claimPoints",
             },
@@ -957,7 +1028,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...claimPoint,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -979,8 +1050,12 @@ export abstract class SceneDbManager {
     }
   };
 
-  static updateSceneProperty: CallableFunction = async (sceneConfig: Scene.Config, property: string, newValue: unknown) => {
-    const ts = Date.now();
+  static updateSceneProperty: CallableFunction = async (
+    sceneConfig: Scene.Config,
+    property: string,
+    newValue: unknown
+  ) => {
+    const ts = DateTime.now().toUnixInteger();
     if (sceneConfig.ts && sceneConfig.ts > ts) {
       sceneConfig.ts = ts;
     }
@@ -992,7 +1067,7 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
       ExpressionAttributeValues: {
         ":prop": newValue,
-        ":sceneTs": Number(sceneConfig.ts) || ts,
+        ":sceneTs": sceneConfig.ts || ts,
         ":ts": ts,
       },
     };
@@ -1011,9 +1086,12 @@ export abstract class SceneDbManager {
     }
   };
 
-  static updateSceneElementProperty: CallableFunction = async (message: VLMSceneMessage, options?: { skipPreset: boolean }) => {
+  static updateSceneElementProperty: CallableFunction = async (
+    message: VLMSceneMessage,
+    options?: { skipPreset: boolean }
+  ) => {
+    const ts = DateTime.now().toUnixInteger();
     let { elementData, property, scenePreset } = message;
-
     let valueProp;
     Object.keys(elementData).forEach((key: string) => {
       if (key == property && elementData.hasOwnProperty(property)) {
@@ -1029,21 +1107,24 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Key: { pk: elementData.pk, sk: elementData.sk },
       UpdateExpression: "set #prop = :prop, #ts = :ts",
-      ConditionExpression: "#ts <= :elementTs",
+      // ConditionExpression: "#ts <= :elementTs",
       ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
       ExpressionAttributeValues: {
         ":prop": elementData[valueProp],
-        ":elementTs": Number(elementData.ts),
-        ":ts": DateTime.now().toUnixInteger(),
+        // ":elementTs": elementData.ts,
+        ":ts": ts,
       },
     };
 
     try {
       await daxClient.update(params).promise();
       elementData = await GenericDbManager.get(elementData);
-      scenePreset = options?.skipPreset ? null : await this.getPreset(message.scenePreset.sk);
+      scenePreset = options?.skipPreset
+        ? null
+        : await this.getPreset(message.scenePreset.sk);
       return { scenePreset, elementData };
     } catch (error) {
+      console.log(error);
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Scene.data/updateElementProperty",
         message,
@@ -1052,16 +1133,22 @@ export abstract class SceneDbManager {
     }
   };
 
-  static removeSceneElement: CallableFunction = async (message: VLMSceneMessage) => {
+  static removeSceneElement: CallableFunction = async (
+    message: VLMSceneMessage
+  ) => {
     const { elementData, scenePreset } = message;
     const dbPreset = await this.getPreset(scenePreset.sk);
 
-    const videos = dbPreset.videos.filter((id: string) => id !== elementData.sk),
+    const videos = dbPreset.videos.filter(
+        (id: string) => id !== elementData.sk
+      ),
       images = dbPreset.images.filter((id: string) => id !== elementData.sk),
       nfts = dbPreset.nfts.filter((id: string) => id !== elementData.sk),
       sounds = dbPreset.sounds.filter((id: string) => id !== elementData.sk),
       widgets = dbPreset.widgets.filter((id: string) => id !== elementData.sk),
-      claimPoints = dbPreset.claimPoints.filter((id: string) => id !== elementData.sk),
+      claimPoints = dbPreset.claimPoints.filter(
+        (id: string) => id !== elementData.sk
+      ),
       models = dbPreset.models.filter((id: string) => id !== elementData.sk);
 
     const params: DocumentClient.TransactWriteItemsInput = {
@@ -1072,7 +1159,8 @@ export abstract class SceneDbManager {
               pk: dbPreset.pk,
               sk: dbPreset.sk,
             },
-            UpdateExpression: "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints, #models = :models",
+            UpdateExpression:
+              "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints, #models = :models",
             ExpressionAttributeNames: {
               "#videos": "videos",
               "#images": "images",
@@ -1127,12 +1215,15 @@ export abstract class SceneDbManager {
     }
   };
 
-  static updatePreset: CallableFunction = async (scene: Scene.Config, preset: Scene.Preset) => {
+  static updatePreset: CallableFunction = async (
+    scene: Scene.Config,
+    preset: Scene.Preset
+  ) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...preset,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -1154,7 +1245,7 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Item: {
         ...scene,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -1170,12 +1261,14 @@ export abstract class SceneDbManager {
     }
   };
 
-  static updateInstance: CallableFunction = async (message: VLMSceneMessage) => {
+  static updateInstance: CallableFunction = async (
+    message: VLMSceneMessage
+  ) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...message.instanceData,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

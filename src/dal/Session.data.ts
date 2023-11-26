@@ -45,7 +45,7 @@ export abstract class SessionDbManager {
       TableName: table,
       Item: {
         ...session,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
         ttl,
       },
     };
@@ -66,7 +66,7 @@ export abstract class SessionDbManager {
       TableName: vlmAnalyticsTable,
       Item: {
         ...config,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
         ttl: DateTime.now().plus({ months: 12 }).toUnixInteger(),
       }
     };
@@ -190,7 +190,7 @@ export abstract class SessionDbManager {
       ExpressionAttributeNames: { "#ts": "ts" },
       ExpressionAttributeValues: {
         ":sessionTs": session.ts,
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
@@ -216,7 +216,7 @@ export abstract class SessionDbManager {
         ":pathIds": [path.sk],
         ":sessionTs": session.ts,
         ":emptyList": new Array(),
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
@@ -371,7 +371,7 @@ export abstract class SessionDbManager {
   };
 
   static createPath: CallableFunction = async (path: Analytics.Path, pathSegment: Analytics.PathSegment) => {
-    const ts = Date.now();
+    const ts = DateTime.now().toUnixInteger();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -409,7 +409,7 @@ export abstract class SessionDbManager {
   };
 
   static addPathSegments: CallableFunction = async (pathId: string, pathSegments: Analytics.PathSegment[]) => {
-    const ts = Date.now();
+    const ts = DateTime.now().toUnixInteger();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: []

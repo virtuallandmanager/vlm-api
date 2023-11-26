@@ -1,5 +1,5 @@
 import { Event } from "../models/Event.model";
-import { docClient, vlmLandLegacyTable, vlmMainTable } from "./common.data";
+import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
 import { largeQuery } from "../helpers/data";
@@ -7,6 +7,7 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Giveaway } from "../models/Giveaway.model";
 import { GenericDbManager } from "./Generic.data";
 import { env } from "process";
+import { DateTime } from "luxon";
 
 export abstract class EventDbManager {
   static obtain: CallableFunction = async (eventConfig: Event) => {
@@ -255,27 +256,6 @@ export abstract class EventDbManager {
     }
   };
 
-  static getLegacy: CallableFunction = async (baseParcel: string) => {
-    var params = {
-      TableName: vlmLandLegacyTable,
-      IndexName: "vlm_land_baseParcel",
-      KeyConditionExpression: "#baseParcel = :baseParcel",
-      ExpressionAttributeNames: {
-        "#baseParcel": "baseParcel",
-      },
-      ExpressionAttributeValues: {
-        ":baseParcel": baseParcel,
-      },
-    };
-
-    const data = await docClient.query(params).promise();
-    const event = data.Items.find((parcel: any) => {
-      return `${parcel.x},${parcel.y}` == baseParcel;
-    });
-
-    return event;
-  };
-
   static getAllForUser: CallableFunction = async (user: User.Account) => {
     const params = {
       TableName: vlmMainTable,
@@ -366,7 +346,7 @@ export abstract class EventDbManager {
       TableName: vlmMainTable,
       Item: {
         ...event,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -425,7 +405,7 @@ export abstract class EventDbManager {
       TableName: vlmMainTable,
       Item: {
         ...link,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -446,7 +426,7 @@ export abstract class EventDbManager {
       TableName: vlmMainTable,
       Item: {
         ...link,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

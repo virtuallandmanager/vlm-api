@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { v4 as uuidv4 } from "uuid";
 import { BalanceType } from "./Balance.model";
 import { User } from "./User.model";
+import { Scene } from "./Scene.model";
 
 export namespace Organization {
   export class Account {
@@ -12,7 +13,7 @@ export namespace Organization {
     legalName: string = "";
     emailAddress?: string;
     discordChannel?: string;
-    createdAt?: EpochTimeStamp = Date.now();;
+    createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();;
     [key: string]: any;
 
     constructor(config: Organization.Config) {
@@ -37,6 +38,31 @@ export namespace Organization {
     }
   }
 
+  export class Invite {
+    static pk: string = "vlm:scene:invite";
+    pk?: string = Invite.pk;
+    sk?: string = uuidv4();
+    userId?: string;
+    orgId?: string;
+    startTime?: EpochTimeStamp;
+    endTime?: EpochTimeStamp;
+    permissions?: Permissions;
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
+
+    constructor(config?: Invite) {
+      if (!config) {
+        return;
+      }
+      this.sk = config.sk || this.sk;
+      this.userId = config.userId;
+      this.orgId = config.orgId;
+      this.startTime = config.startTime;
+      this.endTime = config.endTime;
+      this.permissions = config.permissions;
+      this.ts = config.ts || this.ts;
+    }
+  }
+
   export class Balance {
     static pk: string = "vlm:organization:account:balance";
     pk?: string = Balance.pk;
@@ -44,7 +70,7 @@ export namespace Organization {
     orgId?: string;
     type?: BalanceType;
     value?: number;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
 
     constructor(config: Balance) {
@@ -63,7 +89,7 @@ export namespace Organization {
     orgId: string;
     type: BalanceType;
     value: number;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Balance) {
       this.sk = config?.sk || this.sk;

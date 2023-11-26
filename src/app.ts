@@ -15,6 +15,7 @@ import logController from "./http/controllers/Log.controller";
 import giveawayController from "./http/controllers/Giveaway.controller";
 import balanceController from "./http/controllers/Balance.controller";
 import promotionController from "./http/controllers/Promotion.controller";
+import analyticsController from "./http/controllers/Analytics.controller";
 
 // Create Express server
 const app = express();
@@ -51,6 +52,7 @@ app.use("/event", jsonParser, urlencodedParser, eventController);
 app.use("/giveaway", jsonParser, urlencodedParser, giveawayController);
 app.use("/promotion", jsonParser, urlencodedParser, promotionController);
 app.use("/balance", jsonParser, urlencodedParser, balanceController);
+app.use("/analytics", jsonParser, urlencodedParser, analyticsController);
 app.use("/media", mediaController); // No body-parser middleware applied to this route
 // app.use("/colyseus", monitor());
 app.use("/log", jsonParser, urlencodedParser, logController);

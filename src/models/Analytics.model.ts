@@ -14,7 +14,7 @@ export namespace Analytics {
       world?: string;
       lastIp?: string;
       ttl?: number;
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Config) {
         super(config);
@@ -102,7 +102,7 @@ export namespace Analytics {
       origin?: Metaverse.Location;
       pathPoint?: PathPoint;
       metadata?: unknown = {};
-      ts?: EpochTimeStamp = Date.now();
+      ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
       constructor(config: Action) {
         this.sk = config.sk || this.sk;

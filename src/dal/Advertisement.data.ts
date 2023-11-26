@@ -1,6 +1,7 @@
 import { Advertisement } from "../models/Advertisement.model";
 import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
+import { DateTime } from "luxon";
 
 export abstract class AdvertisementDbManager {
   static obtain: CallableFunction = async (adConfig: Advertisement) => {
@@ -52,7 +53,7 @@ export abstract class AdvertisementDbManager {
       TableName: vlmMainTable,
       Item: {
         ...ad,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

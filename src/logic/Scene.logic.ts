@@ -7,7 +7,8 @@ import { SceneSettingsManager } from "./SceneSettings.logic";
 import { ScenePresetManager } from "./ScenePreset.logic";
 import { GiveawayManager } from "./Giveaway.logic";
 import { DateTime } from "luxon";
-import { UserManager } from "./User.logic";
+import { UserWalletDbManager } from "../dal/UserWallet.data";
+import { SupportedCurrencies } from "../models/Wallet.model";
 
 export abstract class SceneManager {
   // Base Scene Operations //
@@ -57,7 +58,7 @@ export abstract class SceneManager {
       newScene.scenePreset = initialPreset.sk;
       newScene.presets = [initialPreset.sk];
       newScene.settings = initialSettings.map((setting) => setting.sk);
-      
+
       const scene = await SceneManager.createScene(newScene),
         { presets } = await ScenePresetManager.addPresetsToScene(scene, initialPreset),
         { settings } = await SceneSettingsManager.addSettingsToScene(scene, initialSettings),
@@ -126,6 +127,16 @@ export abstract class SceneManager {
   static getGiveawaysForScene: CallableFunction = async (scene: Scene.Config) => {
     const giveaways = await GiveawayManager.getGiveawaysForSceneEvents(scene.sk);
     return giveaways;
+  };
+
+  static inviteUserByWallet: CallableFunction = async (inviteConfig: Scene.Invite & { connectedWallet: string, currency: SupportedCurrencies }) => {
+    try {
+      const user = await UserWalletDbManager.obtain(new User.Wallet({ address: inviteConfig.connectedWallet, currency: inviteConfig.currency || "ETH" }));
+      const invite = new Scene.Invite({ ...inviteConfig, userId: user.userId });
+      return await GenericDbManager.put(invite);
+    } catch (error) {
+      AdminLogManager.logError(error, { from: "SceneManager.inviteUser" });
+    }
   };
   ////
 
@@ -219,26 +230,6 @@ export abstract class SceneManager {
     }
   };
   //
-
-  // Legacy Scene Operations //
-  static getLegacyScene: CallableFunction = async (baseParcel: string) => {
-    try {
-      return await SceneDbManager.getLegacy(baseParcel);
-    } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneManager.getLegacyScene" });
-      return;
-    }
-  };
-
-  static getLegacyScenes: CallableFunction = async () => {
-    try {
-      return await SceneDbManager.getAllLegacy();
-    } catch (error) {
-      AdminLogManager.logError(error, { from: "SceneManager.getLegacyScenes" });
-      return;
-    }
-  };
-  ////
 
   // Scene User State Operations //
   static getUserStateByScene: CallableFunction = async (sceneId: string, key: string) => {

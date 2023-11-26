@@ -42,4 +42,8 @@ export abstract class AnalyticsManager {
     const user = new Analytics.User.Account(userConfig);
     return await AnalyticsUserDbManager.obtain(user);
   };
+
+  static getRecentSceneMetrics: CallableFunction = async (sceneId: string) => {
+    return await AnalyticsUserDbManager.getRecentSceneMetrics(sceneId);
+  }
 }

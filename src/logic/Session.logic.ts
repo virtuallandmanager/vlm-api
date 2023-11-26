@@ -184,7 +184,7 @@ export abstract class SessionManager {
         sk: session.sk,
         userId: session.userId,
         iat: DateTime.now().toUnixInteger(),
-        nonce: Date.now(),
+        nonce: DateTime.now().toUnixInteger(),
       },
       process.env.JWT_ACCESS,
       {
@@ -202,7 +202,7 @@ export abstract class SessionManager {
         sk: session.sk,
         userId: session.userId,
         iat: DateTime.now().toUnixInteger(),
-        nonce: Date.now(),
+        nonce: DateTime.now().toUnixInteger(),
       },
       process.env.JWT_ANALYTICS,
       {
@@ -219,7 +219,7 @@ export abstract class SessionManager {
         sk: session.sk,
         userId: session.userId,
         iat: DateTime.now().toUnixInteger(),
-        nonce: Date.now(),
+        nonce: DateTime.now().toUnixInteger(),
       },
       process.env.JWT_REFRESH,
       {
@@ -236,7 +236,7 @@ export abstract class SessionManager {
         sk: session.sk,
         userId: session.userId,
         iat: DateTime.now().toUnixInteger(),
-        nonce: Date.now(),
+        nonce: DateTime.now().toUnixInteger(),
       },
       process.env.JWT_SIGNATURE,
       {

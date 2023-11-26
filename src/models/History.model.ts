@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { v4 as uuidv4 } from "uuid";
 
 export namespace History {
@@ -6,7 +7,7 @@ export namespace History {
     pk?: string = Config.pk;
     sk?: string = uuidv4(); //shares SK with whatever it's storing a history for
     updates?: string[] | Update[] = [];
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Config) {
       this.sk = config.sk || this.sk;
@@ -21,7 +22,7 @@ export namespace History {
     sk?: string = uuidv4();
     historyId?: string;
     root?: Object;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Root) {
       this.sk = config.sk || this.sk;
@@ -44,7 +45,7 @@ export namespace History {
     property?: string;
     from?: unknown;
     to?: unknown;
-    ts?: EpochTimeStamp = Date.now();
+    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
 
     constructor(config: Update) {
       this.sk = config?.sk || this.sk;

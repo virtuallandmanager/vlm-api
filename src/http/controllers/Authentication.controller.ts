@@ -212,7 +212,7 @@ router.post("/decentraland", dclExpress({ expiration: VALID_SIGNATURE_TOLERANCE_
       clientIp,
       device: subPlatform,
       serverAuthenticated,
-      sessionStart: Date.now(),
+      sessionStart: DateTime.now().toUnixInteger(),
       hasConnectedWeb3: user.hasConnectedWeb3,
       ttl: environment === "prod" ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
     });

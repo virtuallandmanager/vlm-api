@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { BalanceType } from "./Balance.model";
+import { DateTime } from "luxon";
 
 export namespace Promotion {
   export class Config {
@@ -22,7 +23,7 @@ export namespace Promotion {
     promoStart?: EpochTimeStamp;
     promoEnd?: EpochTimeStamp;
     enabled?: boolean;
-    ts: number = Date.now();
+    ts: number = DateTime.now().toUnixInteger();
 
     constructor(config: Config) {
       this.sk = config?.sk || this.sk;
@@ -46,7 +47,7 @@ export namespace Promotion {
     promoId?: string;
     transactionId?: string;
     amount?: number = 0;
-    ts?: number = Date.now();
+    ts?: number = DateTime.now().toUnixInteger();
 
     constructor(config: Claim) {
       this.sk = config?.sk || this.sk;
@@ -69,7 +70,7 @@ export namespace Promotion {
     transactionId?: string;
     balance: number = 0;
     claims?: Array<{ claimId: string, amount: number, ts: number }> = [];
-    ts?: number = Date.now();
+    ts?: number = DateTime.now().toUnixInteger();
 
     constructor(config: ClaimAggregate) {
       this.sk = config?.sk || this.sk;

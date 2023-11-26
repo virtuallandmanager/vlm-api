@@ -1,6 +1,7 @@
 import { docClient, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
+import { DateTime } from "luxon";
 
 export abstract class VLMUserRoleDbManager {
   static get = async (id: number | string) => {
@@ -27,7 +28,7 @@ export abstract class VLMUserRoleDbManager {
       TableName: vlmMainTable,
       Item: {
         ...vlmUserRole,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

@@ -8,9 +8,14 @@ import { Organization } from "../models/Organization.model";
 import { Scene } from "../models/Scene.model";
 import { Analytics } from "../models/Analytics.model";
 import { Log } from "../models/Log.model";
+import { DateTime } from "luxon";
 
 export abstract class AdminDbManager {
-  static getUsers: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getUsers: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -38,7 +43,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getUserSessions: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getUserSessions: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -47,7 +56,7 @@ export abstract class AdminDbManager {
       },
       ExpressionAttributeValues: {
         ":pk": User.Session.Config.pk as AttributeValue,
-        ":ts": Date.now() as AttributeValue,
+        ":ts": DateTime.now().toUnixInteger() as AttributeValue,
       },
       KeyConditionExpression: "#pk = :pk",
       FilterExpression: "#expires >= :ts",
@@ -69,7 +78,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getAnalyticsSessions: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getAnalyticsSessions: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -78,7 +91,7 @@ export abstract class AdminDbManager {
       },
       ExpressionAttributeValues: {
         ":pk": Analytics.Session.Config.pk as AttributeValue,
-        ":ts": Date.now() as AttributeValue,
+        ":ts": DateTime.now().toUnixInteger() as AttributeValue,
       },
       KeyConditionExpression: "#pk = :pk",
       FilterExpression: "#expires >= :ts",
@@ -100,7 +113,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getOrganizations: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getOrganizations: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -129,7 +146,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getScenes: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getScenes: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -159,7 +180,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getEvents: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getEvents: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -189,7 +214,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getErrorLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getErrorLogs: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -219,7 +248,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getWarningLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getWarningLogs: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {
@@ -249,7 +282,11 @@ export abstract class AdminDbManager {
     }
   };
 
-  static getInfoLogs: CallableFunction = async (pageSize?: number, lastEvaluated?: Key, sort?: string) => {
+  static getInfoLogs: CallableFunction = async (
+    pageSize?: number,
+    lastEvaluated?: Key,
+    sort?: string
+  ) => {
     let params: QueryInput = {
       TableName: vlmMainTable,
       ExpressionAttributeNames: {

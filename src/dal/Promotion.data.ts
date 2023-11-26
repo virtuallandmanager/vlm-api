@@ -380,7 +380,7 @@ export abstract class PromotionDbManager {
       TableName: vlmMainTable,
       Item: {
         ...promotion,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 
@@ -406,7 +406,7 @@ export abstract class PromotionDbManager {
       TableName: vlmMainTable,
       Item: {
         ...claim,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

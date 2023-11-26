@@ -7,12 +7,18 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { VLMRecord } from "../models/VLM.model";
 import { largeQuery } from "../helpers/data";
 import { BalanceType } from "../models/Balance.model";
+import { DateTime } from "luxon";
 
 export abstract class BalanceDbManager {
   static getIdsForUser: CallableFunction = async (userId: string) => {
     try {
-      const partialBalances = await GenericDbManager.getAllForUser(User.Balance.pk, userId),
-        balanceIds = partialBalances.map((transaction: User.Balance) => transaction.sk);
+      const partialBalances = await GenericDbManager.getAllForUser(
+          User.Balance.pk,
+          userId
+        ),
+        balanceIds = partialBalances.map(
+          (transaction: User.Balance) => transaction.sk
+        );
 
       return balanceIds;
     } catch (error) {
@@ -26,8 +32,13 @@ export abstract class BalanceDbManager {
 
   static getIdsForOrg: CallableFunction = async (orgId: string) => {
     try {
-      const partialBalances = await GenericDbManager.getAllForOrg(Organization.Balance.pk, orgId),
-        balanceIds = partialBalances.map((transaction: User.Balance) => transaction.sk);
+      const partialBalances = await GenericDbManager.getAllForOrg(
+          Organization.Balance.pk,
+          orgId
+        ),
+        balanceIds = partialBalances.map(
+          (transaction: User.Balance) => transaction.sk
+        );
 
       return balanceIds;
     } catch (error) {
@@ -39,7 +50,9 @@ export abstract class BalanceDbManager {
     }
   };
 
-  static obtain: CallableFunction = async (balance: User.Balance | Organization.Balance) => {
+  static obtain: CallableFunction = async (
+    balance: User.Balance | Organization.Balance
+  ) => {
     let existingBalance, createdBalance;
     try {
       existingBalance = await this.get(balance);
@@ -56,11 +69,21 @@ export abstract class BalanceDbManager {
     }
   };
 
-  static obtainBalanceTypeForUser: CallableFunction = async (userId: string, balanceType: BalanceType) => {
+  static obtainBalanceTypeForUser: CallableFunction = async (
+    userId: string,
+    balanceType: BalanceType
+  ) => {
     try {
       const balanceIds = await this.getIdsForUser(userId);
-      const fullBalanceObjs = await Promise.all(balanceIds.map(async (balanceId: { pk: string, sk: string, userId: string }) => await this.getUserBalanceById(balanceId)));
-      const balancesOfType = await fullBalanceObjs.filter((balance: User.Balance) => balance.type === balanceType);
+      const fullBalanceObjs = await Promise.all(
+        balanceIds.map(
+          async (balanceId: { pk: string; sk: string; userId: string }) =>
+            await this.getUserBalanceById(balanceId)
+        )
+      );
+      const balancesOfType = await fullBalanceObjs.filter(
+        (balance: User.Balance) => balance.type === balanceType
+      );
       if (!balancesOfType || balancesOfType.length === 0) {
         const newBalance = new User.Balance({
           userId,
@@ -70,7 +93,9 @@ export abstract class BalanceDbManager {
         await this.put(newBalance);
         return newBalance;
       } else if (balancesOfType.length > 1) {
-        return new Error("Balance error: More than one balance of the same type was found for this user.");
+        return new Error(
+          "Balance error: More than one balance of the same type was found for this user."
+        );
       } else {
         return balancesOfType[0];
       }
@@ -78,16 +103,24 @@ export abstract class BalanceDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Balance.data/getBalanceTypeForUser",
         userId,
-        balanceType
+        balanceType,
       });
     }
   };
 
-  static obtainBalanceTypeForOrg: CallableFunction = async (orgId: string, balanceType: BalanceType) => {
+  static obtainBalanceTypeForOrg: CallableFunction = async (
+    orgId: string,
+    balanceType: BalanceType
+  ) => {
     try {
       const balanceIds = await this.getIdsForOrg(orgId);
-      const fullBalanceObjs = await balanceIds.map(async (balanceId: { pk: string, sk: string, userId: string }) => await this.getUserBalanceById(balanceId));
-      const balancesOfType = await fullBalanceObjs.filter((balance: Organization.Balance) => balance.type === balanceType);
+      const fullBalanceObjs = await balanceIds.map(
+        async (balanceId: { pk: string; sk: string; userId: string }) =>
+          await this.getUserBalanceById(balanceId)
+      );
+      const balancesOfType = await fullBalanceObjs.filter(
+        (balance: Organization.Balance) => balance.type === balanceType
+      );
       if (!balancesOfType || balancesOfType.length === 0) {
         const newBalance = new Organization.Balance({
           orgId,
@@ -97,7 +130,9 @@ export abstract class BalanceDbManager {
         await this.put(newBalance);
         return newBalance;
       } else if (balancesOfType.length > 1) {
-        return new Error("Balance error: More than one balance of the same type was found for this organization.");
+        return new Error(
+          "Balance error: More than one balance of the same type was found for this organization."
+        );
       } else {
         return balancesOfType[0];
       }
@@ -105,7 +140,7 @@ export abstract class BalanceDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: "Balance.data/obtainBalanceTypeForOrg",
         orgId,
-        balanceType
+        balanceType,
       });
     }
   };
@@ -148,8 +183,13 @@ export abstract class BalanceDbManager {
       };
 
       const balanceFragments = await largeQuery(params),
-        balanceIds = balanceFragments.map((userBalance: User.Balance) => userBalance.sk),
-        balances = await balanceIds.map(async (balance: User.Balance) => await this.getUserBalanceById(balance.sk));
+        balanceIds = balanceFragments.map(
+          (userBalance: User.Balance) => userBalance.sk
+        ),
+        balances = await balanceIds.map(
+          async (balance: User.Balance) =>
+            await this.getUserBalanceById(balance.sk)
+        );
 
       return balances;
     } catch (error) {
@@ -161,8 +201,13 @@ export abstract class BalanceDbManager {
     }
   };
 
-  static createNewBalance: CallableFunction = async (userAccount: User.Account, userBalances: User.Balance[]) => {
-    const balanceIds: string[] = userBalances.map((balance: User.Balance) => balance.sk);
+  static createNewBalance: CallableFunction = async (
+    userAccount: User.Account,
+    userBalances: User.Balance[]
+  ) => {
+    const balanceIds: string[] = userBalances.map(
+      (balance: User.Balance) => balance.sk
+    );
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -171,15 +216,16 @@ export abstract class BalanceDbManager {
             // Add the balance id to the user's account
             Key: {
               ...userAccount,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
-            UpdateExpression: "SET #ts = :ts, #attr = list_append(#attr, :balanceIds)",
+            UpdateExpression:
+              "SET #ts = :ts, #attr = list_append(#attr, :balanceIds)",
             ConditionExpression: "#ts = :userTs",
             ExpressionAttributeNames: { "#ts": "ts", "#value": "value" },
             ExpressionAttributeValues: {
               ":balanceIds": balanceIds,
               ":userTs": userAccount.ts || 0,
-              ":ts": Date.now(),
+              ":ts": DateTime.now().toUnixInteger(),
               TableName: vlmMainTable,
             },
           },
@@ -194,7 +240,7 @@ export abstract class BalanceDbManager {
             // Add a connection from organization to user
             Item: {
               ...userBalance,
-              ts: Date.now(),
+              ts: DateTime.now().toUnixInteger(),
             },
             TableName: vlmMainTable,
           },
@@ -213,7 +259,10 @@ export abstract class BalanceDbManager {
     }
   };
 
-  static updateBalance: CallableFunction = async (balance: User.Balance & VLMRecord, adjustment: number) => {
+  static updateBalance: CallableFunction = async (
+    balance: User.Balance & VLMRecord,
+    adjustment: number
+  ) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: balance.pk, sk: balance.sk },
@@ -223,7 +272,7 @@ export abstract class BalanceDbManager {
       ExpressionAttributeValues: {
         ":value": balance.value || 0,
         ":balanceTs": balance.ts || 0,
-        ":ts": Date.now(),
+        ":ts": DateTime.now().toUnixInteger(),
       },
     };
 
@@ -238,9 +287,13 @@ export abstract class BalanceDbManager {
     }
   };
 
-  static transferBalance: CallableFunction = async (fromBalance: User.Balance | Organization.Balance, toBalance: User.Balance | Organization.Balance, amount: number): Promise<User.Balance | Organization.Balance> => {
+  static transferBalance: CallableFunction = async (
+    fromBalance: User.Balance | Organization.Balance,
+    toBalance: User.Balance | Organization.Balance,
+    amount: number
+  ): Promise<User.Balance | Organization.Balance> => {
     if (amount <= 0) {
-      throw new Error('Amount must be greater than 0');
+      throw new Error("Amount must be greater than 0");
     }
 
     const params: DocumentClient.TransactWriteItemsInput = {
@@ -252,12 +305,12 @@ export abstract class BalanceDbManager {
               pk: fromBalance.pk,
               sk: fromBalance.sk,
             },
-            UpdateExpression: 'SET balance = balance - :amount',
-            ConditionExpression: '#ts <= :balanceTs AND #value >= :amount',
+            UpdateExpression: "SET balance = balance - :amount",
+            ConditionExpression: "#ts <= :balanceTs AND #value >= :amount",
             ExpressionAttributeNames: { "#ts": "ts", "#value": "value" },
             ExpressionAttributeValues: {
-              ':amount': amount,
-              ':balanceTs': fromBalance.ts,
+              ":amount": amount,
+              ":balanceTs": fromBalance.ts,
             },
           },
         },
@@ -268,11 +321,11 @@ export abstract class BalanceDbManager {
               pk: toBalance.pk,
               sk: toBalance.sk,
             },
-            UpdateExpression: 'SET balance = balance + :amount',
-            ConditionExpression: '#ts <= :balanceTs',
+            UpdateExpression: "SET balance = balance + :amount",
+            ConditionExpression: "#ts <= :balanceTs",
             ExpressionAttributeValues: {
-              ':amount': amount,
-              ':balanceTs': toBalance.ts,
+              ":amount": amount,
+              ":balanceTs": toBalance.ts,
             },
           },
         },
@@ -283,12 +336,14 @@ export abstract class BalanceDbManager {
       await docClient.transactWrite(params).promise();
       return this.get(fromBalance);
     } catch (error) {
-      console.error('Transaction failed:', error);
+      console.error("Transaction failed:", error);
       return;
     }
   };
 
-  static get: CallableFunction = async (balance: User.Balance | Organization.Balance) => {
+  static get: CallableFunction = async (
+    balance: User.Balance | Organization.Balance
+  ) => {
     const { pk, sk } = balance;
 
     const params = {
@@ -311,12 +366,14 @@ export abstract class BalanceDbManager {
     }
   };
 
-  static put: CallableFunction = async (balance: User.Balance | Organization.Balance) => {
+  static put: CallableFunction = async (
+    balance: User.Balance | Organization.Balance
+  ) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...balance,
-        ts: Date.now(),
+        ts: DateTime.now().toUnixInteger(),
       },
     };
 

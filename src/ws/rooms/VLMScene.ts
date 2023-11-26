@@ -5,7 +5,7 @@ import { Analytics } from "../../models/Analytics.model";
 import { User } from "../../models/User.model";
 import { UserManager } from "../../logic/User.logic";
 import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/security/auth";
-import { bindEvents, handleAnalyticsUserJoined, handleHostJoined, handleSessionEnd } from "./events/VLMScene.events";
+import { bindEvents, handleAnalyticsUserJoined, handleHostJoined, handleSendActiveUsers, handleSessionEnd } from "./events/VLMScene.events";
 import { Session } from "../../models/Session.model";
 import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
 import { ArraySchema } from "@colyseus/schema";
@@ -122,6 +122,7 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account, sceneId: string }) {
+    handleSendActiveUsers(client, { user: auth?.user, session: auth?.session }, this);
   }
 
   async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config, userConfig: Analytics.User.Account) {
@@ -194,6 +195,7 @@ export class VLMScene extends Room<VLMSceneState> {
       if (client?.auth && !client?.auth?.user) {
         client.auth.user = await UserManager.getById(client.auth.session.userId);
       }
+      handleSendActiveUsers(client, { user: client.auth?.user, session: client.auth?.session, clientLeftScene: true }, this);
       console.log(client.auth?.user?.displayName || "Unknown User", "left!");
       await handleSessionEnd(client, null, this);
     } catch (error) {
