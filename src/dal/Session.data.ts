@@ -12,15 +12,15 @@ import { largeQuery } from "../helpers/data";
 import { Analytics } from "../models/Analytics.model";
 import { User } from "../models/User.model";
 import { DynamoDBServiceException } from "@aws-sdk/client-dynamodb";
+import { config } from "process";
 
-type AnalyticsRestrictedScene = {
-  sceneId: string;
-  restrictedActions: string[];
-};
-
-const analyticsRestrictedScenes: AnalyticsRestrictedScene[] = [];
-let sceneIdUsageRecord: Record<string, { count: number; lastReset: number }> =
-  {};
+const analyticsRestrictedScenes: string[] = []; // stores urns of scene id and actions that have been restricted
+const sceneIdUsageRecords: Record<
+  string,
+  { count: number; lastReset: number }
+> = {};
+type SessionRequestPattern = Record<string, number[]>; // session guid, timestamps
+const sceneRequestPatterns: Record<string, SessionRequestPattern> = {};
 
 export abstract class SessionDbManager {
   static start: CallableFunction = async (
@@ -91,13 +91,53 @@ export abstract class SessionDbManager {
     config: Analytics.Session.Action
   ) => {
     try {
-      // Rate limiting logic
-      const currentTimestamp = Date.now();
-      const usage = sceneIdUsageRecord[`${config.sceneId}:${config.name}`];
+      const sceneActionKey = `${config.sceneId}:${config.name}`,
+        currentTimestamp = DateTime.now().toUnixInteger();
+
+      // Deny request if scene has been restricted from submitting this action
+      if (analyticsRestrictedScenes.includes(sceneActionKey)) {
+        return false;
+      }
+
+      //// START RATE LIMITING LOGIC ////
+
+      // Check if action has an exsiting request pattern for this scene
+      if (!sceneRequestPatterns[sceneActionKey]) {
+        // If not, create a new request pattern for this scene
+        sceneRequestPatterns[sceneActionKey] = {
+          [config.sessionId]: [config.ts],
+        };
+      } else if (sceneRequestPatterns[sceneActionKey][config.sessionId]) {
+        // If there's an existing request pattern for this scene and session, add this timestamp
+        sceneRequestPatterns[sceneActionKey][config.sessionId].push(config.ts);
+      } else {
+        // If not, create a new request pattern for this scene and session id
+        sceneRequestPatterns[sceneActionKey][config.sessionId] = [config.ts];
+      }
+
+      // Check for consistent interval pattern
+      if (this.hasConsistentInterval(config)) {
+        // If this scene is submitting actions at a consistent interval, restrict it from submitting this action
+        analyticsRestrictedScenes.push(sceneActionKey);
+        // Remove this scene action from the request patterns cache
+        delete sceneRequestPatterns[sceneActionKey];
+
+        AdminLogManager.logError(
+          `${config.sceneId} is submitting analytics actions at a consistent interval and has been restricted from submitting "${config.name}" actions.`,
+          {
+            from: "Session.data/logAnalyticsAction",
+            config,
+            patterns: JSON.stringify(sceneRequestPatterns),
+          }
+        );
+        return false;
+      }
+
+      const usage = sceneIdUsageRecords[sceneActionKey];
 
       if (!usage || currentTimestamp - usage.lastReset > 1000) {
         // Set object if new sceneId or more than a second has passed
-        sceneIdUsageRecord[`${config.sceneId}:${config.name}`] = {
+        sceneIdUsageRecords[sceneActionKey] = {
           count: 1,
           lastReset: currentTimestamp,
         };
@@ -107,23 +147,16 @@ export abstract class SessionDbManager {
       } else if (usage.count > 100) {
         // Rate limit exceeded
         AdminLogManager.logError(
-          `${config.sceneId} is being rate limited on "${config.name}" actions.`,
+          `${config.sceneId} has been rate limited on "${config.name}" actions.`,
           {
             from: "Session.data/logAnalyticsAction",
           }
         );
+        analyticsRestrictedScenes.push(sceneActionKey);
         return false;
       }
 
-      const existingRestriction = analyticsRestrictedScenes.find(
-        (restriction) => restriction.sceneId === config.sceneId
-      );
-      if (
-        existingRestriction &&
-        existingRestriction.restrictedActions.includes(config.name)
-      ) {
-        return false;
-      }
+      //// END RATE LIMITING LOGIC ////
 
       const params = {
         TableName: vlmAnalyticsTable,
@@ -141,36 +174,75 @@ export abstract class SessionDbManager {
         from: "Session.data/logAnalyticsAction",
       });
       if (error.code === "ThrottlingException") {
+        const sceneActionKey = `${config.sceneId}:${config.name}`;
         AdminLogManager.logError(
           `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
           {
             from: "Session.data/logAnalyticsAction",
           }
         );
-        const existingRestriction = analyticsRestrictedScenes.find(
-          (restriction) => restriction.sceneId === config.sceneId
-        );
-        if (existingRestriction) {
-          existingRestriction.restrictedActions.push(config.name);
-        } else {
-          analyticsRestrictedScenes.push({
-            sceneId: config.sceneId,
-            restrictedActions: [config.name],
-          });
+        if (!analyticsRestrictedScenes.includes(sceneActionKey)) {
+          analyticsRestrictedScenes.push(sceneActionKey);
         }
       }
       return false;
     }
   };
 
-  static cleanupSceneIdUsageRecord() {
+  static cleanupSceneIdUsageRecord: CallableFunction = () => {
     const currentTimestamp = Date.now();
-    for (const [sceneId, usage] of Object.entries(sceneIdUsageRecord)) {
+    for (const [sceneId, usage] of Object.entries(sceneIdUsageRecords)) {
       if (currentTimestamp - usage.lastReset > 1000) {
-        delete sceneIdUsageRecord[sceneId];
+        delete sceneIdUsageRecords[sceneId];
       }
     }
-  }
+  };
+
+  static hasConsistentInterval: CallableFunction = (
+    sessionAction: Analytics.Session.Action
+  ): boolean => {
+    const sceneActionKey = `${sessionAction.sceneId}:${sessionAction.name}`,
+      sceneSessionActionKey = `${sessionAction.sceneId}:${sessionAction.sessionId}:${sessionAction.name}`,
+      sceneSessionActionPattern =
+        sceneRequestPatterns[sceneActionKey][sessionAction.sessionId];
+
+    // if there are less than 5 timestamps, we need more data to determine if the interval is consistent
+    if (sceneSessionActionPattern.length < 5) return false;
+
+    // Calculate intervals between timestamps
+    let intervals = [];
+    for (
+      let i = 1;
+      i <
+      sceneRequestPatterns[sceneSessionActionKey][sessionAction.sessionId]
+        .length;
+      i++
+    ) {
+      intervals.push(
+        sceneSessionActionPattern[i] - sceneSessionActionPattern[i - 1]
+      );
+    }
+
+    // Calculate the average interval
+    const averageInterval =
+      intervals.reduce((a, b) => a + b) / intervals.length;
+
+    // Define the threshold for consistency (here, half a second or 500 milliseconds)
+    const threshold = 500; // milliseconds
+
+    // Check if all intervals are within the threshold of the average interval
+    const consistent = intervals.every(
+      (interval) => Math.abs(interval - averageInterval) < threshold
+    );
+
+    if (consistent) {
+      return true;
+    } else if (sceneSessionActionPattern.length > 20) {
+      // clear this pattern from the cache if it's not consistent and there are more than 20 timestamps
+      delete sceneRequestPatterns[sceneActionKey][sessionAction.sessionId];
+    }
+    return false;
+  };
 
   static get: CallableFunction = async (
     session: Analytics.Session.Config | User.Session.Config
