@@ -29,11 +29,19 @@ export abstract class UserDbManager {
   };
 
   static get: CallableFunction = async (user: User.Account) => {
-    if (!user.sk) {
+    if (!user.sk && user.connectedWallet) {
       const walletRecord = await UserWalletDbManager.get({
         wallet: user.connectedWallet,
       });
       user.sk = walletRecord.userId;
+    } else {
+      AdminLogManager.logError(
+        "User must have either a connectedWallet or sk",
+        {
+          from: "User.data/get",
+          user,
+        }
+      );
     }
 
     const { pk, sk } = user;
@@ -96,8 +104,16 @@ export abstract class UserDbManager {
       };
 
       const sceneInviteFragments = await largeQuery(params),
-        sceneInviteIds = sceneInviteFragments.map((sceneInvite: Scene.Invite) => sceneInvite.sk),
-        sceneInvites = await sceneInviteIds.map(async (sceneInvite: Scene.Invite) => await GenericDbManager.get({ pk: Scene.Invite.pk, sk: sceneInvite.sk }));
+        sceneInviteIds = sceneInviteFragments.map(
+          (sceneInvite: Scene.Invite) => sceneInvite.sk
+        ),
+        sceneInvites = await sceneInviteIds.map(
+          async (sceneInvite: Scene.Invite) =>
+            await GenericDbManager.get({
+              pk: Scene.Invite.pk,
+              sk: sceneInvite.sk,
+            })
+        );
 
       return sceneInvites;
     } catch (error) {
@@ -126,8 +142,16 @@ export abstract class UserDbManager {
       };
 
       const orgInviteFragments = await largeQuery(params),
-        orgInviteIds = orgInviteFragments.map((orgInvite: Scene.Invite) => orgInvite.sk),
-        orgInvites = await orgInviteIds.map(async (orgInvite: Scene.Invite) => await GenericDbManager.get({ pk: Organization.Invite.pk, sk: orgInvite.sk }));
+        orgInviteIds = orgInviteFragments.map(
+          (orgInvite: Scene.Invite) => orgInvite.sk
+        ),
+        orgInvites = await orgInviteIds.map(
+          async (orgInvite: Scene.Invite) =>
+            await GenericDbManager.get({
+              pk: Organization.Invite.pk,
+              sk: orgInvite.sk,
+            })
+        );
 
       return orgInvites;
     } catch (error) {
@@ -163,7 +187,7 @@ export abstract class UserDbManager {
       return user;
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "User.data/get",
+        from: "User.data/getBalance",
         user,
       });
     }
@@ -224,8 +248,13 @@ export abstract class UserDbManager {
       };
 
       const balanceFragments = await largeQuery(params),
-        balanceIds = balanceFragments.map((userBalance: User.Balance) => userBalance.sk),
-        balances = await balanceIds.map(async (balance: User.Balance) => await UserDbManager.getBalanceById(balance.sk));
+        balanceIds = balanceFragments.map(
+          (userBalance: User.Balance) => userBalance.sk
+        ),
+        balances = await balanceIds.map(
+          async (balance: User.Balance) =>
+            await UserDbManager.getBalanceById(balance.sk)
+        );
 
       return balances;
     } catch (error) {
@@ -237,8 +266,13 @@ export abstract class UserDbManager {
     }
   };
 
-  static createNewBalance: CallableFunction = async (userAccount: User.Account, userBalances: User.Balance[]) => {
-    const balanceIds: string[] = userBalances.map((balance: User.Balance) => balance.sk);
+  static createNewBalance: CallableFunction = async (
+    userAccount: User.Account,
+    userBalances: User.Balance[]
+  ) => {
+    const balanceIds: string[] = userBalances.map(
+      (balance: User.Balance) => balance.sk
+    );
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -249,7 +283,8 @@ export abstract class UserDbManager {
               ...userAccount,
               ts: DateTime.now().toUnixInteger(),
             },
-            UpdateExpression: "SET #ts = :ts, #attr = list_append(#attr, :balanceIds)",
+            UpdateExpression:
+              "SET #ts = :ts, #attr = list_append(#attr, :balanceIds)",
             ConditionExpression: "#ts = :userTs",
             ExpressionAttributeNames: { "#ts": "ts", "#value": "value" },
             ExpressionAttributeValues: {
@@ -289,7 +324,10 @@ export abstract class UserDbManager {
     }
   };
 
-  static updateBalance: CallableFunction = async (balance: User.Balance & VLMRecord, adjustment: number) => {
+  static updateBalance: CallableFunction = async (
+    balance: User.Balance & VLMRecord,
+    adjustment: number
+  ) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: balance.pk, sk: balance.sk },
@@ -377,7 +415,8 @@ export abstract class UserDbManager {
         user,
       });
     }
-  }; static putBalance: CallableFunction = async (balance: User.Balance) => {
+  };
+  static putBalance: CallableFunction = async (balance: User.Balance) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
