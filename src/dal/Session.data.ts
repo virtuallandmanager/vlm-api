@@ -12,7 +12,6 @@ import { largeQuery } from "../helpers/data";
 import { Analytics } from "../models/Analytics.model";
 import { User } from "../models/User.model";
 import { DynamoDBServiceException } from "@aws-sdk/client-dynamodb";
-import { config } from "process";
 
 const analyticsRestrictedScenes: string[] = []; // stores urns of scene id and actions that have been restricted
 const sceneIdUsageRecords: Record<
