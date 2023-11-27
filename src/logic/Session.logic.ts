@@ -275,15 +275,28 @@ export abstract class SessionManager {
       const action = new Analytics.Session.Action(config);
       const rateLimited = rateLimitAnalyticsAction(action);
       if (rateLimited) {
-        return;
+        return false;
       }
-      return await SessionDbManager.logAnalyticsAction(action);
+      const logResponse = await SessionDbManager.logAnalyticsAction(action);
+
+      if (
+        logResponse?.error &&
+        logResponse.sceneActionKey &&
+        !analyticsRestrictedScenes.includes(logResponse.sceneActionKey)
+      ) {
+        analyticsRestrictedScenes.push(logResponse.sceneActionKey);
+        AdminLogManager.logError(
+          `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
+          {
+            from: "Session.logic/logAnalyticsAction",
+          }
+        );
+      }
     } catch (error) {
       AdminLogManager.logError("Failed to log analytics action", {
         from: "Session.logic/logAnalyticsAction",
         config: JSON.stringify(config),
       });
-      console.log(error);
       return;
     }
   };
