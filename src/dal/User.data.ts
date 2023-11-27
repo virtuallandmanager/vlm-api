@@ -34,7 +34,7 @@ export abstract class UserDbManager {
         wallet: user.connectedWallet,
       });
       user.sk = walletRecord.userId;
-    } else {
+    } else if (!user.sk && !user.connectedWallet) {
       AdminLogManager.logError(
         "User must have either a connectedWallet or sk",
         {
@@ -42,6 +42,7 @@ export abstract class UserDbManager {
           user,
         }
       );
+      return;
     }
 
     const { pk, sk } = user;
