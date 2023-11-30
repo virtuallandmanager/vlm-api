@@ -1,5 +1,5 @@
 import { Event } from "../models/Event.model";
-import { vlmMainTable } from "./common.data";
+import { vlmAnalyticsTable, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { largeQuery } from "../helpers/data";
 import { AttributeValue, Key, QueryInput } from "aws-sdk/clients/dynamodb";
@@ -84,7 +84,7 @@ export abstract class AdminDbManager {
     sort?: string
   ) => {
     let params: QueryInput = {
-      TableName: vlmMainTable,
+      TableName: vlmAnalyticsTable,
       ExpressionAttributeNames: {
         "#pk": "pk",
         "#expires": "expires",

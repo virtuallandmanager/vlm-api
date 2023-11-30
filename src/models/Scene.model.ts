@@ -145,6 +145,9 @@ export namespace Scene {
             banWallType: null,
           } as ModerationSettings
         }),
+        new Setting({
+          sceneId, type: SettingType.ACCESS, settingName: "VLM Admin Access", settingValue: false
+        }),
       ];
     }
   }
@@ -155,7 +158,7 @@ export namespace Scene {
     sk?: string = uuidv4();
     userId?: string;
     sceneId?: string;
-    startTime?: EpochTimeStamp;
+    startTime?: EpochTimeStamp = DateTime.now().toUnixInteger();
     endTime?: EpochTimeStamp;
     permissions?: Permissions;
     ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
@@ -178,6 +181,7 @@ export namespace Scene {
     LOCALIZATION,
     MODERATION,
     INTEROPERABILITY,
+    ACCESS
   }
 
   export class Permissions {

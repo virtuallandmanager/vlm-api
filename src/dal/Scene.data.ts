@@ -1,12 +1,12 @@
-import { User } from "../models/User.model";
-import { daxClient, docClient, vlmMainTable } from "./common.data";
-import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { largeQuery } from "../helpers/data";
-import { Scene } from "../models/Scene.model";
-import { DateTime } from "luxon";
-import { GenericDbManager } from "./Generic.data";
-import { VLMSceneMessage } from "../ws/rooms/events/VLMScene.events";
+import { User } from '../models/User.model'
+import { daxClient, docClient, vlmMainTable } from './common.data'
+import { AdminLogManager } from '../logic/ErrorLogging.logic'
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { largeQuery } from '../helpers/data'
+import { Scene } from '../models/Scene.model'
+import { DateTime } from 'luxon'
+import { GenericDbManager } from './Generic.data'
+import { VLMSceneMessage } from '../ws/rooms/events/VLMScene.events'
 
 export abstract class SceneDbManager {
   static get: CallableFunction = async (scene: Scene.Config) => {
@@ -16,19 +16,19 @@ export abstract class SceneDbManager {
         pk: Scene.Config.pk,
         sk: scene.sk,
       },
-    };
+    }
 
     try {
-      const sceneRecord = await daxClient.get(params).promise();
-      return sceneRecord.Item;
+      const sceneRecord = await daxClient.get(params).promise()
+      return sceneRecord.Item
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/get",
+        from: 'Scene.data/get',
         scene,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getPreset: CallableFunction = async (sk: string) => {
     const params = {
@@ -37,19 +37,19 @@ export abstract class SceneDbManager {
         pk: Scene.Preset.pk,
         sk,
       },
-    };
+    }
 
     try {
-      const sceneRecord = await daxClient.get(params).promise();
-      return sceneRecord.Item ? new Scene.Preset(sceneRecord.Item) : {};
+      const sceneRecord = await daxClient.get(params).promise()
+      return sceneRecord.Item ? new Scene.Preset(sceneRecord.Item) : {}
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getPreset",
+        from: 'Scene.data/getPreset',
         sk,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getSetting: CallableFunction = async (sk: string) => {
     const params = {
@@ -58,19 +58,19 @@ export abstract class SceneDbManager {
         pk: Scene.Setting.pk,
         sk,
       },
-    };
+    }
 
     try {
-      const sceneRecord = await daxClient.get(params).promise();
-      return sceneRecord.Item;
+      const sceneRecord = await daxClient.get(params).promise()
+      return sceneRecord.Item
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getSetting",
+        from: 'Scene.data/getSetting',
         sk,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getSceneUserState: CallableFunction = async (sk: string) => {
     const params = {
@@ -79,54 +79,50 @@ export abstract class SceneDbManager {
         pk: Scene.UserState.pk,
         sk,
       },
-    };
+    }
 
     try {
-      const sceneRecord = await daxClient.get(params).promise();
-      return sceneRecord.Item;
+      const sceneRecord = await daxClient.get(params).promise()
+      return sceneRecord.Item
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getSceneUserState",
+        from: 'Scene.data/getSceneUserState',
         sk,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static setSceneUserState: CallableFunction = async (
-    state: Scene.UserState,
-    key: string,
-    value: unknown
-  ) => {
-    const newState = { ...state, [key]: value };
+  static setSceneUserState: CallableFunction = async (state: Scene.UserState, key: string, value: unknown) => {
+    const newState = { ...state, [key]: value }
     const params = {
       TableName: vlmMainTable,
       Key: {
         pk: Scene.UserState.pk,
         sk: state.sk,
       },
-      UpdateExpression: "set #prop = :prop, #ts = :ts",
-      ConditionExpression: "#ts <= :stateTs",
-      ExpressionAttributeNames: { "#prop": "state", "#ts": "ts" },
+      UpdateExpression: 'set #prop = :prop, #ts = :ts',
+      ConditionExpression: '#ts <= :stateTs',
+      ExpressionAttributeNames: { '#prop': 'state', '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ":prop": newState,
-        ":stateTs": state.ts || DateTime.now().toUnixInteger(),
-        ":ts": DateTime.now().toUnixInteger(),
+        ':prop': newState,
+        ':stateTs': state.ts || DateTime.now().toUnixInteger(),
+        ':ts': DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await daxClient.update(params).promise();
-      const fullState = await SceneDbManager.getSceneUserState(state.sk);
-      return fullState && fullState[key];
+      await daxClient.update(params).promise()
+      const fullState = await SceneDbManager.getSceneUserState(state.sk)
+      return fullState && fullState[key]
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/put",
+        from: 'Scene.data/put',
         state,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getById: CallableFunction = async (sk: string) => {
     const params = {
@@ -135,66 +131,64 @@ export abstract class SceneDbManager {
         pk: Scene.Config.pk,
         sk,
       },
-    };
+    }
 
     try {
-      const sceneRecord = await daxClient.get(params).promise();
-      return sceneRecord.Item;
+      const sceneRecord = await daxClient.get(params).promise()
+      return sceneRecord.Item
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getById",
+        from: 'Scene.data/getById',
         sk,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getIdsForUser: CallableFunction = async (user: User.Account) => {
     try {
       const params = {
         TableName: vlmMainTable,
-        IndexName: "userId-index",
+        IndexName: 'userId-index',
         ExpressionAttributeNames: {
-          "#pk": "pk",
-          "#userId": "userId",
+          '#pk': 'pk',
+          '#userId': 'userId',
         },
         ExpressionAttributeValues: {
-          ":pk": User.SceneLink.pk,
-          ":userId": user.sk,
+          ':pk': User.SceneLink.pk,
+          ':userId': user.sk,
         },
-        KeyConditionExpression: "#pk = :pk and #userId = :userId",
-      };
+        KeyConditionExpression: '#pk = :pk and #userId = :userId',
+      }
 
       const sceneLinks = await largeQuery(params),
-        sceneLinkIds = sceneLinks.map(
-          (sceneLink: User.SceneLink) => sceneLink.sk
-        ),
-        ids = await SceneDbManager.getSceneIdsFromLinkIds(sceneLinkIds);
+        sceneLinkIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sk),
+        ids = await SceneDbManager.getSceneIdsFromLinkIds(sceneLinkIds)
 
       if (user?.hideDemoScene) {
-        return ids || [];
+        return ids || []
       } else if (ids?.length) {
-        return [Scene.DemoSceneId, ...ids];
+        return [Scene.DemoSceneId, ...ids]
       } else {
-        return [Scene.DemoSceneId];
+        return [Scene.DemoSceneId]
       }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getIdsByUser",
+        from: 'Scene.data/getIdsByUser',
         user,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getSceneIdsFromLinkIds: CallableFunction = async (sks: string[]) => {
     try {
       if (!sks?.length) {
-        return;
+        return
       }
       const params: DocumentClient.TransactGetItemsInput = {
         TransactItems: [],
-      };
+      }
 
       sks.forEach((sk: string) => {
         params.TransactItems.push({
@@ -206,37 +200,33 @@ export abstract class SceneDbManager {
             },
             TableName: vlmMainTable,
           },
-        });
-      });
+        })
+      })
 
       const response = await docClient.transactGet(params).promise(),
-        sceneLinks = response.Responses.map(
-          (item) => item.Item as User.SceneLink
-        ),
-        sceneIds = sceneLinks.map(
-          (sceneLink: User.SceneLink) => sceneLink.sceneId
-        );
-      return sceneIds;
+        sceneLinks = response.Responses.map((item) => item.Item as User.SceneLink),
+        sceneIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sceneId)
+      return sceneIds
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getSceneIdsFromLinkIds",
+        from: 'Scene.data/getSceneIdsFromLinkIds',
         sks,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getByIds: CallableFunction = async (sks: string[]) => {
     if (!sks?.length) {
-      return;
+      return
     }
     const params: DocumentClient.TransactGetItemsInput = {
       TransactItems: [],
-    };
+    }
 
     sks.forEach((sk: string) => {
       if (!sk) {
-        return;
+        return
       }
       params.TransactItems.push({
         Get: {
@@ -247,28 +237,24 @@ export abstract class SceneDbManager {
           },
           TableName: vlmMainTable,
         },
-      });
-    });
+      })
+    })
 
     try {
       const response = await docClient.transactGet(params).promise(),
-        scenes = response.Responses.map((item) => item.Item as Scene.Config);
-      return scenes?.length ? scenes : [];
+        scenes = response.Responses.map((item) => item.Item as Scene.Config)
+      return scenes?.length ? scenes : []
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/getSceneLinksFromIds",
+        from: 'Scene.data/getSceneLinksFromIds',
         sks,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static initScene: CallableFunction = async (
-    scene: Scene.Config,
-    preset: Scene.Preset,
-    sceneLink: User.SceneLink
-  ) => {
-    const ts = DateTime.now().toUnixInteger();
+  static initScene: CallableFunction = async (scene: Scene.Config, preset: Scene.Preset, sceneLink: User.SceneLink) => {
+    const ts = DateTime.now().toUnixInteger()
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -303,24 +289,21 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      return scene;
+      await docClient.transactWrite(params).promise()
+      return scene
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/initScene",
-      });
-      return;
+        from: 'Scene.data/initScene',
+      })
+      return
     }
-  };
+  }
 
-  static addPresetToScene: CallableFunction = async (
-    sceneConfig: Scene.Config,
-    scenePreset: Scene.Preset
-  ) => {
-    const sk = scenePreset.sk;
+  static addPresetToScene: CallableFunction = async (sceneConfig: Scene.Config, scenePreset: Scene.Preset) => {
+    const sk = scenePreset.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -330,14 +313,13 @@ export abstract class SceneDbManager {
               pk: Scene.Config.pk,
               sk: sceneConfig.sk,
             },
-            UpdateExpression:
-              "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)",
+            UpdateExpression: 'SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)',
             ExpressionAttributeNames: {
-              "#presets": "presets",
+              '#presets': 'presets',
             },
             ExpressionAttributeValues: {
-              ":presetIds": [sk],
-              ":empty_list": [],
+              ':presetIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -353,48 +335,39 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const scene = await this.get(sceneConfig);
-      const preset = await this.getPreset(sk);
+      await docClient.transactWrite(params).promise()
+      const scene = await this.get(sceneConfig)
+      const preset = await this.getPreset(sk)
 
-      return { scene, preset };
+      return { scene, preset }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addPresetToScene",
-      });
-      return;
+        from: 'Scene.data/addPresetToScene',
+      })
+      return
     }
-  };
+  }
 
-  static addPresetsToScene: CallableFunction = async (
-    sceneConfig: Scene.Config,
-    presetConfig: Scene.Preset | Scene.Preset[]
-  ) => {
-    const scenePresets = Array.isArray(presetConfig)
-      ? presetConfig
-      : [presetConfig];
-    const sks = scenePresets
-      .map((preset: Scene.Preset) => preset.sk)
-      .filter((sk: string) => !sceneConfig?.presets?.includes(sk));
+  static addPresetsToScene: CallableFunction = async (sceneConfig: Scene.Config, presetConfig: Scene.Preset | Scene.Preset[]) => {
+    const scenePresets = Array.isArray(presetConfig) ? presetConfig : [presetConfig]
+    const sks = scenePresets.map((preset: Scene.Preset) => preset.sk).filter((sk: string) => !sceneConfig?.presets?.includes(sk))
 
-    let updateExpression =
-      "SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)";
+    let updateExpression = 'SET #presets = list_append(if_not_exists(#presets, :empty_list), :presetIds)'
     const expressionAttributeNames: { [key: string]: string } = {
-      "#presets": "presets",
-    };
+      '#presets': 'presets',
+    }
     const expressionAttributeValues: { [key: string]: any } = {
-      ":presetIds": sks,
-      ":empty_list": [],
-    };
+      ':presetIds': sks,
+      ':empty_list': [],
+    }
 
     if (!sceneConfig.scenePreset && sks.length > 0) {
-      updateExpression +=
-        ", #scenePreset = if_not_exists(#scenePreset, :firstPreset)";
-      expressionAttributeNames["#scenePreset"] = "scenePreset";
-      expressionAttributeValues[":firstPreset"] = sks[0];
+      updateExpression += ', #scenePreset = if_not_exists(#scenePreset, :firstPreset)'
+      expressionAttributeNames['#scenePreset'] = 'scenePreset'
+      expressionAttributeValues[':firstPreset'] = sks[0]
     }
 
     const params: DocumentClient.TransactWriteItemsInput = {
@@ -413,7 +386,7 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     // loop through the array of scene presets passed in and add each to the transaction
     scenePresets.forEach((preset: Scene.Preset) => {
@@ -426,34 +399,31 @@ export abstract class SceneDbManager {
           },
           TableName: vlmMainTable,
         },
-      });
-    });
+      })
+    })
 
     try {
-      await docClient.transactWrite(params).promise();
+      await docClient.transactWrite(params).promise()
       const scene = await this.get(sceneConfig),
-        presets: Scene.Preset[] = [];
+        presets: Scene.Preset[] = []
 
       for (let i = 0; i < sks.length; i++) {
-        const preset = await this.getPreset(sks[i]);
-        presets.push(preset);
+        const preset = await this.getPreset(sks[i])
+        presets.push(preset)
       }
 
-      return { scene, presets };
+      return { scene, presets }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addPresetToScene",
-      });
-      return;
+        from: 'Scene.data/addPresetToScene',
+      })
+      return
     }
-  };
+  }
 
-  static deletePreset: CallableFunction = async (
-    sceneId: string,
-    presetId: string
-  ) => {
+  static deletePreset: CallableFunction = async (sceneId: string, presetId: string) => {
     const scene = await SceneDbManager.getById(sceneId),
-      sks = scene.presets.filter((sk: string) => sk !== presetId);
+      sks = scene.presets.filter((sk: string) => sk !== presetId)
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -463,12 +433,12 @@ export abstract class SceneDbManager {
               pk: Scene.Config.pk,
               sk: sceneId,
             },
-            UpdateExpression: "SET #presets = :presetIds",
+            UpdateExpression: 'SET #presets = :presetIds',
             ExpressionAttributeNames: {
-              "#presets": "presets",
+              '#presets': 'presets',
             },
             ExpressionAttributeValues: {
-              ":presetIds": sks,
+              ':presetIds': sks,
             },
             TableName: vlmMainTable,
           },
@@ -480,41 +450,36 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression: "SET #ttl = :ttl, #deleted = :deleted",
+            UpdateExpression: 'SET #ttl = :ttl, #deleted = :deleted',
             ExpressionAttributeNames: {
-              "#ttl": "ttl",
-              "#deleted": "deleted",
+              '#ttl': 'ttl',
+              '#deleted': 'deleted',
             },
             ExpressionAttributeValues: {
-              ":ttl": DateTime.now().plus({ days: 90 }).toMillis(),
-              ":deleted": true,
+              ':ttl': DateTime.now().plus({ days: 90 }).toMillis(),
+              ':deleted': true,
             },
             TableName: vlmMainTable,
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const scene = await this.getById(sceneId);
+      await docClient.transactWrite(params).promise()
+      const scene = await this.getById(sceneId)
 
-      return scene;
+      return scene
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/deletePreset",
-      });
-      return;
+        from: 'Scene.data/deletePreset',
+      })
+      return
     }
-  };
+  }
 
-  static addSettingsToScene: CallableFunction = async (
-    sceneConfig: Scene.Config,
-    sceneSettings: Scene.Setting[]
-  ) => {
-    const sks = sceneSettings
-      .map((setting: Scene.Setting) => setting.sk)
-      .filter((sk: string) => !sceneConfig?.settings?.includes(sk));
+  static addSettingsToScene: CallableFunction = async (sceneConfig: Scene.Config, sceneSettings: Scene.Setting[]) => {
+    const sks = sceneSettings.map((setting: Scene.Setting) => setting.sk).filter((sk: string) => !sceneConfig?.settings?.includes(sk))
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -524,20 +489,19 @@ export abstract class SceneDbManager {
               pk: Scene.Config.pk,
               sk: sceneConfig.sk,
             },
-            UpdateExpression:
-              "SET #settings = list_append(if_not_exists(#settings, :empty_list), :settingIds)",
+            UpdateExpression: 'SET #settings = list_append(if_not_exists(#settings, :empty_list), :settingIds)',
             ExpressionAttributeNames: {
-              "#settings": "settings",
+              '#settings': 'settings',
             },
             ExpressionAttributeValues: {
-              ":settingIds": sks,
-              ":empty_list": [],
+              ':settingIds': sks,
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
         },
       ],
-    };
+    }
 
     sceneSettings.forEach((setting: Scene.Setting) => {
       params.TransactItems.unshift({
@@ -549,33 +513,30 @@ export abstract class SceneDbManager {
           },
           TableName: vlmMainTable,
         },
-      });
-    });
+      })
+    })
 
     try {
-      await docClient.transactWrite(params).promise();
+      await docClient.transactWrite(params).promise()
       const scene = await this.get(sceneConfig),
-        settings: Scene.Setting[] = [];
+        settings: Scene.Setting[] = []
 
       for (let i = 0; i < sks.length; i++) {
-        const preset = await this.getSetting(sks[i]);
-        settings.push(preset);
+        const preset = await this.getSetting(sks[i])
+        settings.push(preset)
       }
 
-      return { scene, settings };
+      return { scene, settings }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addSettingsToScene",
-      });
-      return;
+        from: 'Scene.data/addSettingsToScene',
+      })
+      return
     }
-  };
+  }
 
-  static addVideoToPreset: CallableFunction = async (
-    presetId: string,
-    sceneVideo: Scene.Video.Config
-  ) => {
-    const sk = sceneVideo.sk;
+  static addVideoToPreset: CallableFunction = async (presetId: string, sceneVideo: Scene.Video.Config) => {
+    const sk = sceneVideo.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -584,14 +545,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #videos = list_append(if_not_exists(#videos, :empty_list), :videoIds)",
+            UpdateExpression: 'SET #videos = list_append(if_not_exists(#videos, :empty_list), :videoIds)',
             ExpressionAttributeNames: {
-              "#videos": "videos",
+              '#videos': 'videos',
             },
             ExpressionAttributeValues: {
-              ":videoIds": [sk],
-              ":empty_list": [],
+              ':videoIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -606,27 +566,25 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(sceneVideo);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(sceneVideo)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addVideoToPreset",
-      });
-      return;
+        from: 'Scene.data/addVideoToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static addInstanceToElement: CallableFunction = async (
-    message: VLMSceneMessage
-  ) => {
+  static addInstanceToElement: CallableFunction = async (message: VLMSceneMessage) => {
     const elementConfig = message.elementData,
-      instanceConfig = message.instanceData;
+      instanceConfig = message.instanceData
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -636,14 +594,13 @@ export abstract class SceneDbManager {
               pk: elementConfig.pk,
               sk: elementConfig.sk,
             },
-            UpdateExpression:
-              "SET #instances = list_append(if_not_exists(#instances, :empty_list), :instanceIds)",
+            UpdateExpression: 'SET #instances = list_append(if_not_exists(#instances, :empty_list), :instanceIds)',
             ExpressionAttributeNames: {
-              "#instances": "instances",
+              '#instances': 'instances',
             },
             ExpressionAttributeValues: {
-              ":instanceIds": [instanceConfig.sk],
-              ":empty_list": [],
+              ':instanceIds': [instanceConfig.sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -658,34 +615,30 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const scenePreset = await this.getPreset(message.scenePreset.sk);
-      const elementData = await GenericDbManager.get(elementConfig);
-      const instanceData = await GenericDbManager.get(instanceConfig);
+      await docClient.transactWrite(params).promise()
+      const scenePreset = await this.getPreset(message.scenePreset.sk)
+      const elementData = await GenericDbManager.get(elementConfig)
+      const instanceData = await GenericDbManager.get(instanceConfig)
 
-      return { scenePreset, elementData, instance: true, instanceData };
+      return { scenePreset, elementData, instance: true, instanceData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addInstanceToElement",
-      });
-      return;
+        from: 'Scene.data/addInstanceToElement',
+      })
+      return
     }
-  };
+  }
 
-  static removeInstanceFromElement: CallableFunction = async (
-    message: VLMSceneMessage
-  ) => {
+  static removeInstanceFromElement: CallableFunction = async (message: VLMSceneMessage) => {
     try {
       const elementConfig = message.elementData,
-        instanceConfig = message.instanceData;
+        instanceConfig = message.instanceData
       const dbElement = await GenericDbManager.get(message.elementData),
         instanceIds = dbElement.instances as string[],
-        filteredInstanceIds = instanceIds.filter(
-          (id: string) => id !== message.instanceData.sk
-        );
+        filteredInstanceIds = instanceIds.filter((id: string) => id !== message.instanceData.sk)
 
       const params: DocumentClient.TransactWriteItemsInput = {
         TransactItems: [
@@ -695,14 +648,14 @@ export abstract class SceneDbManager {
                 pk: message.elementData.pk,
                 sk: message.elementData.sk,
               },
-              ConditionExpression: "#instances = :instanceIds",
-              UpdateExpression: "SET #instances = :newInstanceIds",
+              ConditionExpression: '#instances = :instanceIds',
+              UpdateExpression: 'SET #instances = :newInstanceIds',
               ExpressionAttributeNames: {
-                "#instances": "instances",
+                '#instances': 'instances',
               },
               ExpressionAttributeValues: {
-                ":instanceIds": instanceIds,
-                ":newInstanceIds": filteredInstanceIds,
+                ':instanceIds': instanceIds,
+                ':newInstanceIds': filteredInstanceIds,
               },
               TableName: vlmMainTable,
             },
@@ -713,39 +666,36 @@ export abstract class SceneDbManager {
                 pk: message.instanceData.pk,
                 sk: message.instanceData.sk,
               },
-              UpdateExpression: "SET #ttl = :ttl, #deleted = :deleted",
+              UpdateExpression: 'SET #ttl = :ttl, #deleted = :deleted',
               ExpressionAttributeNames: {
-                "#ttl": "ttl",
-                "#deleted": "deleted",
+                '#ttl': 'ttl',
+                '#deleted': 'deleted',
               },
               ExpressionAttributeValues: {
-                ":ttl": DateTime.now().plus({ days: 30 }),
-                ":deleted": true,
+                ':ttl': DateTime.now().plus({ days: 30 }),
+                ':deleted': true,
               },
               TableName: vlmMainTable,
             },
           },
         ],
-      };
+      }
 
-      await docClient.transactWrite(params).promise();
-      const scenePreset = await this.getPreset(message.scenePreset.sk);
-      const elementData = await GenericDbManager.get(elementConfig);
-      const instanceData = await GenericDbManager.get(instanceConfig);
-      return { scenePreset, elementData, instance: true, instanceData };
+      await docClient.transactWrite(params).promise()
+      const scenePreset = await this.getPreset(message.scenePreset.sk)
+      const elementData = await GenericDbManager.get(elementConfig)
+      const instanceData = await GenericDbManager.get(instanceConfig)
+      return { scenePreset, elementData, instance: true, instanceData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/removeInstanceFromElement",
-      });
-      return;
+        from: 'Scene.data/removeInstanceFromElement',
+      })
+      return
     }
-  };
+  }
 
-  static addImageToPreset: CallableFunction = async (
-    presetId: string,
-    sceneImage: Scene.Image.Config
-  ) => {
-    const sk = sceneImage.sk;
+  static addImageToPreset: CallableFunction = async (presetId: string, sceneImage: Scene.Image.Config) => {
+    const sk = sceneImage.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -754,14 +704,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #images = list_append(if_not_exists(#images, :empty_list), :imageIds)",
+            UpdateExpression: 'SET #images = list_append(if_not_exists(#images, :empty_list), :imageIds)',
             ExpressionAttributeNames: {
-              "#images": "images",
+              '#images': 'images',
             },
             ExpressionAttributeValues: {
-              ":imageIds": [sk],
-              ":empty_list": [],
+              ':imageIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -776,27 +725,24 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(sceneImage);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(sceneImage)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addImageToPreset",
-      });
-      return;
+        from: 'Scene.data/addImageToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static addNftToPreset: CallableFunction = async (
-    presetId: string,
-    sceneNft: Scene.NFT.Config
-  ) => {
-    const sk = sceneNft.sk;
+  static addNftToPreset: CallableFunction = async (presetId: string, sceneNft: Scene.NFT.Config) => {
+    const sk = sceneNft.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -805,14 +751,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #nfts = list_append(if_not_exists(#nfts, :empty_list), :nftIds)",
+            UpdateExpression: 'SET #nfts = list_append(if_not_exists(#nfts, :empty_list), :nftIds)',
             ExpressionAttributeNames: {
-              "#nfts": "nfts",
+              '#nfts': 'nfts',
             },
             ExpressionAttributeValues: {
-              ":nftIds": [sk],
-              ":empty_list": [],
+              ':nftIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -827,27 +772,24 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(sceneNft);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(sceneNft)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addNftToPreset",
-      });
-      return;
+        from: 'Scene.data/addNftToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static addModelToPreset: CallableFunction = async (
-    presetId: string,
-    sceneModel: Scene.Model.Config
-  ) => {
-    const sk = sceneModel.sk;
+  static addModelToPreset: CallableFunction = async (presetId: string, sceneModel: Scene.Model.Config) => {
+    const sk = sceneModel.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -856,14 +798,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #models = list_append(if_not_exists(#models, :empty_list), :modelIds)",
+            UpdateExpression: 'SET #models = list_append(if_not_exists(#models, :empty_list), :modelIds)',
             ExpressionAttributeNames: {
-              "#models": "models",
+              '#models': 'models',
             },
             ExpressionAttributeValues: {
-              ":modelIds": [sk],
-              ":empty_list": [],
+              ':modelIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -878,27 +819,24 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(sceneModel);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(sceneModel)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addModelToPreset",
-      });
-      return;
+        from: 'Scene.data/addModelToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static addSoundToPreset: CallableFunction = async (
-    presetId: string,
-    sceneSound: Scene.Sound.Config
-  ) => {
-    const sk = sceneSound.sk;
+  static addSoundToPreset: CallableFunction = async (presetId: string, sceneSound: Scene.Sound.Config) => {
+    const sk = sceneSound.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -907,14 +845,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #sounds = list_append(if_not_exists(#sounds, :empty_list), :soundIds)",
+            UpdateExpression: 'SET #sounds = list_append(if_not_exists(#sounds, :empty_list), :soundIds)',
             ExpressionAttributeNames: {
-              "#sounds": "sounds",
+              '#sounds': 'sounds',
             },
             ExpressionAttributeValues: {
-              ":soundIds": [sk],
-              ":empty_list": [],
+              ':soundIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -930,27 +867,24 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(sceneSound);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(sceneSound)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addSoundToPreset",
-      });
-      return;
+        from: 'Scene.data/addSoundToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static addWidgetToPreset: CallableFunction = async (
-    presetId: string,
-    sceneWidget: Scene.Widget.Config
-  ) => {
-    const sk = sceneWidget.sk;
+  static addWidgetToPreset: CallableFunction = async (presetId: string, sceneWidget: Scene.Widget.Config) => {
+    const sk = sceneWidget.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -959,14 +893,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #widgets = list_append(if_not_exists(#widgets, :empty_list), :widgetIds)",
+            UpdateExpression: 'SET #widgets = list_append(if_not_exists(#widgets, :empty_list), :widgetIds)',
             ExpressionAttributeNames: {
-              "#widgets": "widgets",
+              '#widgets': 'widgets',
             },
             ExpressionAttributeValues: {
-              ":widgetIds": [sk],
-              ":empty_list": [],
+              ':widgetIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -982,27 +915,24 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(sceneWidget);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(sceneWidget)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addWidgetToPreset",
-      });
-      return;
+        from: 'Scene.data/addWidgetToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static addClaimPointToPreset: CallableFunction = async (
-    presetId: string,
-    claimPoint: Scene.Giveaway.ClaimPoint
-  ) => {
-    const sk = claimPoint.sk;
+  static addClaimPointToPreset: CallableFunction = async (presetId: string, claimPoint: Scene.Giveaway.ClaimPoint) => {
+    const sk = claimPoint.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
         {
@@ -1011,14 +941,13 @@ export abstract class SceneDbManager {
               pk: Scene.Preset.pk,
               sk: presetId,
             },
-            UpdateExpression:
-              "SET #claimPoints = list_append(if_not_exists(#claimPoints, :empty_list), :claimPointIds)",
+            UpdateExpression: 'SET #claimPoints = list_append(if_not_exists(#claimPoints, :empty_list), :claimPointIds)',
             ExpressionAttributeNames: {
-              "#claimPoints": "claimPoints",
+              '#claimPoints': 'claimPoints',
             },
             ExpressionAttributeValues: {
-              ":claimPointIds": [sk],
-              ":empty_list": [],
+              ':claimPointIds': [sk],
+              ':empty_list': [],
             },
             TableName: vlmMainTable,
           },
@@ -1034,122 +963,112 @@ export abstract class SceneDbManager {
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const elementData = await GenericDbManager.get(claimPoint);
-      const scenePreset = await this.getPreset(presetId);
+      await docClient.transactWrite(params).promise()
+      const elementData = await GenericDbManager.get(claimPoint)
+      const scenePreset = await this.getPreset(presetId)
 
-      return { scenePreset, elementData };
+      return { scenePreset, elementData }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/addClaimPointToPreset",
-      });
-      return;
+        from: 'Scene.data/addClaimPointToPreset',
+      })
+      return
     }
-  };
+  }
 
-  static updateSceneProperty: CallableFunction = async (
-    sceneConfig: Scene.Config,
-    property: string,
-    newValue: unknown
-  ) => {
-    const ts = DateTime.now().toUnixInteger();
-    if (sceneConfig.ts && sceneConfig.ts > ts) {
-      sceneConfig.ts = ts;
+  static updateSceneProperty: CallableFunction = async (sceneConfig: Scene.Config, property: string, newValue: unknown) => {
+    const ts = DateTime.now().toUnixInteger()
+    // Get current timestamp in milliseconds for comparison
+    const currentTimestampInMilliseconds = DateTime.now().toMillis()
+
+    // If the timestamp is within the same order of magnitude as the current time, it's likely in milliseconds
+    if (sceneConfig.ts && sceneConfig.ts > currentTimestampInMilliseconds / 10) {
+      sceneConfig.ts = ts
     }
+    
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: Scene.Config.pk, sk: sceneConfig.sk },
-      UpdateExpression: "set #prop = :prop, #ts = :ts",
-      ConditionExpression: "#ts <= :sceneTs",
-      ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
+      UpdateExpression: 'set #prop = :prop, #ts = :ts',
+      ConditionExpression: '#ts <= :sceneTs',
+      ExpressionAttributeNames: { '#prop': property, '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ":prop": newValue,
-        ":sceneTs": sceneConfig.ts || ts,
-        ":ts": ts,
+        ':prop': newValue,
+        ':sceneTs': sceneConfig.ts || ts,
+        ':ts': ts,
       },
-    };
+    }
 
     try {
-      await daxClient.update(params).promise();
-      return await this.getById(sceneConfig.sk);
+      await daxClient.update(params).promise()
+      return await this.getById(sceneConfig.sk)
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/updateSceneProperty",
+        from: 'Scene.data/updateSceneProperty',
         sceneConfig,
         property,
         newValue,
-      });
-      return await this.get(sceneConfig);
+      })
+      return await this.get(sceneConfig)
     }
-  };
+  }
 
-  static updateSceneElementProperty: CallableFunction = async (
-    message: VLMSceneMessage,
-    options?: { skipPreset: boolean }
-  ) => {
-    const ts = DateTime.now().toUnixInteger();
-    let { elementData, property, scenePreset } = message;
-    let valueProp;
+  static updateSceneElementProperty: CallableFunction = async (message: VLMSceneMessage, options?: { skipPreset: boolean }) => {
+    const ts = DateTime.now().toUnixInteger()
+    let { elementData, property, scenePreset } = message
+    let valueProp
     Object.keys(elementData).forEach((key: string) => {
       if (key == property && elementData.hasOwnProperty(property)) {
-        valueProp = key;
+        valueProp = key
       }
-    });
+    })
 
     if (!valueProp) {
-      return;
+      return
     }
 
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: elementData.pk, sk: elementData.sk },
-      UpdateExpression: "set #prop = :prop, #ts = :ts",
+      UpdateExpression: 'set #prop = :prop, #ts = :ts',
       // ConditionExpression: "#ts <= :elementTs",
-      ExpressionAttributeNames: { "#prop": property, "#ts": "ts" },
+      ExpressionAttributeNames: { '#prop': property, '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ":prop": elementData[valueProp],
+        ':prop': elementData[valueProp],
         // ":elementTs": elementData.ts,
-        ":ts": ts,
+        ':ts': ts,
       },
-    };
+    }
 
     try {
-      await daxClient.update(params).promise();
-      elementData = await GenericDbManager.get(elementData);
-      scenePreset = options?.skipPreset
-        ? null
-        : await this.getPreset(message.scenePreset.sk);
-      return { scenePreset, elementData };
+      await daxClient.update(params).promise()
+      elementData = await GenericDbManager.get(elementData)
+      scenePreset = options?.skipPreset ? null : await this.getPreset(message.scenePreset.sk)
+      return { scenePreset, elementData }
     } catch (error) {
-      console.log(error);
+      console.log(error)
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/updateElementProperty",
+        from: 'Scene.data/updateElementProperty',
         message,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static removeSceneElement: CallableFunction = async (
-    message: VLMSceneMessage
-  ) => {
-    const { elementData, scenePreset } = message;
-    const dbPreset = await this.getPreset(scenePreset.sk);
+  static removeSceneElement: CallableFunction = async (message: VLMSceneMessage) => {
+    const { elementData, scenePreset } = message
+    const dbPreset = await this.getPreset(scenePreset.sk)
 
-    const videos = dbPreset.videos.filter(
-        (id: string) => id !== elementData.sk
-      ),
+    const videos = dbPreset.videos.filter((id: string) => id !== elementData.sk),
       images = dbPreset.images.filter((id: string) => id !== elementData.sk),
       nfts = dbPreset.nfts.filter((id: string) => id !== elementData.sk),
       sounds = dbPreset.sounds.filter((id: string) => id !== elementData.sk),
       widgets = dbPreset.widgets.filter((id: string) => id !== elementData.sk),
-      claimPoints = dbPreset.claimPoints.filter(
-        (id: string) => id !== elementData.sk
-      ),
-      models = dbPreset.models.filter((id: string) => id !== elementData.sk);
+      claimPoints = dbPreset.claimPoints.filter((id: string) => id !== elementData.sk),
+      models = dbPreset.models.filter((id: string) => id !== elementData.sk)
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -1160,24 +1079,24 @@ export abstract class SceneDbManager {
               sk: dbPreset.sk,
             },
             UpdateExpression:
-              "SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints, #models = :models",
+              'SET #videos = :videos, #images = :images, #nfts = :nfts, #sounds = :sounds, #widgets = :widgets, #claimPoints = :claimPoints, #models = :models',
             ExpressionAttributeNames: {
-              "#videos": "videos",
-              "#images": "images",
-              "#nfts": "nfts",
-              "#models": "models",
-              "#sounds": "sounds",
-              "#claimPoints": "claimPoints",
-              "#widgets": "widgets",
+              '#videos': 'videos',
+              '#images': 'images',
+              '#nfts': 'nfts',
+              '#models': 'models',
+              '#sounds': 'sounds',
+              '#claimPoints': 'claimPoints',
+              '#widgets': 'widgets',
             },
             ExpressionAttributeValues: {
-              ":videos": videos,
-              ":images": images,
-              ":nfts": nfts,
-              ":models": models,
-              ":sounds": sounds,
-              ":claimPoints": claimPoints,
-              ":widgets": widgets,
+              ':videos': videos,
+              ':images': images,
+              ':nfts': nfts,
+              ':models': models,
+              ':sounds': sounds,
+              ':claimPoints': claimPoints,
+              ':widgets': widgets,
             },
             TableName: vlmMainTable,
           },
@@ -1188,57 +1107,54 @@ export abstract class SceneDbManager {
               pk: elementData.pk,
               sk: elementData.sk,
             },
-            UpdateExpression: "SET #ttl = :ttl, #deleted = :deleted",
+            UpdateExpression: 'SET #ttl = :ttl, #deleted = :deleted',
             ExpressionAttributeNames: {
-              "#ttl": "ttl",
-              "#deleted": "deleted",
+              '#ttl': 'ttl',
+              '#deleted': 'deleted',
             },
             ExpressionAttributeValues: {
-              ":ttl": DateTime.now().plus({ days: 30 }),
-              ":deleted": true,
+              ':ttl': DateTime.now().plus({ days: 30 }),
+              ':deleted': true,
             },
             TableName: vlmMainTable,
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const scenePreset = await GenericDbManager.get(dbPreset);
-      return { scenePreset };
+      await docClient.transactWrite(params).promise()
+      const scenePreset = await GenericDbManager.get(dbPreset)
+      return { scenePreset }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/removeSceneElement",
-      });
-      return;
+        from: 'Scene.data/removeSceneElement',
+      })
+      return
     }
-  };
+  }
 
-  static updatePreset: CallableFunction = async (
-    scene: Scene.Config,
-    preset: Scene.Preset
-  ) => {
+  static updatePreset: CallableFunction = async (scene: Scene.Config, preset: Scene.Preset) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...preset,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await daxClient.put(params).promise();
-      const scenePreset = await SceneDbManager.getPreset(preset.sk);
-      return { scenePreset };
+      await daxClient.put(params).promise()
+      const scenePreset = await SceneDbManager.getPreset(preset.sk)
+      return { scenePreset }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/put",
+        from: 'Scene.data/put',
         scene,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static put: CallableFunction = async (scene: Scene.Config) => {
     const params = {
@@ -1247,46 +1163,44 @@ export abstract class SceneDbManager {
         ...scene,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await daxClient.put(params).promise();
-      return await SceneDbManager.getById(scene.sk);
+      await daxClient.put(params).promise()
+      return await SceneDbManager.getById(scene.sk)
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/put",
+        from: 'Scene.data/put',
         scene,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static updateInstance: CallableFunction = async (
-    message: VLMSceneMessage
-  ) => {
+  static updateInstance: CallableFunction = async (message: VLMSceneMessage) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...message.instanceData,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await daxClient.put(params).promise();
-      const instanceData = await GenericDbManager.get(message.instanceData);
-      const scenePreset = await this.getPreset(message.scenePreset.sk);
+      await daxClient.put(params).promise()
+      const instanceData = await GenericDbManager.get(message.instanceData)
+      const scenePreset = await this.getPreset(message.scenePreset.sk)
 
       return {
         instanceData,
         scenePreset,
-      };
+      }
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Scene.data/updateInstance",
+        from: 'Scene.data/updateInstance',
         message,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 }
