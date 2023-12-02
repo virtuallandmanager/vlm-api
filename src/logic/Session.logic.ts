@@ -23,8 +23,11 @@ const cleanupSceneIdUsageRecord: CallableFunction = () => {
   }
 }
 
-setTimeout(() => {
-  AdminLogManager.logErrorToDiscord('Rate Limiter Cache Status:' + JSON.stringify({ sceneIdUsageRecords, sceneRequestPatterns }))
+setInterval(() => {
+  AdminLogManager.logErrorToDiscord(
+    'Rate Limiter Cache Status:' + JSON.stringify({ analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }),
+    true
+  )
 }, 1000 * 60 * 30)
 
 const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Session.Action): boolean => {
