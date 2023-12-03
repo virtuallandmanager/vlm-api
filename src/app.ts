@@ -16,7 +16,6 @@ import giveawayController from './http/controllers/Giveaway.controller'
 import balanceController from './http/controllers/Balance.controller'
 import promotionController from './http/controllers/Promotion.controller'
 import analyticsController from './http/controllers/Analytics.controller'
-import { vlmAdminMiddleware } from './middlewares/security/auth'
 
 // Create Express server
 const app = express()
@@ -63,7 +62,7 @@ app.use('/promotion', jsonParser, urlencodedParser, promotionController)
 app.use('/balance', jsonParser, urlencodedParser, balanceController)
 app.use('/analytics', jsonParser, urlencodedParser, analyticsController)
 app.use('/media', mediaController) // No body-parser middleware applied to this route
-app.use('/colyseus', vlmAdminMiddleware, monitor())
+app.use('/_status', monitor())
 app.use('/log', jsonParser, urlencodedParser, logController)
 
 export default app

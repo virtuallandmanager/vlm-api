@@ -164,55 +164,22 @@ router.get('/migrate/:pk', async (req: Request, res: Response) => {
   }
 })
 
-router.get('/convert-timestamps/:pk', (req, res) => {
-  const primaryKey = req.params.pk
-
-  convertTimestamps(primaryKey)
-    .then(() => res.send(`Timestamp conversion completed for PK: ${primaryKey}`))
-    .catch((error) => res.status(500).send(error.message))
-})
-
-async function convertTimestamps(primaryKey: string) {
-  const tableName = 'vlm_main'
-  let itemsProcessed = 0
-
-  const queryParams: AWS.DynamoDB.DocumentClient.QueryInput = {
-    TableName: tableName,
-    KeyConditionExpression: 'pk = :pk',
-    ExpressionAttributeValues: { ':pk': primaryKey },
-  }
-
+router.get('stats', async (req: Request, res: Response) => {
   try {
-    let queryResult
-    do {
-      queryResult = await docClient.query(queryParams).promise()
-      for (const item of queryResult.Items || []) {
-        const timestamp = item.ts as number
-        if (timestamp && timestamp.toString().length === 13) {
-          const updatedTimestamp = DateTime.fromMillis(timestamp).toUnixInteger()
-
-          const updateParams: AWS.DynamoDB.DocumentClient.UpdateItemInput = {
-            TableName: tableName,
-            Key: {
-              pk: primaryKey,
-              sk: item.sk,
-            },
-            UpdateExpression: 'set ts = :t',
-            ExpressionAttributeValues: { ':t': updatedTimestamp },
-          }
-
-          await docClient.update(updateParams).promise()
-          itemsProcessed++
-        }
-      }
-      queryParams.ExclusiveStartKey = queryResult.LastEvaluatedKey
-    } while (queryParams.ExclusiveStartKey)
-  } catch (error) {
-    console.error(`Error processing PK ${primaryKey}:`, error)
-    throw error
+    const status = await SessionManager.getSessionStats()
+    return res.status(200).json({
+      text: 'Successfully got status.',
+      status: JSON.stringify(status),
+    })
+  } catch (error: unknown) {
+    AdminLogManager.logError(JSON.stringify(error), {
+      from: 'Admin.controller/getStatus',
+    })
+    return res.status(500).json({
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
+      error,
+    })
   }
-
-  console.log(`Processed and updated ${itemsProcessed} items for PK: ${primaryKey}`)
-}
+})
 
 export default router

@@ -8,8 +8,9 @@ import { Analytics } from '../models/Analytics.model'
 import { User } from '../models/User.model'
 import { Session as BaseSession } from '../models/Session.model'
 import { UserManager } from './User.logic'
+import { redis } from '../dal/common.data'
 
-const analyticsRestrictedScenes: string[] = [] // stores urns of scene id and actions that have been restricted
+const analyticsRestrictedScenes: string[] = SessionDbManager.restoreRedisArray('analyticsRestrictedScenes') // stores urns of scene id and actions that have been restricted
 const sceneIdUsageRecords: Record<string, { count: number; lastReset: number }> = {}
 type SessionRequestPattern = Record<string, number[]> // session guid, timestamps
 const sceneRequestPatterns: Record<string, SessionRequestPattern> = {}
@@ -101,6 +102,7 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
     if (hasConsistentInterval(config)) {
       // If this scene is submitting actions at a consistent interval, restrict it from submitting this action
       analyticsRestrictedScenes.push(sceneActionKey)
+      redis.set('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
       // Remove this scene action from the request patterns cache
       delete sceneRequestPatterns[sceneActionKey]
 
@@ -147,6 +149,16 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
 }
 
 export abstract class SessionManager {
+  static getSessionStats: CallableFunction = async () => {
+    try {
+      return { analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }
+    } catch (error) {
+      AdminLogManager.logError('Failed to get session stats', { from: 'Session.logic/getSessionStats' })
+      console.log(error)
+      return
+    }
+  }
+
   static initAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
     try {
       const session = new Analytics.Session.Config(config)
