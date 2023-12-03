@@ -1,205 +1,234 @@
-import { Client, Room } from "colyseus";
-import axios from "axios";
-import { SessionManager } from "../../logic/Session.logic";
-import { Analytics } from "../../models/Analytics.model";
-import { User } from "../../models/User.model";
-import { UserManager } from "../../logic/User.logic";
-import { analyticsAuthMiddleware, userAuthMiddleware } from "../../middlewares/security/auth";
-import { bindEvents, handleAnalyticsUserJoined, handleHostJoined, handleSendActiveUsers, handleSessionEnd } from "./events/VLMScene.events";
-import { Session } from "../../models/Session.model";
-import { SceneStream, VLMSceneState } from "./schema/VLMSceneState";
-import { ArraySchema } from "@colyseus/schema";
-import { AdminLogManager } from "../../logic/ErrorLogging.logic";
-import https from "https";
+import { Client, Room } from 'colyseus'
+import axios from 'axios'
+import { SessionManager } from '../../logic/Session.logic'
+import { Analytics } from '../../models/Analytics.model'
+import { User } from '../../models/User.model'
+import { UserManager } from '../../logic/User.logic'
+import { analyticsAuthMiddleware, userAuthMiddleware } from '../../middlewares/security/auth'
+import { bindEvents, handleAnalyticsUserJoined, handleHostJoined, handleSendActiveUsers, handleSessionEnd } from './events/VLMScene.events'
+import { Session } from '../../models/Session.model'
+import { SceneStream, VLMSceneState } from './schema/VLMSceneState'
+import { ArraySchema } from '@colyseus/schema'
+import { AdminLogManager } from '../../logic/ErrorLogging.logic'
+import https from 'https'
 
 export class VLMScene extends Room<VLMSceneState> {
   onCreate(options: any) {
-    bindEvents(this);
-    this.setState(new VLMSceneState(options.sceneId));
-    this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000);
+    bindEvents(this)
+    this.setState(new VLMSceneState(options.sceneId))
+    this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000)
   }
 
   removeDuplicates(arr: ArraySchema<SceneStream>) {
     // Use a Set to store unique 'sk' values.
-    const skSet = new Set();
-    const result = new ArraySchema<SceneStream>();
+    const skSet = new Set()
+    const result = new ArraySchema<SceneStream>()
 
     for (let obj of arr) {
       // If the 'sk' value is already in the Set, skip this object.
       if (skSet.has(obj.sk)) {
-        continue;
+        continue
       }
 
       // Add the 'sk' value to the Set and push the object to the result array.
-      skSet.add(obj.sk);
-      result.push(obj);
+      skSet.add(obj.sk)
+      result.push(obj)
     }
 
-    return result;
+    return result
   }
 
   async checkStateOfStreams() {
     if (this.state.streams.length === 0) {
-      return;
+      return
     } else if (this.state.streams.length <= 4 && this.state.skipped >= 2) {
-      this.state.batchSize = this.state.streams.length;
-      this.state.skipped = 0;
+      this.state.batchSize = this.state.streams.length
+      this.state.skipped = 0
     } else if (this.state.streams.length <= 4 && this.state.skipped < 2) {
-      this.state.skipped += 1;
-      return;
+      this.state.skipped += 1
+      return
     } else if (this.state.streams.length <= 100) {
       // Gradually increase batch size from 1 to 20 as the number of streams goes from 5 to 100
-      this.state.batchSize = Math.ceil(((this.state.streams.length - 4) / (100 - 4)) * (20 - 1) + 1);
+      this.state.batchSize = Math.ceil(((this.state.streams.length - 4) / (100 - 4)) * (20 - 1) + 1)
     } else {
-      AdminLogManager.logErrorToDiscord(`There are more than 100 streams in scene ${this.state.sceneId}. Warn scene owner of performance issues.`);
-      return;
+      AdminLogManager.logErrorToDiscord(`There are more than 100 streams in scene ${this.state.sceneId}. Warn scene owner of performance issues.`)
+      return
     }
-    this.state.streams = this.removeDuplicates(this.state.streams);
-    console.log(`--- Checking Streams ---`);
-    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status} - ${this.state.sceneId}`).join("\n ")}`);
+    this.state.streams = this.removeDuplicates(this.state.streams)
+    console.log(`--- Checking Streams ---`)
+    console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status} - ${this.state.sceneId}`).join('\n ')}`)
 
     if (this.state.streamIndex >= this.state.streams.length) {
-      this.state.streamIndex = 0;
+      this.state.streamIndex = 0
     }
 
-    const streams = this.state.streams.slice(this.state.streamIndex, this.state.streamIndex + this.state.batchSize);
+    const streams = this.state.streams.slice(this.state.streamIndex, this.state.streamIndex + this.state.batchSize)
 
     for (const stream of streams) {
-      const streamStatus = stream.status;
-      const status = await this.isStreamLive(stream.url);
+      const streamStatus = stream.status
+      const status = await this.isStreamLive(stream.url)
 
       // If the status has changed, update it and notify relevant clients
       if (status !== streamStatus) {
-        stream.status = status;
-        console.log(`Stream State Changed:`);
-        console.log(`Scene: ${this.state.sceneId} | Stream: ${stream.url} | Status: ${status}`);
+        stream.status = status
+        console.log(`Stream State Changed:`)
+        console.log(`Scene: ${this.state.sceneId} | Stream: ${stream.url} | Status: ${status}`)
         // Send a message to anyone in the room that has a matching sceneId
-        this.broadcast("scene_video_status", { sk: stream.sk, status, url: stream.url });
+        this.broadcast('scene_video_status', { sk: stream.sk, status, url: stream.url })
+      } else if (this.state.needsUpdate.length > 0) {
+        this.clients.forEach((client) => {
+          const userId = client.auth?.user?.sk,
+            needsUpdate = this.state.needsUpdate.includes(userId),
+            needsUpdateIndex = this.state.needsUpdate.findIndex((id) => id === userId)
+
+          if (userId && needsUpdate) {
+            client.send('scene_video_status', { sk: stream.sk, status, url: stream.url })
+            this.state.needsUpdate.splice(needsUpdateIndex, 1)
+          }
+        })
       }
     }
-    this.state.streamIndex += this.state.batchSize;
+    this.state.streamIndex += this.state.batchSize
   }
 
   async onAuth(client: Client, sessionConfig: Session.Config) {
-    const { sessionToken, refreshToken, sceneId } = sessionConfig;
+    const { sessionToken, refreshToken, sceneId } = sessionConfig
     try {
-      let auth: { session: Session.Config; user: Analytics.User.Account } = { session: sessionConfig, user: {} };
+      let auth: { session: Session.Config; user: Analytics.User.Account } = { session: sessionConfig, user: {} }
 
       if (sessionConfig.pk == Analytics.Session.Config.pk) {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
-          auth.session = session;
-          auth.user = user;
+          auth.session = session
+          auth.user = user
           if (!auth.session || !auth.user) {
-            client.leave();
-            return;
+            client.leave()
+            return
           }
-        });
-        const response = await this.connectAnalyticsUser(client, auth.session, auth.user);
-        auth.session = response.session;
+        })
+        const response = await this.connectAnalyticsUser(client, auth.session, auth.user)
+        auth.session = response.session
       } else if (sessionConfig.host) {
         await userAuthMiddleware(client, { sessionToken, refreshToken, sceneId }, ({ session, user }) => {
-          auth.session = session;
-          auth.user = user;
+          auth.session = session
+          auth.user = user
           if (!auth.session || !auth.user) {
-            client.leave();
-            return;
+            client.leave()
+            return
           }
-          auth.session.sceneId = sessionConfig.sceneId;
-        });
-        const user = await this.connectHostUser(client, auth.session);
+          auth.session.sceneId = sessionConfig.sceneId
+        })
+        const user = await this.connectHostUser(client, auth.session)
         if (user) {
-          auth.user = user;
+          auth.user = user
         }
       } else {
-        AdminLogManager.logError("Invalid session type detected", { sessionConfig });
+        AdminLogManager.logError('Invalid session type detected', { sessionConfig })
       }
-      client.auth = auth;
+      client.auth = auth
 
-      return auth;
+      return auth
     } catch (error) {
-      AdminLogManager.logError(error, { from: "VLMScene.onAuth" });
+      AdminLogManager.logError(error, { from: 'VLMScene.onAuth' })
     }
   }
 
-  async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | Analytics.User.Account, sceneId: string }) {
-    handleSendActiveUsers(client, { user: auth?.user, session: auth?.session }, this);
+  async onJoin(
+    client: Client,
+    sessionConfig: Session.Config,
+    auth: { session: Session.Config; user: User.Account | Analytics.User.Account; sceneId: string }
+  ) {
+    handleSendActiveUsers(client, { user: auth?.user, session: auth?.session }, this)
   }
 
   async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config, userConfig: Analytics.User.Account) {
-    const session = await SessionManager.initAnalyticsSession(sessionConfig);
-    console.log(`${userConfig?.displayName} joined in ${sessionConfig.location.world || "world"} at ${sessionConfig.location.location} - ${client.sessionId}.`);
-    await handleAnalyticsUserJoined(client, { session, user: userConfig }, this);
-    return { session };
+    const session = await SessionManager.initAnalyticsSession(sessionConfig)
+    console.log(
+      `${userConfig?.displayName} joined in ${sessionConfig.location.world || 'world'} at ${sessionConfig.location.location} - ${client.sessionId}.`
+    )
+    await handleAnalyticsUserJoined(client, { session, user: userConfig }, this)
+    return { session }
   }
 
   async connectHostUser(client: Client, session: User.Session.Config) {
     if (session?.userId) {
-      const user = await UserManager.getById(session.userId);
-      await handleHostJoined(client, { session, user }, this);
-      return user;
+      const user = await UserManager.getById(session.userId)
+      await handleHostJoined(client, { session, user }, this)
+      return user
     } else {
-      client.leave();
+      client.leave()
     }
   }
 
   async getHlsContent(url: string): Promise<boolean> {
     try {
       if (!url) {
-        return;
+        return
       }
       const agent = new https.Agent({
         rejectUnauthorized: false,
-      });
+      })
       // console.log("Checking HLS stream: ", url);
-      const response = await axios.get(url, { httpsAgent: agent });
+      const response = await axios.get(url, { httpsAgent: agent })
       // console.log(response);
       if (response.status === 200) {
-        return true;
+        return true
       } else {
-        AdminLogManager.logInfo("Received non-200 success status", { url, streams: JSON.stringify(this.state.streams), totalClients: this.clients.length, clients: this.clients, response: JSON.stringify(response) });
-        return false;
+        AdminLogManager.logInfo('Received non-200 success status', {
+          url,
+          streams: JSON.stringify(this.state.streams),
+          totalClients: this.clients.length,
+          clients: this.clients,
+          response: JSON.stringify(response),
+        })
+        return false
       }
     } catch (error: any) {
       if (error.response && error.response.status == 403) {
-        this.state.streams = this.state.streams.filter((stream) => stream.url !== url);
-        const clientAuths = this.clients.map((client) => client.auth);
+        this.state.streams = this.state.streams.filter((stream) => stream.url !== url)
+        const clientAuths = this.clients.map((client) => client.auth)
         try {
-          const log = await AdminLogManager.logWarning("Received 403 Forbidden error from HLS stream.", { url, streams: JSON.stringify(this.state.streams), totalClients: this.clients.length, clients: clientAuths, error: JSON.stringify(error) });
-          return false;
+          const log = await AdminLogManager.logWarning('Received 403 Forbidden error from HLS stream.', {
+            url,
+            streams: JSON.stringify(this.state.streams),
+            totalClients: this.clients.length,
+            clients: clientAuths,
+            error: JSON.stringify(error),
+          })
+          return false
         } catch (error) {
-          return false;
+          return false
         }
       } else if (error.response && error.response.status === 404) {
-        return false;
+        return false
       } else {
-        return false;
+        return false
       }
     }
   }
 
   async isStreamLive(url: string): Promise<boolean> {
     try {
-      const content = await this.getHlsContent(url);
+      const content = await this.getHlsContent(url)
       if (content) {
-        return true;
+        return true
       } else {
-        return false;
+        return false
       }
     } catch (error: any) {
-      return false;
+      return false
     }
   }
 
   async onLeave(client: Client) {
     try {
       if (client?.auth && !client?.auth?.user) {
-        client.auth.user = await UserManager.getById(client.auth.session.userId);
+        client.auth.user = await UserManager.getById(client.auth.session.userId)
       }
-      handleSendActiveUsers(client, { user: client.auth?.user, session: client.auth?.session, clientLeftScene: true }, this);
-      console.log(client.auth?.user?.displayName || "Unknown User", "left!");
-      await handleSessionEnd(client, null, this);
+      handleSendActiveUsers(client, { user: client.auth?.user, session: client.auth?.session, clientLeftScene: true }, this)
+      console.log(client.auth?.user?.displayName || 'Unknown User', 'left!')
+      await handleSessionEnd(client, null, this)
     } catch (error) {
-      AdminLogManager.logError(error, { from: "VLMScene.onLeave" });
+      AdminLogManager.logError(error, { from: 'VLMScene.onLeave' })
     }
   }
 }
