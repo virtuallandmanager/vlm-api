@@ -86,7 +86,7 @@ export class VLMScene extends Room<VLMSceneState> {
       // send updates to any clients that need an updated video status
       this.state.needsUpdate.forEach((id, i) => {
         const clientNeedingUpdate = this.clients.find((client) => client.auth?.user?.sk === id),
-          userId = clientNeedingUpdate.auth?.user?.sk,
+          userId = clientNeedingUpdate?.auth?.user?.sk,
           needsUpdate = this.state.needsUpdate.includes(userId)
 
         if (userId && needsUpdate) {
