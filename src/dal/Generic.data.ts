@@ -54,6 +54,9 @@ export abstract class GenericDbManager {
         pk,
       },
       KeyConditionExpression: '#pk = :pk',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+      },
     }
 
     try {
