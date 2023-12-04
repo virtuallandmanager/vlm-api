@@ -508,7 +508,7 @@ export abstract class SessionDbManager {
 
   static restoreRedisArray: CallableFunction = async () => {
     try {
-      const cacheRecords = await GenericDbManager.get({ pk: Cache.Config.pk })
+      const cacheRecords = await GenericDbManager.query({ pk: Cache.Config.pk })
       cacheRecords.forEach((record: Cache.Config) => {
         redis.set(record.sk, JSON.stringify(record))
       })

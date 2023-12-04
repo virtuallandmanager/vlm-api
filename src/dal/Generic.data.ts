@@ -1,29 +1,29 @@
-import { IDbItem, daxClient, docClient, vlmMainTable } from "./common.data";
-import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { largeQuery } from "../helpers/data";
-import { VLMRecord } from "../models/VLM.model";
-import { DateTime } from "luxon";
+import { IDbItem, daxClient, docClient, vlmMainTable } from './common.data'
+import { AdminLogManager } from '../logic/ErrorLogging.logic'
+import { largeQuery } from '../helpers/data'
+import { VLMRecord } from '../models/VLM.model'
+import { DateTime } from 'luxon'
 
 export abstract class GenericDbManager {
   static obtain: CallableFunction = async (dataConfig: IDbItem) => {
-    let existingData, updatedData, finalData;
+    let existingData, updatedData, finalData
     try {
-      existingData = await this.get(dataConfig);
-      updatedData = Object.assign({}, existingData, dataConfig);
-      finalData = await this.put(updatedData);
+      existingData = await this.get(dataConfig)
+      updatedData = Object.assign({}, existingData, dataConfig)
+      finalData = await this.put(updatedData)
 
-      return finalData;
+      return finalData
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Generic.data/obtain",
+        from: 'Generic.data/obtain',
         dataConfig,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static get = async (dataConfig: IDbItem) => {
-    const { pk, sk } = dataConfig;
+    const { pk, sk } = dataConfig
 
     const params = {
       TableName: vlmMainTable,
@@ -31,29 +31,52 @@ export abstract class GenericDbManager {
         pk,
         sk,
       },
-    };
+    }
 
     try {
-      const record = await docClient.get(params).promise();
-      return record.Item;
+      const record = await docClient.get(params).promise()
+      return record.Item
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Generic.data/get",
+        from: 'Generic.data/get',
         dataConfig,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
+
+  static query = async (dataConfig: IDbItem) => {
+    const { pk, sk } = dataConfig
+
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk,
+        sk,
+      },
+    }
+
+    try {
+      const records = await largeQuery(params)
+      return records
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: 'Generic.data/query',
+        dataConfig,
+      })
+      return
+    }
+  }
 
   static getFragment = async (dataConfig: IDbItem, props: string[]) => {
-    const { pk, sk } = dataConfig;
+    const { pk, sk } = dataConfig
     let ProjectionExpression,
-      ExpressionAttributeNames: { [any: string]: string } = {};
+      ExpressionAttributeNames: { [any: string]: string } = {}
 
     props.forEach((prop: string) => {
-      ExpressionAttributeNames[`#${prop}`] = prop;
-    });
-    ProjectionExpression = Object.keys(ExpressionAttributeNames).join(", ");
+      ExpressionAttributeNames[`#${prop}`] = prop
+    })
+    ProjectionExpression = Object.keys(ExpressionAttributeNames).join(', ')
 
     const params = {
       TableName: vlmMainTable,
@@ -63,75 +86,75 @@ export abstract class GenericDbManager {
       },
       ProjectionExpression,
       ExpressionAttributeNames,
-    };
+    }
 
     try {
-      const record = await docClient.get(params).promise();
-      return record.Item;
+      const record = await docClient.get(params).promise()
+      return record.Item
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Generic.data/getFragment",
+        from: 'Generic.data/getFragment',
         dataConfig,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getAllForUser = async (pk: string, userId: string) => {
     const params = {
       TableName: vlmMainTable,
-      IndexName: "userId-index",
+      IndexName: 'userId-index',
       ExpressionAttributeNames: {
-        "#pk": "pk",
-        "#userId": "userId",
+        '#pk': 'pk',
+        '#userId': 'userId',
       },
       ExpressionAttributeValues: {
-        ":pk": pk,
-        ":userId": userId,
+        ':pk': pk,
+        ':userId': userId,
       },
-      KeyConditionExpression: "#pk = :pk and #userId = :userId",
-    };
+      KeyConditionExpression: '#pk = :pk and #userId = :userId',
+    }
 
     try {
-      const records = await largeQuery(params);
-      return records;
+      const records = await largeQuery(params)
+      return records
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Generic.data/get",
+        from: 'Generic.data/get',
         pk,
         userId,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getAllForOrg = async (pk: string, orgId: string) => {
     const params = {
       TableName: vlmMainTable,
-      IndexName: "orgId-index",
+      IndexName: 'orgId-index',
       ExpressionAttributeNames: {
-        "#pk": "pk",
-        "#userId": "userId",
+        '#pk': 'pk',
+        '#userId': 'userId',
       },
       ExpressionAttributeValues: {
-        ":pk": pk,
-        ":orgId": orgId,
+        ':pk': pk,
+        ':orgId': orgId,
       },
-      KeyConditionExpression: "#pk = :pk and #orgId = :orgId",
-    };
+      KeyConditionExpression: '#pk = :pk and #orgId = :orgId',
+    }
 
     try {
-      const records = await largeQuery(params);
-      return records;
+      const records = await largeQuery(params)
+      return records
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Generic.data/get",
+        from: 'Generic.data/get',
         pk,
         orgId,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static put = async (dataConfig: IDbItem, useCaching: boolean = false) => {
     const params = {
@@ -140,22 +163,22 @@ export abstract class GenericDbManager {
         ...dataConfig,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
       if (useCaching) {
-        await daxClient.put(params).promise();
+        await daxClient.put(params).promise()
       } else {
-        await docClient.put(params).promise();
+        await docClient.put(params).promise()
       }
-      const dbItem = await this.get(dataConfig);
-      return dbItem;
+      const dbItem = await this.get(dataConfig)
+      return dbItem
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
-        from: "Generic.data/put",
+        from: 'Generic.data/put',
         dataConfig,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 }
