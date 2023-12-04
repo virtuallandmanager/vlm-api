@@ -116,7 +116,7 @@ export class VLMScene extends Room<VLMSceneState> {
             return
           }
         })
-        const response = await this.connectAnalyticsUser(client, auth.session, auth.user)
+        const response = await this.connectAnalyticsUser(client, { ...auth.session, ...sessionConfig }, auth.user)
         auth.session = response.session
       } else if (sessionConfig.host) {
         await userAuthMiddleware(client, { sessionToken, refreshToken, sceneId }, ({ session, user }) => {
