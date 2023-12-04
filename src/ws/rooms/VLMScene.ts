@@ -39,21 +39,26 @@ export class VLMScene extends Room<VLMSceneState> {
   }
 
   async checkStateOfStreams() {
+    // Checks the status of the video streams, running once every second
     if (this.state.streams.length === 0) {
       return
     } else if (this.state.streams.length <= 4 && this.state.skipped >= 2) {
+      // If there are 4 or fewer streams, and two checks have been skipped, check all streams
       this.state.batchSize = this.state.streams.length
       this.state.skipped = 0
     } else if (this.state.streams.length <= 4 && this.state.skipped < 2) {
+      // If there are 4 or fewer streams and less than two checks have been skipped, skip this check
+      // This limits stream status checks to once every 3 seconds.
       this.state.skipped += 1
       return
-    } else if (this.state.streams.length <= 100) {
-      // Gradually increase batch size from 1 to 20 as the number of streams goes from 5 to 100
-      this.state.batchSize = Math.ceil(((this.state.streams.length - 4) / (100 - 4)) * (20 - 1) + 1)
+    } else if (this.state.streams.length <= 50) {
+      // Gradually increase batch size from 1 to 10 as the number of streams goes from 5 to 50
+      this.state.batchSize = Math.ceil((this.state.streams.length / (100 - 4)) * (20 - 1) + 1)
     } else {
-      AdminLogManager.logErrorToDiscord(`There are more than 100 streams in scene ${this.state.sceneId}. Warn scene owner of performance issues.`)
+      AdminLogManager.logErrorToDiscord(`There are more than 50 streams in scene ${this.state.sceneId}. Warn scene owner of performance issues.`)
       return
     }
+
     this.state.streams = this.removeDuplicates(this.state.streams)
     console.log(`--- Checking Streams ---`)
     console.log(`${this.state.streams.map((stream) => `${stream.url} - ${stream.status} - ${this.state.sceneId}`).join('\n ')}`)
@@ -68,25 +73,28 @@ export class VLMScene extends Room<VLMSceneState> {
       const streamStatus = stream.status
       const status = await this.isStreamLive(stream.url)
 
-      // If the status has changed, update it and notify relevant clients
+      // If the status has changed, update it and notify all clients
       if (status !== streamStatus) {
         stream.status = status
-        console.log(`Stream State Changed:`)
-        console.log(`Scene: ${this.state.sceneId} | Stream: ${stream.url} | Status: ${status}`)
-        // Send a message to anyone in the room that has a matching sceneId
-        this.broadcast('scene_video_status', { sk: stream.sk, status, url: stream.url })
-      } else if (this.state.needsUpdate.length > 0) {
-        this.clients.forEach((client) => {
-          const userId = client.auth?.user?.sk,
-            needsUpdate = this.state.needsUpdate.includes(userId),
-            needsUpdateIndex = this.state.needsUpdate.findIndex((id) => id === userId)
 
-          if (userId && needsUpdate) {
-            client.send('scene_video_status', { sk: stream.sk, status, url: stream.url })
-            this.state.needsUpdate.splice(needsUpdateIndex, 1)
-          }
-        })
+        // Send a message to everyone in the room
+        this.broadcast('scene_video_status', { sk: stream.sk, status, url: stream.url })
+      } else if (this.state.needsUpdate.length <= 0) {
+        return
       }
+
+      // send updates to any clients that need an updated video status
+      this.state.needsUpdate.forEach((id, i) => {
+        const clientNeedingUpdate = this.clients.find((client) => client.auth?.user?.sk === id),
+          userId = clientNeedingUpdate.auth?.user?.sk,
+          needsUpdate = this.state.needsUpdate.includes(userId)
+
+        if (userId && needsUpdate) {
+          clientNeedingUpdate.send('scene_video_status', { sk: stream.sk, status, url: stream.url })
+        } else {
+          this.state.needsUpdate = this.state.needsUpdate.splice(i, 1)
+        }
+      })
     }
     this.state.streamIndex += this.state.batchSize
   }
@@ -167,9 +175,7 @@ export class VLMScene extends Room<VLMSceneState> {
       const agent = new https.Agent({
         rejectUnauthorized: false,
       })
-      // console.log("Checking HLS stream: ", url);
       const response = await axios.get(url, { httpsAgent: agent })
-      // console.log(response);
       if (response.status === 200) {
         return true
       } else {
