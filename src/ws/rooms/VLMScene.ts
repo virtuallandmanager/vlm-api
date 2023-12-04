@@ -102,7 +102,10 @@ export class VLMScene extends Room<VLMSceneState> {
   async onAuth(client: Client, sessionConfig: Session.Config) {
     const { sessionToken, refreshToken, sceneId } = sessionConfig
     try {
-      let auth: { session: Session.Config; user: Analytics.User.Account } = { session: sessionConfig, user: {} }
+      let auth: { session: Partial<Analytics.Session.Config | Session.Config>; user: Partial<Analytics.User.Account | User.Account> } = {
+        session: sessionConfig,
+        user: {},
+      }
 
       if (sessionConfig.pk == Analytics.Session.Config.pk) {
         await analyticsAuthMiddleware(client, { sessionToken, sceneId }, ({ session, user }) => {
@@ -148,7 +151,7 @@ export class VLMScene extends Room<VLMSceneState> {
     handleSendActiveUsers(client, { user: auth?.user, session: auth?.session }, this)
   }
 
-  async connectAnalyticsUser(client: Client, sessionConfig: Analytics.Session.Config, userConfig: Analytics.User.Account) {
+  async connectAnalyticsUser(client: Client, sessionConfig: Partial<Analytics.Session.Config>, userConfig: Partial<Analytics.User.Account>) {
     const session = await SessionManager.initAnalyticsSession(sessionConfig)
     console.log(
       `${userConfig?.displayName} joined in ${sessionConfig.location.world || 'world'} at ${sessionConfig.location.location} - ${client.sessionId}.`
@@ -157,7 +160,7 @@ export class VLMScene extends Room<VLMSceneState> {
     return { session }
   }
 
-  async connectHostUser(client: Client, session: User.Session.Config) {
+  async connectHostUser(client: Client, session: Partial<User.Session.Config>) {
     if (session?.userId) {
       const user = await UserManager.getById(session.userId)
       await handleHostJoined(client, { session, user }, this)

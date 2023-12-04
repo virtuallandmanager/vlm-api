@@ -6,8 +6,7 @@ import { AdminManager } from '../../logic/Admin.logic'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import { MigrationDbManager } from '../../dal/Migration.data'
 import { SessionManager } from '../../logic/Session.logic'
-import { docClient } from '../../dal/common.data'
-import { DateTime } from 'luxon'
+
 const router = express.Router()
 
 router.get('/panel', authMiddleware, vlmAdminMiddleware, async (req: Request, res: Response) => {

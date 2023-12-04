@@ -235,8 +235,6 @@ async function handleSessionAction(
       { session, user } = client.auth,
       { displayName } = user
 
-    // if (client.auth.session.environment !== "prod") { return false };
-    // await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async () => {
     const response = await SessionManager.logAnalyticsAction({
       name: action,
       metadata,
@@ -254,7 +252,6 @@ async function handleSessionAction(
         host.send('add_session_action', { action, metadata, pathPoint, displayName, timestamp })
       })
     }
-    // });
     return false
   } catch (error) {
     AdminLogManager.logError('Failed to log analytics action - UNAUTHENTICATED', { ...message, ...client.auth })
@@ -825,7 +822,6 @@ export async function handleRequestPlayerPosition(client: Client, message: { use
   // Logic for request_player_position message
   try {
     const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk)
-    // const inWorldUser = room.clients.find((c) => c.auth.session.pk === Analytics.Session.Config.pk && c.auth.user.sk === message.userId || c.auth.user.connectedWallet === message.connectedWallet);
     if (inWorldUser) {
       inWorldUser.send('request_player_position', message)
     } else {
