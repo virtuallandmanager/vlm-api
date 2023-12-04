@@ -230,6 +230,9 @@ async function handleSessionAction(
   room: VLMScene
 ) {
   try {
+    if (message.pathPoint && message.pathPoint[0]) {
+      message.pathPoint[0] = message.pathPoint[0].toString().length >= 13 ? message.pathPoint[0] / 1000 : message.pathPoint[0]
+    }
     const timestamp = DateTime.now().toUnixInteger(),
       { action, metadata, pathPoint } = message,
       { session, user } = client.auth,
@@ -254,7 +257,7 @@ async function handleSessionAction(
     }
     return false
   } catch (error) {
-    AdminLogManager.logError('Failed to log analytics action - UNAUTHENTICATED', { ...message, ...client.auth })
+    AdminLogManager.logError('Failed to log analytics action', { error, action: message.action })
     return false
   }
 }
