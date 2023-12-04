@@ -100,15 +100,6 @@ export async function analyticsAuthMiddleware(
 
   if (session) {
     let user = await AnalyticsManager.getUserById(session.userId)
-    user = { pk: user.pk, sk: user.sk, displayName: user.displayName, connectedWallet: user.connectedWallet }
-    session = {
-      pk: session.pk,
-      sk: session.sk,
-      sessionToken: session.sessionToken,
-      sceneId: session.sceneId,
-      userId: session.userId,
-      connectedWallet: session.connectedWallet,
-    }
     next({ session, user })
     return
   }
