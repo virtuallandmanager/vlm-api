@@ -512,7 +512,7 @@ export abstract class SessionDbManager {
       cacheRecords.forEach((record: Cache.Config) => {
         redis.set(record.sk, JSON.stringify(record))
       })
-      return { success: true }
+      return cacheRecords || []
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: 'Session.data/cacheRedisArray',

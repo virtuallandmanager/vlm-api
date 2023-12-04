@@ -10,7 +10,7 @@ import { Session as BaseSession } from '../models/Session.model'
 import { UserManager } from './User.logic'
 import { redis } from '../dal/common.data'
 
-const analyticsRestrictedScenes: string[] = SessionDbManager.restoreRedisArray('analyticsRestrictedScenes') // stores urns of scene id and actions that have been restricted
+const analyticsRestrictedScenes: string[] = SessionDbManager.restoreRedisArray('analyticsRestrictedScenes') || [] // stores urns of scene id and actions that have been restricted
 const sceneIdUsageRecords: Record<string, { count: number; lastReset: number }> = {}
 type SessionRequestPattern = Record<string, number[]> // session guid, timestamps
 const sceneRequestPatterns: Record<string, SessionRequestPattern> = {}
@@ -79,7 +79,7 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
 
     // Deny request if scene has been restricted from submitting this action
     if (analyticsRestrictedScenes.includes(sceneActionKey)) {
-      return false
+      return true
     }
 
     //// START RATE LIMITING LOGIC ////
@@ -114,7 +114,7 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
           patterns: JSON.stringify(sceneRequestPatterns),
         }
       )
-      return false
+      return true
     }
 
     const usage = sceneIdUsageRecords[sceneActionKey]
@@ -134,8 +134,9 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
         from: 'Session Action Rate Limiter',
       })
       analyticsRestrictedScenes.push(sceneActionKey)
-      return false
+      return true
     }
+    return false
     //// END RATE LIMITING LOGIC ////
   } catch (error) {
     AdminLogManager.logError('Failed to check for consistent interval', {
