@@ -25,10 +25,17 @@ const cleanupSceneIdUsageRecord: CallableFunction = () => {
 }
 
 setInterval(() => {
-  AdminLogManager.logErrorToDiscord(
-    'Rate Limiter Cache Status:' + JSON.stringify({ analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }),
-    true
-  )
+  if (analyticsRestrictedScenes && Array(analyticsRestrictedScenes) && analyticsRestrictedScenes.length) {
+    AdminLogManager.logErrorToDiscord(
+      'Rate Limiter Cache Status:' + JSON.stringify({ analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }),
+      true
+    )
+  } else {
+    AdminLogManager.logErrorToDiscord(
+      'Rate Limiter Cache Status:' + JSON.stringify({ analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }),
+      true
+    )
+  }
 }, 1000 * 60 * 30)
 
 const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Session.Action): boolean => {

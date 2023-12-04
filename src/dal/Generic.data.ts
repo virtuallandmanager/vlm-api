@@ -64,13 +64,13 @@ export abstract class GenericDbManager {
 
     try {
       const records = await largeQuery(params)
-      return records
+      return records || []
     } catch (error) {
       AdminLogManager.logError(JSON.stringify(error), {
         from: 'Generic.data/query',
         dataConfig,
       })
-      return
+      return []
     }
   }
 
