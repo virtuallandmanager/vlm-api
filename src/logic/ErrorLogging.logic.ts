@@ -1,69 +1,72 @@
-import axios from "axios";
-import { AdminLogDbManager } from "../dal/ErrorLogging.data";
-import config from "../../config/config";
-import { Log } from "../models/Log.model";
-import { User } from "../models/User.model";
+import axios from 'axios'
+import { AdminLogDbManager } from '../dal/ErrorLogging.data'
+import config from '../../config/config'
+import { Log } from '../models/Log.model'
+import { User } from '../models/User.model'
 
 export abstract class AdminLogManager {
-  static retries: { [retryId: string]: number } = {};
+  static retries: { [retryId: string]: number } = {}
 
   static logInfo = async (log: unknown, metadata: any, userInfo?: User.Account) => {
     try {
-      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.INFO);
+      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.INFO)
     } catch (error: any) {
-      this.logError(error, { from: "AdminLogManager.logInfo", metadata });
-      console.log(error);
-      return;
+      this.logError(error, { from: 'AdminLogManager.logInfo', metadata })
+      console.log(error)
+      return
     }
-  };
+  }
   static logWarning = async (log: unknown, metadata: any, userInfo?: User.Account) => {
     try {
-      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WARNING);
+      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WARNING)
     } catch (error: any) {
-      this.logError(error, { from: "AdminLogManager.logWarning", metadata });
-      console.log(error);
-      return;
+      this.logError(error, { from: 'AdminLogManager.logWarning', metadata })
+      console.log(error)
+      return
     }
-  };
+  }
   static logError = async (log: unknown, metadata: any, userInfo?: User.Account, noCatch?: boolean) => {
     try {
-      this.logErrorToDiscord(`<@&1041552453918801973>\n
+      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR)
+
+      if (!noCatch) {
+        this.logErrorToDiscord(`<@&1041552453918801973>\n
       ${JSON.stringify(log)}\n
       -\n
       Metadata: ${JSON.stringify(metadata)}}`)
-      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR);
+      }
     } catch (error: any) {
       if (noCatch) {
-        return;
+        return
       }
-      this.logError(error, { from: "AdminLogManager.logError", metadata, failedOnce: true }, userInfo, true);
-      console.log(error);
-      return;
+      this.logError(error, { from: 'AdminLogManager.logError', metadata, failedOnce: true }, userInfo, true)
+      console.log(error)
+      return
     }
-  };
+  }
   static logFatal = async (log: unknown, metadata: any, userInfo: User.Account) => {
     try {
-      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.FATAL);
+      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.FATAL)
     } catch (error: any) {
-      this.logError(error, { from: "AdminLogManager.logFatal", metadata });
-      console.log(error);
-      return;
+      this.logError(error, { from: 'AdminLogManager.logFatal', metadata })
+      console.log(error)
+      return
     }
-  };
+  }
   static logWAT = async (log: unknown, metadata: any, userInfo?: User.Account) => {
     try {
-      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WAT);
+      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WAT)
     } catch (error: any) {
-      this.logError(error, { from: "AdminLogManager.logWAT", metadata });
-      console.log(error);
-      return;
+      this.logError(error, { from: 'AdminLogManager.logWAT', metadata })
+      console.log(error)
+      return
     }
-  };
+  }
   static logExternalError = async (log: unknown, metadata: any, userInfo?: User.Account) => {
     try {
-      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR);
+      await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR)
       this.logErrorToDiscord(`
-      :rotating_light: -- ${userInfo ? "USER-REPORTED " : ""}ERROR LOGGED FROM ${config.environment.toUpperCase()} -- :rotating_light:\n
+      :rotating_light: -- ${userInfo ? 'USER-REPORTED ' : ''}ERROR LOGGED FROM ${config.environment.toUpperCase()} -- :rotating_light:\n
       <@&1041552453918801973>\n
       TIME:\n
       **${new Date().toLocaleString()}**\n\n
@@ -71,30 +74,31 @@ export abstract class AdminLogManager {
       \`\`\`json\n${JSON.stringify(log, null, 2)}\n\`\`\`\n
       METADATA:\n
       \`\`\`json\n${JSON.stringify(metadata, null, 2)}\n\`\`\`\n
-      ${userInfo
+      ${
+        userInfo
           ? `AFFECTED USER:\n
       \`\`\`json\n${JSON.stringify(userInfo, null, 2)}\n\`\`\`\n`
-          : ""
-        }
+          : ''
+      }
       :rotating_light: -- END ERROR -- :rotating_light:\n
-      `);
+      `)
     } catch (error: any) {
-      this.logError(error, { from: "AdminLogManager.logExternalError", metadata });
-      console.log(error);
-      return;
+      this.logError(error, { from: 'AdminLogManager.logExternalError', metadata })
+      console.log(error)
+      return
     }
-  };
+  }
 
   static logErrorToDiscord = async (content: string, wat: boolean = false): Promise<void> => {
     try {
       //
-      const webhook = wat ? process.env.DISCORD_WAT_WEBHOOK : process.env.DISCORD_ERROR_WEBHOOK;
+      const webhook = wat ? process.env.DISCORD_WAT_WEBHOOK : process.env.DISCORD_ERROR_WEBHOOK
       await axios.post(webhook, {
         content,
-      });
+      })
     } catch (error: any) {
-      console.log(error);
-      return;
+      console.log(error)
+      return
     }
-  };
+  }
 }

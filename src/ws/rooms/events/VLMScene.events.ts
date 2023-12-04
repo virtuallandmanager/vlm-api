@@ -248,7 +248,7 @@ async function handleSessionAction(
       timestamp,
     })
     if (!response) {
-      AdminLogManager.logError('Failed to log analytics action', { ...message, ...client.auth })
+      console.log('Failed to log analytics action', { action, metadata, pathPoint, displayName, timestamp })
     } else {
       const hosts = room.clients.filter((c) => c?.auth?.session?.pk === User.Session.Config.pk)
       hosts.forEach((host) => {
@@ -257,7 +257,8 @@ async function handleSessionAction(
     }
     return false
   } catch (error) {
-    AdminLogManager.logError('Failed to log analytics action', { error, action: message.action })
+    console.log('Failed to log analytics action', { error })
+
     return false
   }
 }
