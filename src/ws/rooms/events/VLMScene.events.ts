@@ -840,16 +840,19 @@ export async function handleRequestPlayerPosition(client: Client, message: { use
 export async function handleSendPlayerPosition(client: Client, message: { userId?: string; connectedWallet?: string }, room: VLMScene) {
   // Logic for send_player_position message
   try {
-    room.clients.forEach((c) => {
-      c.send('send_player_position', message)
-    })
-    room.clients
-      .find(
-        (c) =>
-          (c.auth.session.pk === User.Session.Config.pk && c.auth.user.sk === message.userId) ||
-          c.auth.user.connectedWallet === message.connectedWallet
-      )
-      ?.send('send_player_position')
+    const sameUserInScene = room.clients.find(
+      (c) =>
+        (c.auth.session.pk === User.Session.Config.pk && c.auth.user.sk === message.userId) || c.auth.user.connectedWallet === message.connectedWallet
+    )
+
+    if (sameUserInScene) {
+      room.clients
+        .find((c) => c.auth.user.sk === message.userId || c.auth.user.connectedWallet === message.connectedWallet)
+        .send('send_player_position', message)
+    } else {
+      const firstUserInScene = room.clients.find((c) => c.auth.session.pk === Analytics.Session.Config.pk)
+      firstUserInScene.send('send_player_position', message)
+    }
     return false
   } catch (error) {
     return false
