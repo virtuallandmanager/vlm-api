@@ -45,15 +45,15 @@ export abstract class GenericDbManager {
     }
   }
 
-  static query = async (dataConfig: IDbItem) => {
+  static getAll = async (dataConfig: IDbItem) => {
     const { pk, sk } = dataConfig
 
     const params = {
       TableName: vlmMainTable,
       Key: {
         pk,
-        sk,
       },
+      KeyConditionExpression: '#pk = :pk',
     }
 
     try {
