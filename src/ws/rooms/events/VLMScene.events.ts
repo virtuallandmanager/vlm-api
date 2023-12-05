@@ -18,6 +18,7 @@ import { SceneSettingsManager } from '../../../logic/SceneSettings.logic'
 import { GiveawayManager } from '../../../logic/Giveaway.logic'
 import { Giveaway } from '../../../models/Giveaway.model'
 import { DateTime } from 'luxon'
+import { Session } from '../../../models/Session.model'
 
 type ElementName = 'image' | 'video' | 'nft' | 'model' | 'sound' | 'widget' | 'claimpoint'
 type Action = 'init' | 'create' | 'update' | 'delete' | 'trigger'
@@ -650,8 +651,8 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
       // filter out any stream links using the same sk
       const filteredPresetVideos = room.state.streams.filter((stream: SceneStream) => stream.sk !== message.elementData.sk)
       const presetVideos = message.scenePreset.videos as Scene.Video.Config[]
-      room.state.streams.length = 0
-      room.state.streams.push(...filteredPresetVideos)
+
+      room.state.streams = filteredPresetVideos
 
       const videoPromises = presetVideos.map(async (video: Scene.Video.Config) => {
         if (!video.liveSrc || !video.enableLiveStream || !video.enabled) return null
@@ -826,11 +827,13 @@ export async function handleGiveawayClaim(
 export async function handleRequestPlayerPosition(client: Client, message: { userId?: string; connectedWallet?: string }, room: VLMScene) {
   // Logic for request_player_position message
   try {
-    const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk)
+    const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk && c.auth.user.sk == message.userId)
     if (inWorldUser) {
       inWorldUser.send('request_player_position', message)
+    } else if (!room.clients.length) {
+      client.send('send_player_position', { positionData: [null, null, null, null, 8, 1, 8, null, null, null, null, null, null, null] })
     } else {
-      client.send('send_player_position', null)
+      room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk).send('request_player_position', message)
     }
     return false
   } catch (error) {
@@ -841,18 +844,14 @@ export async function handleRequestPlayerPosition(client: Client, message: { use
 export async function handleSendPlayerPosition(client: Client, message: { userId?: string; connectedWallet?: string }, room: VLMScene) {
   // Logic for send_player_position message
   try {
-    const sameUserInScene = room.clients.find(
-      (c) =>
-        (c.auth.session.pk === User.Session.Config.pk && c.auth.user.sk === message.userId) || c.auth.user.connectedWallet === message.connectedWallet
+    const userThatSentRequest = room.clients.find(
+      (c) => (c.auth.session.pk === Session.Config.pk && c.auth.user.sk === message.userId) || c.auth.user.connectedWallet === message.connectedWallet
     )
 
-    if (sameUserInScene) {
-      room.clients
-        .find((c) => c.auth.user.sk === message.userId || c.auth.user.connectedWallet === message.connectedWallet)
-        .send('send_player_position', message)
+    if (userThatSentRequest) {
+      userThatSentRequest.send('send_player_position', message)
     } else {
-      const firstUserInScene = room.clients.find((c) => c.auth.session.pk === Analytics.Session.Config.pk)
-      firstUserInScene.send('send_player_position', message)
+      room.broadcast('send_player_position', message)
     }
     return false
   } catch (error) {
