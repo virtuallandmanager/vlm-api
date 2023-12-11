@@ -981,14 +981,7 @@ export abstract class SceneDbManager {
 
   static updateSceneProperty: CallableFunction = async (sceneConfig: Scene.Config, property: string, newValue: unknown) => {
     const ts = DateTime.now().toUnixInteger()
-    // Get current timestamp in milliseconds for comparison
-    const currentTimestampInMilliseconds = DateTime.now().toMillis()
 
-    // If the timestamp is within the same order of magnitude as the current time, it's likely in milliseconds
-    if (sceneConfig.ts && sceneConfig.ts > currentTimestampInMilliseconds / 10) {
-      sceneConfig.ts = ts
-    }
-    
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: Scene.Config.pk, sk: sceneConfig.sk },
@@ -1034,11 +1027,11 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Key: { pk: elementData.pk, sk: elementData.sk },
       UpdateExpression: 'set #prop = :prop, #ts = :ts',
-      // ConditionExpression: "#ts <= :elementTs",
+      ConditionExpression: '#ts <= :elementTs',
       ExpressionAttributeNames: { '#prop': property, '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':prop': elementData[valueProp],
-        // ":elementTs": elementData.ts,
+        ':elementTs': elementData.ts,
         ':ts': ts,
       },
     }
@@ -1048,13 +1041,21 @@ export abstract class SceneDbManager {
       elementData = await GenericDbManager.get(elementData)
       scenePreset = options?.skipPreset ? null : await this.getPreset(message.scenePreset.sk)
       return { scenePreset, elementData }
-    } catch (error) {
+    } catch (error: any) {
       console.log(error)
+      if (error.code === 'ConditionalCheckFailedException') {
+        const storedElement = await GenericDbManager.get(message.elementData)
+        AdminLogManager.logError(JSON.stringify(error), {
+          from: 'Scene.data/updateSceneElementProperty',
+          reason: `ts mismatch: ${message.elementData.ts} is before ${storedElement.ts}`,
+          elementData,
+        })
+      }
       AdminLogManager.logError(JSON.stringify(error), {
-        from: 'Scene.data/updateElementProperty',
+        from: 'Scene.data/updateSceneElementProperty',
         message,
       })
-      return
+      throw error
     }
   }
 
@@ -1172,6 +1173,64 @@ export abstract class SceneDbManager {
       AdminLogManager.logError(JSON.stringify(error), {
         from: 'Scene.data/put',
         scene,
+      })
+      return
+    }
+  }
+
+  static updateAllSceneElements: CallableFunction = async (elements: Scene.Element[]) => {
+    try {
+      const updatedElements = elements.map((item) => {
+        return {
+          PutRequest: {
+            Item: item,
+          },
+        }
+      })
+
+      while (updatedElements.length) {
+        let batch = updatedElements.splice(0, 25)
+        let batchWriteParams = {
+          RequestItems: {
+            [vlmMainTable]: batch,
+          },
+        }
+        await daxClient.batchWrite(batchWriteParams).promise()
+      }
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: 'Scene.data/updateAllSceneElements',
+      })
+      return
+    }
+  }
+
+  static getAllSceneElements: CallableFunction = async (elements: Scene.Element[]) => {
+    let results = []
+
+    try {
+      let toProcess = elements.map((item) => ({ pk: item.pk, sk: item.sk }))
+
+      while (toProcess.length) {
+        let batch = toProcess.splice(0, 25)
+        let batchGetParams = {
+          RequestItems: {
+            [vlmMainTable]: {
+              Keys: batch,
+            },
+          },
+        }
+
+        let response = await daxClient.batchGet(batchGetParams).promise()
+
+        if (response.Responses && response.Responses[vlmMainTable]) {
+          results.push(...response.Responses[vlmMainTable])
+        }
+      }
+      return results
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: 'Scene.data/getAllSceneElements',
       })
       return
     }

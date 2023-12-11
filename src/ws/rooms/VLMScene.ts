@@ -91,9 +91,9 @@ export class VLMScene extends Room<VLMSceneState> {
 
         if (userId && needsUpdate) {
           clientNeedingUpdate.send('scene_video_status', { sk: stream.sk, status, url: stream.url })
-        } else {
-          this.state.needsUpdate = this.state.needsUpdate.splice(i, 1)
         }
+
+        this.state.needsUpdate.splice(i, 1)
       })
     }
     this.state.streamIndex += this.state.batchSize

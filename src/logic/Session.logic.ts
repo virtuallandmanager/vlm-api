@@ -8,37 +8,18 @@ import { Analytics } from '../models/Analytics.model'
 import { User } from '../models/User.model'
 import { Session as BaseSession } from '../models/Session.model'
 import { UserManager } from './User.logic'
-import { redis } from '../dal/common.data'
-
-const analyticsRestrictedScenes: string[] = SessionDbManager.restoreRedisArray('analyticsRestrictedScenes') || [] // stores urns of scene id and actions that have been restricted
-const sceneIdUsageRecords: Record<string, { count: number; lastReset: number }> = {}
-type SessionRequestPattern = Record<string, number[]> // session guid, timestamps
-const sceneRequestPatterns: Record<string, SessionRequestPattern> = {}
-
-const cleanupSceneIdUsageRecord: CallableFunction = () => {
-  const currentTimestamp = Date.now()
-  for (const [sceneId, usage] of Object.entries(sceneIdUsageRecords)) {
-    if (currentTimestamp - usage.lastReset > 1000) {
-      delete sceneIdUsageRecords[sceneId]
-    }
-  }
-}
 
 setInterval(() => {
-  if (analyticsRestrictedScenes && Array(analyticsRestrictedScenes) && analyticsRestrictedScenes.length) {
-    AdminLogManager.logErrorToDiscord(
-      'Rate Limiter Cache Status:' + JSON.stringify({ analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }),
-      true
-    )
-  } else {
-    AdminLogManager.logErrorToDiscord(
-      'Rate Limiter Cache Status:' + JSON.stringify({ analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }),
-      true
-    )
-  }
-}, 1000 * 60 * 30)
+  SessionDbManager.persistRedisData('analyticsRestrictedScenes')
+  SessionDbManager.persistRedisData('sceneIdUsageRecords')
+  SessionDbManager.persistRedisData('sceneRequestPatterns')
+}, 1000 * 60)
+
+type SessionRequestPattern = Record<string, number[]> // session guid, timestamps
 
 const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Session.Action): boolean => {
+  const sceneRequestPatterns: Record<string, SessionRequestPattern> = SessionDbManager.getRedisData('sceneRequestPatterns')
+
   try {
     const sceneActionKey = `${sessionAction.sceneId}:${sessionAction.name}`,
       sceneSessionActionKey = `${sessionAction.sceneId}:${sessionAction.sessionId}:${sessionAction.name}`,
@@ -67,6 +48,7 @@ const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Sessio
     } else if (sceneSessionActionPattern.length > 20) {
       // clear this pattern from the cache if it's not consistent and there are more than 20 timestamps
       delete sceneRequestPatterns[sceneActionKey][sessionAction.sessionId]
+      SessionDbManager.setRedisData('sceneRequestPatterns', JSON.stringify(sceneRequestPatterns))
     }
     return false
   } catch (error) {
@@ -79,7 +61,11 @@ const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Sessio
   }
 }
 
-const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Action) => {
+const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
+  const sceneRequestPatterns = await SessionDbManager.getRedisData('sceneRequestPatterns'),
+    sceneIdUsageRecords = await SessionDbManager.getRedisData('sceneIdUsageRecords'),
+    analyticsRestrictedScenes = await SessionDbManager.getRedisData('analyticsRestrictedScenes')
+
   try {
     const sceneActionKey = `${config.sceneId}:${config.name}`,
       currentTimestamp = DateTime.now().toUnixInteger()
@@ -109,9 +95,11 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
     if (hasConsistentInterval(config)) {
       // If this scene is submitting actions at a consistent interval, restrict it from submitting this action
       analyticsRestrictedScenes.push(sceneActionKey)
-      redis.set('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
+      await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
+
       // Remove this scene action from the request patterns cache
       delete sceneRequestPatterns[sceneActionKey]
+      await SessionDbManager.setRedisData('sceneRequestPatterns', JSON.stringify(sceneRequestPatterns))
 
       AdminLogManager.logError(
         `${config.sceneId} is submitting analytics actions at a consistent interval and has been restricted from submitting "${config.name}" actions.`,
@@ -157,8 +145,12 @@ const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Ac
 }
 
 export abstract class SessionManager {
-  static getSessionStats: CallableFunction = async () => {
+  static getServerRestrictions: CallableFunction = async () => {
     try {
+      const analyticsRestrictedScenes = await SessionDbManager.getRedisData('analyticsRestrictedScenes'),
+        sceneIdUsageRecords = await SessionDbManager.getRedisData('sceneIdUsageRecords'),
+        sceneRequestPatterns = await SessionDbManager.getRedisData('sceneRequestPatterns')
+
       return { analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }
     } catch (error) {
       AdminLogManager.logError('Failed to get session stats', { from: 'Session.logic/getSessionStats' })
@@ -252,17 +244,7 @@ export abstract class SessionManager {
       if (rateLimited) {
         return false
       }
-      const logResponse = await SessionDbManager.logAnalyticsAction(action)
-
-      if (logResponse?.error && logResponse.sceneActionKey && !analyticsRestrictedScenes.includes(logResponse.sceneActionKey)) {
-        analyticsRestrictedScenes.push(logResponse.sceneActionKey)
-        AdminLogManager.logError(
-          `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
-          {
-            from: 'Session.logic/logAnalyticsAction',
-          }
-        )
-      }
+      var logResponse = await SessionDbManager.logAnalyticsAction(action)
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
@@ -270,20 +252,23 @@ export abstract class SessionManager {
       })
       return
     }
-  }
 
-  static getServerRestrictions: CallableFunction = async () => {
+    if (logResponse && !logResponse?.error && !logResponse.sceneActionKey) {
+      return logResponse
+    }
+
+    // if an error exists and the sceneActionKey is returned, an error occurred that should rate limit the scene
     try {
-      return {
-        analyticsRestrictedScenes,
-        sceneIdUsageRecords,
-        sceneRequestPatterns,
-      }
+      const analyticsRestrictedScenes = await SessionDbManager.getRedisData('analyticsRestrictedScenes')
+      analyticsRestrictedScenes.push(logResponse.sceneActionKey)
+      await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
     } catch (error) {
-      AdminLogManager.logError('Failed to get server restrictions', {
-        from: 'Session.logic/getServerRestrictions',
-      })
-      return
+      AdminLogManager.logError(
+        `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
+        {
+          from: 'Session.logic/logAnalyticsAction',
+        }
+      )
     }
   }
 

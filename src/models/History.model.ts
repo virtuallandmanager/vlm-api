@@ -57,7 +57,7 @@ export namespace History {
       this.property = config.property;
       this.from = config.from;
       this.to = config.to;
-      this.ts = config.ts;
+      this.ts = config.ts || this.ts;
     }
   }
 

@@ -21,7 +21,7 @@ import { DateTime } from 'luxon'
 import { Session } from '../../../models/Session.model'
 
 type ElementName = 'image' | 'video' | 'nft' | 'model' | 'sound' | 'widget' | 'claimpoint'
-type Action = 'init' | 'create' | 'update' | 'delete' | 'trigger'
+type Action = 'init' | 'create' | 'update' | 'updateAll' | 'delete' | 'trigger'
 type Settings = 'moderation' | 'localization' | 'access' | 'interoperability'
 type Property =
   | 'enabled'
@@ -51,13 +51,15 @@ export class VLMSceneMessage {
   element: ElementName
   instance: boolean
   setting: Settings
-  elementData?: VLMSceneElement & { [key: string]: any }
+  elementData?: VLMSceneElement & { isLive?: boolean }
+  allElementsData?: VLMSceneElement[]
   instanceData?: VLMSceneElementInstance
   settingData?: Scene.Setting
   scenePreset: Scene.Preset
   sceneData: Scene.Config
   user: User.Account
   isLive: boolean
+  skipDb?: boolean
   stage: 'pre' | 'post'
 
   constructor(message: VLMSceneMessage) {
@@ -159,7 +161,9 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         userLocation = session.location,
         scene = await SceneManager.obtainScene(new Scene.Config({ sk: sceneId, locations: [userLocation] })),
         scenePreset,
-        sceneSettings
+        sceneSettings,
+        sceneExists = !!scene,
+        hasNoLocations = scene?.locations?.length < 1
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal =
@@ -172,50 +176,67 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         return equal
       })
 
-      const worldHasBeenAdded = existingSceneLocations?.length,
-        locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) =>
-          deepEqual(location.integrationData, userLocation.integrationData)
-        )
+      const isFirstLocation = !existingSceneLocations?.length
 
-      if (scene && !worldHasBeenAdded) {
+      const locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) =>
+        deepEqual(location.integrationData, userLocation.integrationData)
+      )
+
+      const locationWithUpdatedParcels = existingSceneLocations.findIndex((location: Metaverse.Location) => {
+        const sameBaseParcel = location.coordinates.join(',') === userLocation.coordinates.join(','),
+          sameNumberOfParcels = location?.parcels?.length !== userLocation?.parcels?.length,
+          overlapsExistingLocation = location?.parcels.some((parcel: string) => location?.parcels.includes(parcel))
+
+        return sameBaseParcel && !sameNumberOfParcels && overlapsExistingLocation
+      })
+
+      const hasOutdatedLocation = locationWithUpdatedVersion > -1 || locationWithUpdatedParcels > -1
+
+      if (sceneExists && isFirstLocation) {
         // add new location
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...scene.locations, userLocation] })
-      } else if (scene && worldHasBeenAdded && locationWithUpdatedVersion > -1) {
+      } else if (sceneExists && hasOutdatedLocation) {
         // replace existing location
         const locations = scene.locations.filter((location: Metaverse.Location, i: number) => {
-          return i !== locationWithUpdatedVersion
+          const isLocationWithUpdatedVersion = i == locationWithUpdatedVersion,
+            isLocationWithUpdatedParcels = i !== locationWithUpdatedParcels,
+            needsReplacement = isLocationWithUpdatedVersion || isLocationWithUpdatedParcels
+
+          return needsReplacement
         })
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...locations, userLocation] })
-      } else if (scene.locations.length < 1) {
+      } else if (sceneExists && hasNoLocations) {
         // add first location
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [userLocation] })
-      } else if (!scene || !worldHasBeenAdded) {
+      } else if (!sceneExists || !isFirstLocation) {
         AdminLogManager.logError('Unexpected location/version condition', { scene, userLocation })
       }
 
       client.send('session_started', { session: dbSession, user })
 
-      if (scene?.scenePreset) {
-        scenePreset = await ScenePresetManager.getScenePresetById(scene.scenePreset)
-        scenePreset = await ScenePresetManager.buildScenePreset(scenePreset)
-
-        for (let i = 0; i < scenePreset.videos.length; i++) {
-          const video = scenePreset.videos[i]
-          const cachedStream = room.state.streams.find((stream) => stream.sk == video.sk)
-          if (cachedStream) {
-            video.isLive = cachedStream.status
-            continue
-          } else if (video.liveSrc) {
-            const status = await room.isStreamLive(video.liveSrc),
-              stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status, sceneId })
-            room.state.streams.push(stream)
-            video.isLive = status
-          }
-        }
-
-        sceneSettings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings)
-        sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION) }
+      if (!scene?.scenePreset) {
+        return
       }
+
+      scenePreset = await ScenePresetManager.getScenePresetById(scene.scenePreset)
+      scenePreset = await ScenePresetManager.buildScenePreset(scenePreset)
+
+      for (let i = 0; i < scenePreset.videos.length; i++) {
+        const video = scenePreset.videos[i]
+        const cachedStream = room.state.streams.find((stream) => stream.sk == video.sk)
+        if (cachedStream) {
+          video.isLive = cachedStream.status
+          continue
+        } else if (video.liveSrc) {
+          const status = await room.isStreamLive(video.liveSrc),
+            stream = new SceneStream({ sk: video.sk, url: video.liveSrc, status, sceneId })
+          room.state.streams.push(stream)
+          video.isLive = status
+        }
+      }
+
+      sceneSettings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings)
+      sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION) }
 
       client.send('scene_preset_update', { action: 'init', scenePreset, sceneSettings })
     })
@@ -618,7 +639,8 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
   // Logic for scene_preset_update message
   try {
     let presetResponse
-    if (message.instance) {
+
+    if (!message.skipDb && message.instance) {
       switch (message.action) {
         case 'create':
           presetResponse = await SceneElementManager.addInstanceToElement(message)
@@ -630,7 +652,7 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
           presetResponse = await SceneElementManager.removeInstanceFromElement(message)
           break
       }
-    } else {
+    } else if (!message.skipDb) {
       switch (message.action) {
         case 'create':
           presetResponse = await SceneElementManager.createSceneElement(message)
@@ -638,11 +660,15 @@ export async function handlePresetUpdate(client: Client, message: VLMSceneMessag
         case 'update':
           presetResponse = await SceneElementManager.updateSceneElement(message)
           break
+        case 'updateAll':
+          presetResponse = await SceneElementManager.updateAllSceneElements(message)
+          break
         case 'delete':
           presetResponse = await SceneElementManager.removeSceneElement(message)
           break
       }
     }
+
     if (presetResponse) {
       message.scenePreset = await ScenePresetManager.buildScenePreset(presetResponse.scenePreset)
     }

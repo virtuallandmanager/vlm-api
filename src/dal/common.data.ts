@@ -2,7 +2,7 @@ import { Alchemy, Network } from 'alchemy-sdk'
 import AWS, { DynamoDB } from 'aws-sdk'
 import DAX from 'amazon-dax-client'
 import config from '../../config/config'
-import Redis from 'ioredis'
+import Redis, { RedisKey } from 'ioredis'
 
 export let docClient: AWS.DynamoDB.DocumentClient
 export let daxClient: AWS.DynamoDB.DocumentClient
@@ -84,6 +84,6 @@ export const batchQuery: CallableFunction = async (params: AWS.DynamoDB.QueryInp
 
 export interface IDbItem {
   pk?: string
-  sk?: string
+  sk?: string | RedisKey
   [key: string]: any
 }

@@ -9,6 +9,7 @@ import { User } from '../models/User.model'
 import { Cache } from '../models/Cache.model'
 import { DynamoDBServiceException } from '@aws-sdk/client-dynamodb'
 import { GenericDbManager } from './Generic.data'
+import { RedisKey, RedisValue } from 'ioredis'
 
 export abstract class SessionDbManager {
   static start: CallableFunction = async (sessionConfig: BaseSession.Config) => {
@@ -19,7 +20,7 @@ export abstract class SessionDbManager {
       ExpressionAttributeNames: {
         '#ts': 'ts',
         '#sessionStart': 'sessionStart',
-        '#ttl': 'ttl', // Added this line
+        '#ttl': 'ttl', 
       },
       ExpressionAttributeValues: {
         ':sessionStart': startTime.toUnixInteger(),
@@ -429,39 +430,37 @@ export abstract class SessionDbManager {
 
     try {
       for (let i = 0; i < pathSegments.length; i++) {
-        params.TransactItems.push(
-          {
-            Put: {
-              // Add a path segment to the path
-              Item: {
-                ...pathSegments[i],
-                ts,
-              },
-              TableName: vlmAnalyticsTable,
+        params.TransactItems.push({
+          Put: {
+            // Add a path segment to the path
+            Item: {
+              ...pathSegments[i],
+              ts,
             },
+            TableName: vlmAnalyticsTable,
           },
-          {
-            Update: {
-              // Update the path with the new path segments
-              TableName: vlmAnalyticsTable,
-              Key: {
-                pk: Analytics.Path.pk,
-                sk: pathId,
-              },
-              UpdateExpression: 'set #segments = list_append(if_not_exists(#segments, :emptyList), :pathSegment), #ts = :ts',
-              ExpressionAttributeNames: {
-                '#segments': 'segments',
-                '#ts': 'ts',
-              },
-              ExpressionAttributeValues: {
-                ':pathSegment': [pathSegments[i].sk],
-                ':emptyList': [],
-                ':ts': ts,
-              },
-            },
-          }
-        )
+        })
       }
+      params.TransactItems.push({
+        Update: {
+          // Update the path with the new path segments
+          TableName: vlmAnalyticsTable,
+          Key: {
+            pk: Analytics.Path.pk,
+            sk: pathId,
+          },
+          UpdateExpression: 'set #segments = list_append(if_not_exists(#segments, :emptyList), :pathSegments), #ts = :ts',
+          ExpressionAttributeNames: {
+            '#segments': 'segments',
+            '#ts': 'ts',
+          },
+          ExpressionAttributeValues: {
+            ':pathSegments': pathSegments.map((segment) => segment.sk),
+            ':emptyList': [],
+            ':ts': ts,
+          },
+        },
+      })
 
       await docClient.transactWrite(params).promise()
 
@@ -520,16 +519,38 @@ export abstract class SessionDbManager {
     }
   }
 
-  static persistRedisArray: CallableFunction = async (key: string, data: Array<any>) => {
+  static setRedisData: CallableFunction = async (key: RedisKey, data: RedisValue): Promise<Cache.Config> => {
     try {
-      const redisArray = await redis.get(key)
-      let deserializedRedisArray
+      const cacheRecord = (await redis.set(key, data)) as Cache.Config
+      return cacheRecord?.data
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: 'Session.data/cacheRedisArray',
+      })
+    }
+  }
 
-      if (redisArray) {
-        deserializedRedisArray = JSON.parse(redisArray)
+  static getRedisData: CallableFunction = async (key: RedisKey): Promise<Cache.Config> => {
+    try {
+      const cacheRecord = (await redis.get(key)) as Cache.Config
+      return cacheRecord?.data
+    } catch (error) {
+      AdminLogManager.logError(JSON.stringify(error), {
+        from: 'Session.data/cacheRedisArray',
+      })
+    }
+  }
+
+  static persistRedisData: CallableFunction = async (key: RedisKey) => {
+    try {
+      const redisData = await redis.get(key)
+      let deserializedRedisData
+
+      if (redisData) {
+        deserializedRedisData = JSON.parse(redisData)
       }
 
-      await GenericDbManager.put({ pk: Cache.Config.pk, sk: key, data })
+      await GenericDbManager.put({ pk: Cache.Config.pk, sk: key, deserializedRedisData })
 
       return { success: true }
     } catch (error) {

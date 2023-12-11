@@ -6,6 +6,8 @@ import { AdminManager } from '../../logic/Admin.logic'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import { MigrationDbManager } from '../../dal/Migration.data'
 import { SessionManager } from '../../logic/Session.logic'
+import { DateTime } from 'luxon'
+import { docClient } from '../../dal/common.data'
 
 const router = express.Router()
 
@@ -155,24 +157,6 @@ router.get('/migrate/:pk', async (req: Request, res: Response) => {
   } catch (error: unknown) {
     AdminLogManager.logError(JSON.stringify(error), {
       from: 'Session.controller/migrate',
-    })
-    return res.status(500).json({
-      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
-      error,
-    })
-  }
-})
-
-router.get('stats', async (req: Request, res: Response) => {
-  try {
-    const status = await SessionManager.getSessionStats()
-    return res.status(200).json({
-      text: 'Successfully got status.',
-      status: JSON.stringify(status),
-    })
-  } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
-      from: 'Admin.controller/getStatus',
     })
     return res.status(500).json({
       text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
