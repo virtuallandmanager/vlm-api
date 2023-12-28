@@ -1,8 +1,7 @@
 import { Event } from "../models/Event.model";
-import { docClient, vlmMainTable } from "./common.data";
+import { docClient, largeQuery, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
-import { largeQuery } from "../helpers/data";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { Giveaway } from "../models/Giveaway.model";
 import { GenericDbManager } from "./Generic.data";
@@ -20,7 +19,7 @@ export abstract class EventDbManager {
 
       return createdEvent || existingEvent;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/obtain",
         eventConfig,
       });
@@ -43,7 +42,7 @@ export abstract class EventDbManager {
       const eventRecord = await docClient.get(params).promise();
       return eventRecord.Item;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/get",
         eventConfig,
       });
@@ -67,7 +66,7 @@ export abstract class EventDbManager {
       const event = await docClient.get(params).promise();
       return event.Item;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getByIds",
         sk,
       });
@@ -100,7 +99,7 @@ export abstract class EventDbManager {
       const events = await docClient.transactGet(params).promise();
       return events.Responses.map((item) => item.Item);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getByIds",
         sks,
       });
@@ -129,7 +128,7 @@ export abstract class EventDbManager {
       const linkedEvents = await Promise.all(fullLinks.map((link: Event.SceneLink) => GenericDbManager.get({ pk: Event.Config.pk, sk: link.eventId })));
       return linkedEvents;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getLinkedEventsBySceneId",
         sk,
       });
@@ -157,7 +156,7 @@ export abstract class EventDbManager {
       const linkedScenes = await Promise.all(linkRecords.map((link: Event.SceneLink) => GenericDbManager.get({ pk: Event.SceneLink.pk, sk: link.sk })));
       return linkedScenes;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getLinkedGiveawaysById",
         sk,
       });
@@ -173,7 +172,7 @@ export abstract class EventDbManager {
 
       return sceneLinks.flat();
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getLinkedScenesByIds",
       });
       return;
@@ -200,7 +199,7 @@ export abstract class EventDbManager {
       const linkedGiveaways = await Promise.all(linkRecords.map((link: Event.GiveawayLink) => GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk })));
       return linkedGiveaways;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getLinkedGiveawaysById",
         sk,
       });
@@ -216,7 +215,7 @@ export abstract class EventDbManager {
 
       return giveawayLinks.flat();
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getLinkedGiveawaysByIds",
       });
       return;
@@ -248,7 +247,7 @@ export abstract class EventDbManager {
       const events = await docClient.transactGet(params).promise();
       return events.Responses.map((item) => item.Item);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getGiveawaysByIds",
         sks,
       });
@@ -277,7 +276,7 @@ export abstract class EventDbManager {
         events = await EventDbManager.getByIds(eventIds);
       return events;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getAllForUser",
         user,
       });
@@ -306,7 +305,7 @@ export abstract class EventDbManager {
         giveaways = await EventDbManager.getGiveawaysByIds(giveawayIds);
       return giveaways;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/getGiveawaysForEvent",
         event,
       });
@@ -330,7 +329,7 @@ export abstract class EventDbManager {
       const eventQuery = await largeQuery(params);
       return eventQuery;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/adminGetAll",
       });
       return;
@@ -354,7 +353,7 @@ export abstract class EventDbManager {
       await docClient.put(params).promise();
       return event;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/put",
         event,
       });
@@ -372,7 +371,7 @@ export abstract class EventDbManager {
       }
       return await this.getLinkedScenesById(eventId);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/updateSceneLinks",
         linksToAdd,
         linksToRemove,
@@ -391,7 +390,7 @@ export abstract class EventDbManager {
       }
       return await this.getLinkedGiveawaysById(eventId);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/updateGiveawayLinks",
         linksToAdd,
         linksToRemove,
@@ -413,7 +412,7 @@ export abstract class EventDbManager {
       await docClient.put(params).promise();
       return await GenericDbManager.get({ pk: Event.SceneLink.pk, sk: link.sk });
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/linkScene",
         link,
       });
@@ -434,7 +433,7 @@ export abstract class EventDbManager {
       await docClient.put(params).promise();
       return await GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk });
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/linkGiveaway",
         link,
       });
@@ -455,7 +454,7 @@ export abstract class EventDbManager {
       await docClient.delete(params).promise();
       return;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/linkScene",
         linkId,
       });
@@ -476,7 +475,7 @@ export abstract class EventDbManager {
       await docClient.delete(params).promise();
       return;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Event.data/linkGiveaway",
         linkId,
       });

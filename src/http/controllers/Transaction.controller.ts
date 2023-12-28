@@ -1,73 +1,70 @@
-import express, { Request, Response } from "express";
-import { AdminLogManager } from "../../logic/ErrorLogging.logic";
+import express, { Request, Response } from 'express'
+import { AdminLogManager } from '../../logic/ErrorLogging.logic'
+import { alchemyWebhook } from '../../middlewares/security/auth'
 
-const router = express.Router();
+const router = express.Router()
 
-router.post("/mine", async (req: Request, res: Response | any) => {
+router.post('/mine', alchemyWebhook, async (req: Request, res: Response | any) => {
   try {
-    if (!req.session.userId) {
-      return res.status(400).json({
-        text: "Bad Request.",
-      });
-    }
+    
 
-    return res.status(200);
+    return res.status(200)
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
-      from: "Transaction.controller/mine",
-    });
+    AdminLogManager.logError(error, {
+      from: 'Transaction.controller/mine',
+    })
     return res.status(500).json({
-      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
       error,
-    });
+    })
   }
-});
+})
 
-router.post("/drop", async (req: Request, res: Response | any) => {
+router.post('/drop', alchemyWebhook, async (req: Request, res: Response | any) => {
   try {
     if (!req.session.userId) {
       return res.status(400).json({
-        text: "Bad Request.",
-      });
+        text: 'Bad Request.',
+      })
     }
 
     AdminLogManager.logError(
-      { error: "Transaction Dropped!", content: req.body.fullTransaction },
+      { error: 'Transaction Dropped!', content: req.body.fullTransaction },
       {
-        from: "Alchemy",
+        from: 'Alchemy',
       }
-    );
+    )
 
-    return res.status(200);
+    return res.status(200)
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
-      from: "Transaction.controller/drop",
-    });
+    AdminLogManager.logError(error, {
+      from: 'Transaction.controller/drop',
+    })
     return res.status(500).json({
-      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
       error,
-    });
+    })
   }
-});
+})
 
-router.post("/transfer", async (req: Request, res: Response | any) => {
+router.post('/transfer', async (req: Request, res: Response | any) => {
   try {
     if (!req.session.userId) {
       return res.status(400).json({
-        text: "Bad Request.",
-      });
+        text: 'Bad Request.',
+      })
     }
 
-    return res.status(200);
+    return res.status(200)
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
-      from: "Transaction.controller/transfer",
-    });
+    AdminLogManager.logError(error, {
+      from: 'Transaction.controller/transfer',
+    })
     return res.status(500).json({
-      text: JSON.stringify(error) || "Something went wrong on the server. Try again.",
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
       error,
-    });
+    })
   }
-});
+})
 
-export default router;
+export default router

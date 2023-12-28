@@ -30,7 +30,7 @@ router.get("/all", authMiddleware, async (req: Request, res: Response) => {
       sceneLinks: sceneLinks || [],
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/all",
     });
     return res.status(500).json({
@@ -52,7 +52,7 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
       event,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/create",
     });
     return res.status(500).json({
@@ -73,7 +73,7 @@ router.post("/link/scenes", authMiddleware, async (req: Request, res: Response) 
       sceneLinks: sceneLinks,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/link/scenes",
     });
     return res.status(500).json({
@@ -94,7 +94,7 @@ router.post("/link/giveaways", authMiddleware, async (req: Request, res: Respons
       giveawayLinks: giveawayLinks,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/link/giveaways",
     });
     return res.status(500).json({
@@ -115,7 +115,7 @@ router.post("/link/scene", authMiddleware, async (req: Request, res: Response) =
       sceneLink,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/link/scene",
     });
     return res.status(500).json({
@@ -137,7 +137,7 @@ router.post("/link/giveaway", authMiddleware, async (req: Request, res: Response
       giveawayLink,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/link/scene",
     });
     return res.status(500).json({
@@ -159,7 +159,7 @@ router.post("/unlink/scene", authMiddleware, async (req: Request, res: Response)
       linkId
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/link/scene",
     });
     return res.status(500).json({
@@ -182,7 +182,7 @@ router.post("/unlink/giveaway", authMiddleware, async (req: Request, res: Respon
       linkId
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/link/scene",
     });
     return res.status(500).json({
@@ -210,7 +210,7 @@ router.post("/update", authMiddleware, async (req: Request, res: Response) => {
       event,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/update",
     });
     return res.status(500).json({
@@ -236,7 +236,7 @@ router.get("/migrate/all", async (req: Request, res: Response) => {
       // claims,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/migrate",
     });
     return res.status(500).json({
@@ -268,7 +268,7 @@ router.get("/:eventId", authMiddleware, async (req: Request, res: Response) => {
       event,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Event.controller/:eventId",
     });
     return res.status(500).json({

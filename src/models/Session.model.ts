@@ -23,7 +23,7 @@ export namespace Session {
     world?: Metaverse.Worlds;
     location?: Metaverse.Location;
     host?: boolean = false;
-    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    ts?: EpochTimeStamp = DateTime.now().toMillis();
 
     constructor(config: Partial<Config>) {
       this.sk = config.sk || this.sk;

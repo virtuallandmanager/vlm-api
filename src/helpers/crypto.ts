@@ -20,9 +20,9 @@ const getETHPrice = async () => {
     try {
         let url;
         if (process.env.NODE_ENV == "development") {
-            url = `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_TEST_ETH}`;
+            url = `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_MAINNET_GOERLI}`;
         } else {
-            url = `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MAIN_ETH}`;
+            url = `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_MAINNET}`;
 
         }
         const payload = {
@@ -58,9 +58,9 @@ const getMANAPrice = async () => {
         let url;
 
         if (process.env.NODE_ENV == "development") {
-            url = `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_TEST_ETH}`;
+            url = `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_MAINNET_GOERLI}`;
         } else {
-            url = `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_MAIN_ETH}`;
+            url = `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY_MAINNET}`;
 
         }
         const payload = {

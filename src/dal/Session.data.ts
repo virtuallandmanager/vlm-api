@@ -1,9 +1,8 @@
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { Session as BaseSession } from '../models/Session.model'
-import { daxClient, docClient, redis, vlmAnalyticsTable, vlmSessionsTable } from './common.data'
+import { daxClient, docClient, largeQuery, redis, vlmAnalyticsTable, vlmSessionsTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
 import { DateTime } from 'luxon'
-import { largeQuery } from '../helpers/data'
 import { Analytics } from '../models/Analytics.model'
 import { User } from '../models/User.model'
 import { Cache } from '../models/Cache.model'
@@ -20,11 +19,11 @@ export abstract class SessionDbManager {
       ExpressionAttributeNames: {
         '#ts': 'ts',
         '#sessionStart': 'sessionStart',
-        '#ttl': 'ttl', 
+        '#ttl': 'ttl',
       },
       ExpressionAttributeValues: {
         ':sessionStart': startTime.toUnixInteger(),
-        ':ts': startTime.toUnixInteger(),
+        ':ts': startTime.toMillis(),
       },
       UpdateExpression: 'SET #ts = :ts, #sessionStart = :sessionStart REMOVE #ttl', // Added "REMOVE #ttl"
     }
@@ -33,7 +32,7 @@ export abstract class SessionDbManager {
       await daxClient.update(params).promise()
       return await this.get(sessionConfig)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/start',
         sessionConfig,
       })
@@ -58,7 +57,7 @@ export abstract class SessionDbManager {
       await daxClient.put(params).promise()
       return this.get(session)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/create',
         session,
       })
@@ -79,7 +78,7 @@ export abstract class SessionDbManager {
       await daxClient.put(params).promise()
       return true
     } catch (error: any | DynamoDBServiceException) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/logAnalyticsAction',
       })
       if (error.code === 'ThrottlingException') {
@@ -110,7 +109,7 @@ export abstract class SessionDbManager {
       const sessionRecord = await daxClient.get(params).promise()
       return sessionRecord.Item as Analytics.Session.Config | User.Session.Config
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/get',
         session,
       })
@@ -145,7 +144,7 @@ export abstract class SessionDbManager {
       }
       return expandedRecords
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/getVLMByUserId',
         userId,
       })
@@ -180,7 +179,7 @@ export abstract class SessionDbManager {
       }
       return
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/recentAnalyticsSessionsByUserId',
         userId,
       })
@@ -199,7 +198,7 @@ export abstract class SessionDbManager {
       ExpressionAttributeNames: { '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':sessionTs': session.ts,
-        ':ts': DateTime.now().toUnixInteger(),
+        ':ts': DateTime.now().toMillis(),
       },
     }
 
@@ -207,7 +206,7 @@ export abstract class SessionDbManager {
       await daxClient.update(params).promise()
       return await SessionDbManager.get(session)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/update',
         session,
       })
@@ -225,7 +224,7 @@ export abstract class SessionDbManager {
         ':pathIds': [path.sk],
         ':sessionTs': session.ts,
         ':emptyList': new Array(),
-        ':ts': DateTime.now().toUnixInteger(),
+        ':ts': DateTime.now().toMillis(),
       },
     }
 
@@ -233,7 +232,7 @@ export abstract class SessionDbManager {
       await daxClient.update(params).promise()
       return await SessionDbManager.get(session)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/addPathId',
         session,
       })
@@ -259,7 +258,7 @@ export abstract class SessionDbManager {
         ':sessionToken': session.sessionToken || '',
         ':signatureToken': session.signatureToken || '',
         ':expires': session.expires,
-        ':ts': DateTime.now().toUnixInteger(),
+        ':ts': DateTime.now().toMillis(),
       },
     }
 
@@ -267,7 +266,7 @@ export abstract class SessionDbManager {
       await daxClient.update(params).promise()
       return await SessionDbManager.get(session)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/renew',
         session,
       })
@@ -298,7 +297,7 @@ export abstract class SessionDbManager {
         ':signatureToken': session.signatureToken || null,
         ':refreshToken': session.refreshToken || null,
         ':expires': session.expires || null,
-        ':ts': DateTime.now().toUnixInteger(),
+        ':ts': DateTime.now().toMillis(),
       },
     }
 
@@ -306,7 +305,7 @@ export abstract class SessionDbManager {
       await daxClient.update(params).promise()
       return await SessionDbManager.get(session)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/refresh',
         session,
       })
@@ -333,7 +332,7 @@ export abstract class SessionDbManager {
       return session
     } catch (error) {
       console.log(error)
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/end',
         session,
       })
@@ -356,7 +355,7 @@ export abstract class SessionDbManager {
       const userSessionPathRecord = await daxClient.get(params).promise()
       return userSessionPathRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/getPath',
         userSessionPath,
       })
@@ -376,7 +375,7 @@ export abstract class SessionDbManager {
       const userSessionPathRecord = await daxClient.get(params).promise()
       return userSessionPathRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/getPathById',
         sk,
       })
@@ -384,7 +383,7 @@ export abstract class SessionDbManager {
   }
 
   static createPath: CallableFunction = async (path: Analytics.Path, pathSegment: Analytics.PathSegment) => {
-    const ts = DateTime.now().toUnixInteger()
+    const ts = DateTime.now().toMillis()
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -415,14 +414,14 @@ export abstract class SessionDbManager {
       await docClient.transactWrite(params).promise()
       return await SessionDbManager.getPath(path)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/createPath',
       })
     }
   }
 
   static addPathSegments: CallableFunction = async (pathId: string, pathSegments: Analytics.PathSegment[]) => {
-    const ts = DateTime.now().toUnixInteger()
+    const ts = DateTime.now().toMillis()
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [],
@@ -468,7 +467,7 @@ export abstract class SessionDbManager {
 
       return { added: pathSegments.length, total: path.segments.length }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/addPathSegments',
       })
     }
@@ -499,7 +498,7 @@ export abstract class SessionDbManager {
 
       return { success: true }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/cacheRedisArray',
       })
     }
@@ -513,7 +512,7 @@ export abstract class SessionDbManager {
       })
       return cacheRecords || []
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/cacheRedisArray',
       })
     }
@@ -524,7 +523,7 @@ export abstract class SessionDbManager {
       const cacheRecord = (await redis.set(key, data)) as Cache.Config
       return cacheRecord?.data
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/cacheRedisArray',
       })
     }
@@ -535,7 +534,7 @@ export abstract class SessionDbManager {
       const cacheRecord = (await redis.get(key)) as Cache.Config
       return cacheRecord?.data
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/cacheRedisArray',
       })
     }
@@ -554,7 +553,7 @@ export abstract class SessionDbManager {
 
       return { success: true }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Session.data/cacheRedisArray',
       })
     }

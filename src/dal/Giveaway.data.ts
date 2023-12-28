@@ -1,21 +1,20 @@
-import { Event } from "../models/Event.model";
-import { docClient, vlmAnalyticsTable, vlmMainTable } from "./common.data";
-import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { Accounting } from "../models/Accounting.model";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { largeQuery, largeScan } from "../helpers/data";
-import { Analytics } from "../models/Analytics.model";
-import { User } from "../models/User.model";
-import { Giveaway } from "../models/Giveaway.model";
-import { BalanceDbManager } from "./Balance.data";
-import { Organization } from "../models/Organization.model";
-import { GenericDbManager } from "./Generic.data";
-import { DateTime } from "luxon";
+import { Event } from '../models/Event.model'
+import { docClient, largeQuery, largeScan, vlmAnalyticsTable, vlmClaimsTable, vlmMainTable, vlmTransactionsTable } from './common.data'
+import { AdminLogManager } from '../logic/ErrorLogging.logic'
+import { Accounting } from '../models/Accounting.model'
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { Analytics } from '../models/Analytics.model'
+import { User } from '../models/User.model'
+import { Giveaway } from '../models/Giveaway.model'
+import { BalanceDbManager } from './Balance.data'
+import { Organization } from '../models/Organization.model'
+import { GenericDbManager } from './Generic.data'
+import { DateTime } from 'luxon'
 
 export abstract class GiveawayDbManager {
   static get: CallableFunction = async (giveawayConfig: Giveaway.Config) => {
     const giveaway = new Giveaway.Config(giveawayConfig),
-      { pk, sk } = giveaway;
+      { pk, sk } = giveaway
 
     const params = {
       TableName: vlmMainTable,
@@ -23,23 +22,23 @@ export abstract class GiveawayDbManager {
         pk,
         sk,
       },
-    };
+    }
 
     try {
-      const giveawayRecord = await docClient.get(params).promise();
-      return giveawayRecord.Item;
+      const giveawayRecord = await docClient.get(params).promise()
+      return giveawayRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/get",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/get',
         giveawayConfig,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getById: CallableFunction = async (sk: string) => {
     if (!sk) {
-      return;
+      return
     }
     const params: DocumentClient.GetItemInput = {
       Key: {
@@ -47,27 +46,27 @@ export abstract class GiveawayDbManager {
         sk,
       },
       TableName: vlmMainTable,
-    };
+    }
 
     try {
-      const giveaway = await docClient.get(params).promise();
-      return giveaway.Item as Giveaway.Config;
+      const giveaway = await docClient.get(params).promise()
+      return giveaway.Item as Giveaway.Config
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Event.data/getById",
+      AdminLogManager.logError(error, {
+        from: 'Event.data/getById',
         sk,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getByIds: CallableFunction = async (sks: string[]) => {
     if (!sks?.length) {
-      return;
+      return
     }
     const params: DocumentClient.TransactGetItemsInput = {
       TransactItems: [],
-    };
+    }
 
     sks.forEach((sk: string) => {
       params.TransactItems.push({
@@ -79,29 +78,29 @@ export abstract class GiveawayDbManager {
           },
           TableName: vlmMainTable,
         },
-      });
-    });
+      })
+    })
 
     try {
-      const giveaways = await docClient.transactGet(params).promise();
-      return giveaways.Responses.map((item) => new Giveaway.Config(item.Item));
+      const giveaways = await docClient.transactGet(params).promise()
+      return giveaways.Responses.map((item) => new Giveaway.Config(item.Item))
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/getByIds",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getByIds',
         sks,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getItemsByIds: CallableFunction = async (sks: string[]) => {
     if (!sks?.length) {
-      return;
+      return
     }
     try {
       const params: DocumentClient.TransactGetItemsInput = {
         TransactItems: [],
-      };
+      }
 
       sks.forEach((sk: string) => {
         params.TransactItems.push({
@@ -113,53 +112,57 @@ export abstract class GiveawayDbManager {
             },
             TableName: vlmMainTable,
           },
-        });
-      });
+        })
+      })
 
-      const giveaways = await docClient.transactGet(params).promise();
-      return giveaways.Responses.map((item) => item.Item);
+      const giveaways = await docClient.transactGet(params).promise()
+      return giveaways.Responses.map((item) => item.Item)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/getItemsByIds",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getItemsByIds',
         sks,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static adminGetAll: CallableFunction = async () => {
     const params = {
-      TableName: "VLM_MigratedLegacyEvents",
+      TableName: 'VLM_MigratedLegacyEvents',
       ExpressionAttributeNames: {
-        "#pk": "pk",
+        '#pk': 'pk',
       },
       ExpressionAttributeValues: {
-        ":pk": Giveaway.Config.pk,
+        ':pk': Giveaway.Config.pk,
       },
-      KeyConditionExpression: "#pk = :pk",
-    };
+      KeyConditionExpression: '#pk = :pk',
+    }
 
     try {
-      const giveawayQuery = await docClient.query(params).promise();
-      return giveawayQuery.Items;
+      const giveawayQuery = await docClient.query(params).promise()
+      return giveawayQuery.Items
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/adminGetAll",
-      });
-      return;
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/adminGetAll',
+      })
+      return
     }
-  };
+  }
 
   static getAllLegacy: CallableFunction = async (chunkCb: CallableFunction) => {
     var params = {
-      TableName: "vlm_claims",
-    };
-    const data = await largeScan(params, chunkCb);
-    return data;
-  };
+      TableName: 'vlm_claims',
+    }
+    const data = await largeScan(params, chunkCb)
+    return data
+  }
 
-  static addClaim: CallableFunction = async (analyticsAction: Analytics.Session.Action, claim: Giveaway.Claim, transaction: Accounting.Transaction) => {
-    const ts = DateTime.now().toUnixInteger();
+  static addClaim: CallableFunction = async (
+    analyticsAction: Analytics.Session.Action,
+    claim: Giveaway.Claim,
+    transaction: Accounting.Transaction
+  ) => {
+    const ts = DateTime.now().toMillis()
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -180,7 +183,7 @@ export abstract class GiveawayDbManager {
               ...claim,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmClaimsTable,
           },
         },
         {
@@ -190,21 +193,21 @@ export abstract class GiveawayDbManager {
               ...transaction,
               ts,
             },
-            TableName: vlmMainTable,
+            TableName: vlmTransactionsTable,
           },
         },
       ],
-    };
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
+      await docClient.transactWrite(params).promise()
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/addClaim",
-      });
-      return;
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/addClaim',
+      })
+      return
     }
-  };
+  }
 
   static put: CallableFunction = async (giveaway: Giveaway.Config) => {
     const params = {
@@ -213,22 +216,21 @@ export abstract class GiveawayDbManager {
         ...giveaway,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await docClient.put(params).promise();
-      return giveaway;
+      await docClient.put(params).promise()
+      return giveaway
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/put",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/put',
         giveaway,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static addItem: CallableFunction = async ({ giveaway, giveawayItem }: { giveaway: Giveaway.Config, giveawayItem: Giveaway.Item }) => {
-
+  static addItem: CallableFunction = async ({ giveaway, giveawayItem }: { giveaway: Giveaway.Config; giveawayItem: Giveaway.Item }) => {
     // Add the item
     const itemPut: DocumentClient.TransactWriteItem = {
       Put: {
@@ -236,9 +238,9 @@ export abstract class GiveawayDbManager {
         Item: {
           ...giveawayItem,
           ts: DateTime.now().toUnixInteger(),
-        }
-      }
-    };
+        },
+      },
+    }
 
     // Update the user balance
     const giveawayUpdate: DocumentClient.TransactWriteItem = {
@@ -246,36 +248,35 @@ export abstract class GiveawayDbManager {
         TableName: vlmMainTable,
         Key: {
           pk: Giveaway.Config.pk,
-          sk: giveaway.sk
+          sk: giveaway.sk,
         },
-        UpdateExpression: "SET #items = list_append(#items, :item)", // use list_append function to add new value to the list
+        UpdateExpression: 'SET #items = list_append(#items, :item)', // use list_append function to add new value to the list
         ExpressionAttributeNames: {
-          "#items": "items" // Replace with your attribute name
+          '#items': 'items', // Replace with your attribute name
         },
         ExpressionAttributeValues: {
-          ":item": [giveawayItem.sk]
-        }
+          ':item': [giveawayItem.sk],
+        },
       },
-    };
+    }
 
     const params = {
       TransactItems: [itemPut, giveawayUpdate],
-    };
-
+    }
 
     try {
-      await docClient.transactWrite(params).promise();
-      const dbGiveaway = await this.get(giveaway);
-      return dbGiveaway;
+      await docClient.transactWrite(params).promise()
+      const dbGiveaway = await this.get(giveaway)
+      return dbGiveaway
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/addItem",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/addItem',
         giveaway,
         giveawayItem,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static linkEvent: CallableFunction = async (link: Event.GiveawayLink) => {
     const params = {
@@ -284,59 +285,66 @@ export abstract class GiveawayDbManager {
         ...link,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await docClient.put(params).promise();
-      return link;
+      await docClient.put(params).promise()
+      return link
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/linkEvent",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/linkEvent',
         link,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getAllForUser: CallableFunction = async (user: User.Account) => {
     const params = {
       TableName: vlmMainTable,
-      IndexName: "userId-index",
+      IndexName: 'userId-index',
       ExpressionAttributeNames: {
-        "#pk": "pk",
-        "#userId": "userId",
+        '#pk': 'pk',
+        '#userId': 'userId',
       },
       ExpressionAttributeValues: {
-        ":pk": Giveaway.Config.pk,
-        ":userId": user.sk,
+        ':pk': Giveaway.Config.pk,
+        ':userId': user.sk,
       },
-      KeyConditionExpression: "#pk = :pk and #userId = :userId",
-    };
+      KeyConditionExpression: '#pk = :pk and #userId = :userId',
+    }
 
     try {
       const giveawayRecords = await largeQuery(params),
         giveawayIds = giveawayRecords.map((giveaway: Giveaway.Config) => giveaway.sk),
-        giveaways = await GiveawayDbManager.getByIds(giveawayIds);
-      return giveaways || [];
+        giveaways = await GiveawayDbManager.getByIds(giveawayIds)
+      return giveaways || []
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/getAllForUser",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getAllForUser',
         user,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static allocateCreditsToGiveaway: CallableFunction = async ({ giveaway, allocation, balance }: { giveaway: Giveaway.Config, allocation: Accounting.CreditAllocation, balance: User.Balance | Organization.Balance }) => {
+  static allocateCreditsToGiveaway: CallableFunction = async ({
+    giveaway,
+    allocation,
+    balance,
+  }: {
+    giveaway: Giveaway.Config
+    allocation: Accounting.CreditAllocation
+    balance: User.Balance | Organization.Balance
+  }) => {
     try {
-
       // Add an allocation record
       const allocationPut: DocumentClient.TransactWriteItem = {
         Put: {
           TableName: vlmMainTable,
           Item: allocation,
         },
-      };
+      }
 
       // Update the giveaway allocation
       const giveawayUpdate: DocumentClient.TransactWriteItem = {
@@ -352,7 +360,7 @@ export abstract class GiveawayDbManager {
           },
           ReturnValuesOnConditionCheckFailure: 'ALL_OLD',
         },
-      };
+      }
 
       // Update the user balance
       const balanceUpdate: DocumentClient.TransactWriteItem = {
@@ -368,67 +376,62 @@ export abstract class GiveawayDbManager {
           },
           ReturnValuesOnConditionCheckFailure: 'ALL_OLD',
         },
-      };
+      }
 
       const params = {
         TransactItems: [allocationPut, giveawayUpdate, balanceUpdate],
-      };
+      }
 
-      await docClient.transactWrite(params).promise();
+      await docClient.transactWrite(params).promise()
 
-      const adjustedBalance = await BalanceDbManager.get(balance);
+      const adjustedBalance = await BalanceDbManager.get(balance)
 
-      return adjustedBalance;
+      return adjustedBalance
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/allocateCreditsToGiveaway",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/allocateCreditsToGiveaway',
         giveaway,
         allocation,
-        balance
-      });
+        balance,
+      })
 
       // Record a failed transaction
-      await GenericDbManager.put({ ...allocation, status: Accounting.TransactionStatus.FAILED });
-      console.log(error);
-      return;
+      await GenericDbManager.put({ ...allocation, status: Accounting.TransactionStatus.FAILED })
+      console.log(error)
+      return
     }
-  };
+  }
 
-  static getUserClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account, giveawayId: string }) => {
+  static getUserClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account; giveawayId: string }) => {
     const params = {
-      TableName: vlmMainTable,
-      IndexName: "userId-index",
+      TableName: vlmClaimsTable,
+      IndexName: 'userId-index',
       ExpressionAttributeNames: {
-        "#pk": "pk",
-        "#userId": "userId",
+        '#pk': 'pk',
+        '#userId': 'userId',
+        '#giveawayId': 'giveawayId',
       },
       ExpressionAttributeValues: {
-        ":pk": Giveaway.Claim.pk,
-        ":userId": user.sk,
+        ':pk': Giveaway.Claim.pk,
+        ':userId': user.sk,
+        ':giveawayId': giveawayId,
       },
-      KeyConditionExpression: "#pk = :pk and #userId = :userId",
-    };
+      KeyConditionExpression: '#pk = :pk and #userId = :userId',
+      FilterExpression: '#giveawayId = :giveawayId',
+    }
 
     try {
-      const claimRecords = await largeQuery(params);
-      // get full claim records
-      const claims = await Promise.all(claimRecords.map(async (claim: Giveaway.Claim) => {
-        const fullClaim = await GenericDbManager.get(claim);
-        return fullClaim;
-      }));
-
-      // filter for the giveaway
-      const giveawayClaims = claims.filter((claim: Giveaway.Claim) => claim.giveawayId === giveawayId);
-      return giveawayClaims;
+      const claimRecords = await largeQuery(params)
+      return claimRecords
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/getUserClaimsForEvent",
-        event,
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getUserClaimsForEvent',
         user,
-      });
-      return;
+        error,
+      })
+      return
     }
-  };
+  }
 
   static addGiveawayClaim: CallableFunction = async (claim: Giveaway.Claim) => {
     const params = {
@@ -437,18 +440,17 @@ export abstract class GiveawayDbManager {
         ...claim,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await docClient.put(params).promise();
-      return claim;
+      await docClient.put(params).promise()
+      return claim
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Giveaway.data/addGiveawayClaim",
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/addGiveawayClaim',
         claim,
-      });
-      return;
+      })
+      return
     }
-  };
-
+  }
 }

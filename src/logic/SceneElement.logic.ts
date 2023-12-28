@@ -8,12 +8,12 @@ import { GenericDbManager } from '../dal/Generic.data'
 import { all } from 'axios'
 
 const alchemy = new Alchemy({
-  apiKey: process.env.ALCHEMY_API_KEY, // Replace with your Alchemy API Key.
+  apiKey: process.env.ALCHEMY_API_KEY_MAINNET, // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
 })
 
 const alchemyPoly = new Alchemy({
-  apiKey: process.env.ALCHEMY_API_KEY, // Replace with your Alchemy API Key.
+  apiKey: process.env.ALCHEMY_API_KEY_MATIC, // Replace with your Alchemy API Key.
   network: Network.MATIC_MAINNET, // Replace with your network.
 })
 
@@ -25,7 +25,7 @@ export abstract class SceneElementManager {
         for (let i = 0; i < sks.length; i++) {
           let sceneElement = await SceneManager.getSceneElementById(pk, sks[i])
 
-          if (pk == 'vlm.scene.nft' && sceneElement.contractAddress && sceneElement.tokenId > -1) {
+          if (pk == 'vlm:scene:nft' && sceneElement.contractAddress && sceneElement.tokenId > -1) {
             await alchemy.nft.getNftMetadata(sceneElement.contractAddress, sceneElement.tokenId)
           }
           if (sceneElement.instances && sceneElement.instances.length) {
@@ -159,8 +159,9 @@ export abstract class SceneElementManager {
 
   static addClaimPointToPreset: CallableFunction = async (message: VLMSceneMessage) => {
     try {
-      const claimPoint = new Scene.Giveaway.ClaimPoint(message.elementData)
-      return await SceneDbManager.addClaimPointToPreset(message.scenePreset.sk, claimPoint)
+      const claimPoint = new Scene.ClaimPoint.Config(message.elementData),
+        claimPointInstance = new Scene.ClaimPoint.Instance(message.instanceData)
+      return await SceneDbManager.addClaimPointToPreset(message.scenePreset.sk, claimPoint, claimPointInstance)
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneElementManager.addClaimPointToPreset' })
       return

@@ -1,7 +1,6 @@
 import { Event } from "../models/Event.model";
-import { vlmAnalyticsTable, vlmMainTable } from "./common.data";
+import { largeQuery, vlmAnalyticsTable, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { largeQuery } from "../helpers/data";
 import { AttributeValue, Key, QueryInput } from "aws-sdk/clients/dynamodb";
 import { User } from "../models/User.model";
 import { Organization } from "../models/Organization.model";
@@ -36,7 +35,7 @@ export abstract class AdminDbManager {
       const users = await largeQuery(params);
       return users;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getUsers",
       });
       return;
@@ -56,7 +55,7 @@ export abstract class AdminDbManager {
       },
       ExpressionAttributeValues: {
         ":pk": User.Session.Config.pk as AttributeValue,
-        ":ts": DateTime.now().toUnixInteger() as AttributeValue,
+        ":ts": DateTime.now().toMillis() as AttributeValue,
       },
       KeyConditionExpression: "#pk = :pk",
       FilterExpression: "#expires >= :ts",
@@ -71,7 +70,7 @@ export abstract class AdminDbManager {
       const users = await largeQuery(params);
       return users;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getUserSessions",
       });
       return;
@@ -91,7 +90,7 @@ export abstract class AdminDbManager {
       },
       ExpressionAttributeValues: {
         ":pk": Analytics.Session.Config.pk as AttributeValue,
-        ":ts": DateTime.now().toUnixInteger() as AttributeValue,
+        ":ts": DateTime.now().toMillis() as AttributeValue,
       },
       KeyConditionExpression: "#pk = :pk",
       FilterExpression: "#expires >= :ts",
@@ -106,7 +105,7 @@ export abstract class AdminDbManager {
       const users = await largeQuery(params);
       return users;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getAnalyticsSessions",
       });
       return;
@@ -139,7 +138,7 @@ export abstract class AdminDbManager {
       const orgs = await largeQuery(params);
       return orgs;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getOrganizations",
       });
       return;
@@ -173,7 +172,7 @@ export abstract class AdminDbManager {
       const scenes = await largeQuery(params);
       return scenes;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getScenes",
       });
       return;
@@ -207,7 +206,7 @@ export abstract class AdminDbManager {
       const events = await largeQuery(params);
       return events;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getEvents",
       });
       return;
@@ -241,7 +240,7 @@ export abstract class AdminDbManager {
       const events = await largeQuery(params);
       return events;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getErrorLogs",
       });
       return;
@@ -275,7 +274,7 @@ export abstract class AdminDbManager {
       const events = await largeQuery(params);
       return events;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getWarningLogs",
       });
       return;
@@ -309,7 +308,7 @@ export abstract class AdminDbManager {
       const events = await largeQuery(params);
       return events;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Admin.data/getInfoLogs",
       });
       return;

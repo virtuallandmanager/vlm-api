@@ -3,12 +3,12 @@ import { DateTime } from "luxon";
 
 // Optional Config object, but defaults to demo api-key and eth-mainnet.
 const ethSettings = {
-  apiKey: process.env.ALCHEMY_MAIN_ETH, // Replace with your Alchemy API Key.
+  apiKey: process.env.ALCHEMY_API_KEY_MAINNET, // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
 };
 
 const maticSettings = {
-  apiKey: process.env.ALCHEMY_MAIN_POLY, // Replace with your Alchemy API Key.
+  apiKey: process.env.ALCHEMY_API_KEY_MAINNET_MATIC, // Replace with your Alchemy API Key.
   network: Network.MATIC_MAINNET, // Replace with your network.
 };
 

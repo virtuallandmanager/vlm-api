@@ -1,8 +1,7 @@
 import { User } from '../models/User.model'
-import { daxClient, docClient, vlmMainTable } from './common.data'
+import { daxClient, docClient, largeQuery, vlmMainTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
-import { largeQuery } from '../helpers/data'
 import { Scene } from '../models/Scene.model'
 import { DateTime } from 'luxon'
 import { GenericDbManager } from './Generic.data'
@@ -22,7 +21,7 @@ export abstract class SceneDbManager {
       const sceneRecord = await daxClient.get(params).promise()
       return sceneRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/get',
         scene,
       })
@@ -43,7 +42,7 @@ export abstract class SceneDbManager {
       const sceneRecord = await daxClient.get(params).promise()
       return sceneRecord.Item ? new Scene.Preset(sceneRecord.Item) : {}
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getPreset',
         sk,
       })
@@ -64,7 +63,7 @@ export abstract class SceneDbManager {
       const sceneRecord = await daxClient.get(params).promise()
       return sceneRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getSetting',
         sk,
       })
@@ -85,7 +84,7 @@ export abstract class SceneDbManager {
       const sceneRecord = await daxClient.get(params).promise()
       return sceneRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getSceneUserState',
         sk,
       })
@@ -106,8 +105,8 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { '#prop': 'state', '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':prop': newState,
-        ':stateTs': state.ts || DateTime.now().toUnixInteger(),
-        ':ts': DateTime.now().toUnixInteger(),
+        ':stateTs': state.ts || DateTime.now().toMillis(),
+        ':ts': DateTime.now().toMillis(),
       },
     }
 
@@ -116,7 +115,7 @@ export abstract class SceneDbManager {
       const fullState = await SceneDbManager.getSceneUserState(state.sk)
       return fullState && fullState[key]
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/put',
         state,
       })
@@ -137,7 +136,7 @@ export abstract class SceneDbManager {
       const sceneRecord = await daxClient.get(params).promise()
       return sceneRecord.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getById',
         sk,
       })
@@ -173,7 +172,7 @@ export abstract class SceneDbManager {
         return [Scene.DemoSceneId]
       }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getIdsByUser',
         user,
       })
@@ -208,7 +207,7 @@ export abstract class SceneDbManager {
         sceneIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sceneId)
       return sceneIds
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getSceneIdsFromLinkIds',
         sks,
       })
@@ -245,7 +244,7 @@ export abstract class SceneDbManager {
         scenes = response.Responses.map((item) => item.Item as Scene.Config)
       return scenes?.length ? scenes : []
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getSceneLinksFromIds',
         sks,
       })
@@ -254,7 +253,7 @@ export abstract class SceneDbManager {
   }
 
   static initScene: CallableFunction = async (scene: Scene.Config, preset: Scene.Preset, sceneLink: User.SceneLink) => {
-    const ts = DateTime.now().toUnixInteger()
+    const ts = DateTime.now().toMillis()
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -295,7 +294,7 @@ export abstract class SceneDbManager {
       await docClient.transactWrite(params).promise()
       return scene
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/initScene',
       })
       return
@@ -344,7 +343,7 @@ export abstract class SceneDbManager {
 
       return { scene, preset }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addPresetToScene',
       })
       return
@@ -414,7 +413,7 @@ export abstract class SceneDbManager {
 
       return { scene, presets }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addPresetToScene',
       })
       return
@@ -456,7 +455,7 @@ export abstract class SceneDbManager {
               '#deleted': 'deleted',
             },
             ExpressionAttributeValues: {
-              ':ttl': DateTime.now().plus({ days: 90 }).toMillis(),
+              ':ttl': DateTime.now().plus({ days: 90 }).toUnixInteger(),
               ':deleted': true,
             },
             TableName: vlmMainTable,
@@ -471,7 +470,7 @@ export abstract class SceneDbManager {
 
       return scene
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/deletePreset',
       })
       return
@@ -528,7 +527,7 @@ export abstract class SceneDbManager {
 
       return { scene, settings }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addSettingsToScene',
       })
       return
@@ -575,7 +574,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addVideoToPreset',
       })
       return
@@ -625,7 +624,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData, instance: true, instanceData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addInstanceToElement',
       })
       return
@@ -672,7 +671,7 @@ export abstract class SceneDbManager {
                 '#deleted': 'deleted',
               },
               ExpressionAttributeValues: {
-                ':ttl': DateTime.now().plus({ days: 30 }),
+                ':ttl': DateTime.now().plus({ days: 30 }).toUnixInteger(),
                 ':deleted': true,
               },
               TableName: vlmMainTable,
@@ -687,7 +686,7 @@ export abstract class SceneDbManager {
       const instanceData = await GenericDbManager.get(instanceConfig)
       return { scenePreset, elementData, instance: true, instanceData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/removeInstanceFromElement',
       })
       return
@@ -734,7 +733,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addImageToPreset',
       })
       return
@@ -781,7 +780,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addNftToPreset',
       })
       return
@@ -828,7 +827,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addModelToPreset',
       })
       return
@@ -876,7 +875,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addSoundToPreset',
       })
       return
@@ -924,14 +923,18 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addWidgetToPreset',
       })
       return
     }
   }
 
-  static addClaimPointToPreset: CallableFunction = async (presetId: string, claimPoint: Scene.Giveaway.ClaimPoint) => {
+  static addClaimPointToPreset: CallableFunction = async (
+    presetId: string,
+    claimPoint: Scene.ClaimPoint.Config,
+    instance: Scene.ClaimPoint.Instance
+  ) => {
     const sk = claimPoint.sk
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -962,6 +965,16 @@ export abstract class SceneDbManager {
             TableName: vlmMainTable,
           },
         },
+        {
+          Put: {
+            // Create a scene preset
+            Item: {
+              ...instance,
+              ts: DateTime.now().toUnixInteger(),
+            },
+            TableName: vlmMainTable,
+          },
+        },
       ],
     }
 
@@ -972,7 +985,7 @@ export abstract class SceneDbManager {
 
       return { scenePreset, elementData }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/addClaimPointToPreset',
       })
       return
@@ -980,7 +993,7 @@ export abstract class SceneDbManager {
   }
 
   static updateSceneProperty: CallableFunction = async (sceneConfig: Scene.Config, property: string, newValue: unknown) => {
-    const ts = DateTime.now().toUnixInteger()
+    const ts = DateTime.now().toMillis()
 
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
@@ -999,7 +1012,7 @@ export abstract class SceneDbManager {
       await daxClient.update(params).promise()
       return await this.getById(sceneConfig.sk)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/updateSceneProperty',
         sceneConfig,
         property,
@@ -1010,7 +1023,7 @@ export abstract class SceneDbManager {
   }
 
   static updateSceneElementProperty: CallableFunction = async (message: VLMSceneMessage, options?: { skipPreset: boolean }) => {
-    const ts = DateTime.now().toUnixInteger()
+    const ts = DateTime.now().toMillis()
     let { elementData, property, scenePreset } = message
     let valueProp
     Object.keys(elementData).forEach((key: string) => {
@@ -1045,13 +1058,13 @@ export abstract class SceneDbManager {
       console.log(error)
       if (error.code === 'ConditionalCheckFailedException') {
         const storedElement = await GenericDbManager.get(message.elementData)
-        AdminLogManager.logError(JSON.stringify(error), {
+        AdminLogManager.logError(error, {
           from: 'Scene.data/updateSceneElementProperty',
           reason: `ts mismatch: ${message.elementData.ts} is before ${storedElement.ts}`,
           elementData,
         })
       }
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/updateSceneElementProperty',
         message,
       })
@@ -1114,7 +1127,7 @@ export abstract class SceneDbManager {
               '#deleted': 'deleted',
             },
             ExpressionAttributeValues: {
-              ':ttl': DateTime.now().plus({ days: 30 }),
+              ':ttl': DateTime.now().plus({ days: 30 }).toUnixInteger(),
               ':deleted': true,
             },
             TableName: vlmMainTable,
@@ -1128,7 +1141,7 @@ export abstract class SceneDbManager {
       const scenePreset = await GenericDbManager.get(dbPreset)
       return { scenePreset }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/removeSceneElement',
       })
       return
@@ -1149,7 +1162,7 @@ export abstract class SceneDbManager {
       const scenePreset = await SceneDbManager.getPreset(preset.sk)
       return { scenePreset }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/put',
         scene,
       })
@@ -1170,7 +1183,7 @@ export abstract class SceneDbManager {
       await daxClient.put(params).promise()
       return await SceneDbManager.getById(scene.sk)
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/put',
         scene,
       })
@@ -1198,7 +1211,7 @@ export abstract class SceneDbManager {
         await daxClient.batchWrite(batchWriteParams).promise()
       }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/updateAllSceneElements',
       })
       return
@@ -1229,7 +1242,7 @@ export abstract class SceneDbManager {
       }
       return results
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/getAllSceneElements',
       })
       return
@@ -1255,7 +1268,7 @@ export abstract class SceneDbManager {
         scenePreset,
       }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Scene.data/updateInstance',
         message,
       })

@@ -8,7 +8,8 @@ import { ScenePresetManager } from './ScenePreset.logic'
 import { GiveawayManager } from './Giveaway.logic'
 import { DateTime } from 'luxon'
 import { UserWalletDbManager } from '../dal/UserWallet.data'
-import { SupportedCurrencies } from '../models/Wallet.model'
+import { SupportedCurrencies, WalletType } from '../models/Wallet.model'
+import { UserManager } from './User.logic'
 
 export abstract class SceneManager {
   // Base Scene Operations //
@@ -96,9 +97,9 @@ export abstract class SceneManager {
     }
   }
 
-  static getIdsForUser: CallableFunction = async (vlmUser: User.Account) => {
+  static getIdsForUser: CallableFunction = async (user: User.Account) => {
     try {
-      return await SceneDbManager.getIdsForUser(vlmUser.sk)
+      return await SceneDbManager.getIdsForUser(user)
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.getIdsForUser' })
     }
@@ -131,8 +132,8 @@ export abstract class SceneManager {
 
   static inviteUserByWallet: CallableFunction = async (inviteConfig: Scene.Invite & { connectedWallet: string; currency: SupportedCurrencies }) => {
     try {
-      const user = await UserWalletDbManager.obtain(
-        new User.Wallet({ address: inviteConfig.connectedWallet, currency: inviteConfig.currency || 'ETH' })
+      const user = await UserManager.obtainUserByWallet(
+        new User.Wallet({ address: inviteConfig.connectedWallet, currency: inviteConfig.currency || 'ETH', type: WalletType.USER })
       )
       const invite = new Scene.Invite({ ...inviteConfig, userId: user.userId })
       await GenericDbManager.put(invite)
@@ -269,28 +270,30 @@ export abstract class SceneManager {
     try {
       const element = await GenericDbManager.get({ pk, sk })
       switch (pk) {
-        case 'vlm.scene.image':
+        case 'vlm:scene:image':
           return new Scene.Image.Config(element)
-        case 'vlm.scene.image.instance':
+        case 'vlm:scene:image:instance':
           return new Scene.Image.Instance(element)
-        case 'vlm.scene.video':
+        case 'vlm:scene:video':
           return new Scene.Video.Config(element)
-        case 'vlm.scene.video.instance':
+        case 'vlm:scene:video:instance':
           return new Scene.Video.Instance(element)
-        case 'vlm.scene.model':
+        case 'vlm:scene:model':
           return new Scene.Model.Config(element)
-        case 'vlm.scene.model.instance':
+        case 'vlm:scene:model:instance':
           return new Scene.Model.Instance(element)
-        case 'vlm.scene.nft':
+        case 'vlm:scene:nft':
           return new Scene.NFT.Config(element)
-        case 'vlm.scene.sound':
+        case 'vlm:scene:sound':
           return new Scene.Sound.Config(element)
-        case 'vlm.scene.sound.instance':
+        case 'vlm:scene:sound:instance':
           return new Scene.Sound.Instance(element)
-        case 'vlm.scene.widget':
+        case 'vlm:scene:claimpoint':
+          return new Scene.ClaimPoint.Config(element)
+        case 'vlm:scene:claimpoint':
+          return new Scene.ClaimPoint.Config(element)
+        case 'vlm:scene:widget':
           return new Scene.Widget.Config(element)
-        case 'vlm.scene.giveaway.claimpoint':
-          return new Scene.Giveaway.ClaimPoint(element)
         default:
           return element
       }

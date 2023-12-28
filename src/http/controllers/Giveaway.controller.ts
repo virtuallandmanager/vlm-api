@@ -27,7 +27,7 @@ router.get("/all", authMiddleware, async (req: Request, res: Response) => {
       giveaways
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Giveaway.controller/cards",
     });
     return res.status(500).json({
@@ -49,7 +49,7 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
       giveaway,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Giveaway.controller/create",
     });
     return res.status(500).json({
@@ -73,7 +73,7 @@ router.post("/update", authMiddleware, async (req: Request, res: Response) => {
       giveaway,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Giveaway.controller/create",
     });
     return res.status(500).json({
@@ -97,7 +97,7 @@ router.post("/item/add", authMiddleware, async (req: Request, res: Response) => 
       giveaway,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Giveaway.controller/create",
     });
     return res.status(500).json({
@@ -136,7 +136,7 @@ router.get("/:giveawayId", authMiddleware, async (req: Request, res: Response) =
       giveaway,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Giveaway.controller/:giveawayId",
     });
     return res.status(500).json({
@@ -180,7 +180,7 @@ router.post("/set-minter/broadcast", async (req: Request, res: Response | any) =
 
     return res.status(200);
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Transaction.controller/create",
     });
     return res.status(500).json({

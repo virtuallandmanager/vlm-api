@@ -9,16 +9,16 @@ import { ScenePresetManager } from '../../../logic/ScenePreset.logic'
 import { SceneElementManager } from '../../../logic/SceneElement.logic'
 import { analyticsAuthMiddleware } from '../../../middlewares/security/auth'
 import { AdminLogManager } from '../../../logic/ErrorLogging.logic'
-import { SceneStream, VLMSceneState } from '../schema/VLMSceneState'
+import { SceneStream } from '../schema/VLMSceneState'
 import { HistoryManager } from '../../../logic/History.logic'
 import { Metaverse } from '../../../models/Metaverse.model'
 import { deepEqual } from '../../../helpers/data'
-import { AnalyticsManager } from '../../../logic/Analytics.logic'
 import { SceneSettingsManager } from '../../../logic/SceneSettings.logic'
 import { GiveawayManager } from '../../../logic/Giveaway.logic'
 import { Giveaway } from '../../../models/Giveaway.model'
 import { DateTime } from 'luxon'
 import { Session } from '../../../models/Session.model'
+import { UserManager } from '../../../logic/User.logic'
 
 type ElementName = 'image' | 'video' | 'nft' | 'model' | 'sound' | 'widget' | 'claimpoint'
 type Action = 'init' | 'create' | 'update' | 'updateAll' | 'delete' | 'trigger'
@@ -176,7 +176,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         return equal
       })
 
-      const isFirstLocation = !existingSceneLocations?.length
+      const isExistingLocation = existingSceneLocations?.length
 
       const locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) =>
         deepEqual(location.integrationData, userLocation.integrationData)
@@ -192,7 +192,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
 
       const hasOutdatedLocation = locationWithUpdatedVersion > -1 || locationWithUpdatedParcels > -1
 
-      if (sceneExists && isFirstLocation) {
+      if (sceneExists && !isExistingLocation) {
         // add new location
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...scene.locations, userLocation] })
       } else if (sceneExists && hasOutdatedLocation) {
@@ -202,13 +202,13 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
             isLocationWithUpdatedParcels = i !== locationWithUpdatedParcels,
             needsReplacement = isLocationWithUpdatedVersion || isLocationWithUpdatedParcels
 
-          return needsReplacement
+          return !needsReplacement
         })
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...locations, userLocation] })
       } else if (sceneExists && hasNoLocations) {
         // add first location
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [userLocation] })
-      } else if (!sceneExists || !isFirstLocation) {
+      } else if (!sceneExists || !isExistingLocation) {
         AdminLogManager.logError('Unexpected location/version condition', { scene, userLocation })
       }
 
@@ -397,7 +397,7 @@ export async function handleUserMessage(client: Client, message: any, room: VLMS
     const { sceneId } = client.auth.session
     let { user } = client.auth.user
     if (!user) {
-      user = await AnalyticsManager.getUserById(client.auth.session.userId)
+      user = await UserManager.getById(client.auth.session.userId)
     }
     console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async ({ session, user }) => {
@@ -420,7 +420,7 @@ export async function handleGetUserState(client: Client, message: any, room: VLM
     const { sceneId } = client.auth.session
     let { user } = client.auth.user
     if (!user) {
-      user = await AnalyticsManager.getUserById(client.auth.session.userId)
+      user = await UserManager.getById(client.auth.session.userId)
     }
     console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
@@ -441,7 +441,7 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
     const { sceneId } = client.auth.session
     let { user } = client.auth.user
     if (!user) {
-      user = await AnalyticsManager.getUserById(client.auth.session.userId)
+      user = await UserManager.getById(client.auth.session.userId)
     }
     console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
@@ -807,7 +807,7 @@ export function handleSceneVideoUpdate(client: Client, message: any, room: VLMSc
 export async function handleToggleSoundLocators(client: Client, message: any, room: VLMScene) {
   // Logic for scene_video_update message
   const wallet = client.auth.user.connectedWallet || client.auth.session.connectedWallet
-  const analyticsUser = await AnalyticsManager.obtainUserByWallet({ address: wallet }, client.auth.user)
+  const analyticsUser = await UserManager.obtainUserByWallet({ address: wallet }, client.auth.user)
   message.user = analyticsUser
   try {
     return true
@@ -850,14 +850,19 @@ export async function handleGiveawayClaim(
   }
 }
 
-export async function handleRequestPlayerPosition(client: Client, message: { userId?: string; connectedWallet?: string }, room: VLMScene) {
+export async function handleRequestPlayerPosition(
+  client: Client,
+  message: { userId?: string; connectedWallet?: string; positionData?: Analytics.PathPoint },
+  room: VLMScene
+) {
   // Logic for request_player_position message
   try {
     const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk && c.auth.user.sk == message.userId)
     if (inWorldUser) {
       inWorldUser.send('request_player_position', message)
     } else if (!room.clients.length) {
-      client.send('send_player_position', { positionData: [null, null, null, null, 8, 1, 8, null, null, null, null, null, null, null] })
+      const positionData: Analytics.PathPoint = [null, 8, 1, 8, null, null, null, null, null, null, null]
+      client.send('send_player_position', { positionData })
     } else {
       room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk).send('request_player_position', message)
     }

@@ -17,7 +17,7 @@ router.post("/create", authMiddleware, async (req: Request, res: Response) => {
       organization,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Organization.controller/create",
     });
     return res.status(500).json({
@@ -41,7 +41,7 @@ router.post("/invite/user", authMiddleware, async (req: Request, res: Response) 
       text: `Invite sent to ${connectedWallet}.`,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Scene.controller/invite/user",
     });
     return res.status(500).json({
@@ -62,7 +62,7 @@ router.post("/update", authMiddleware, async (req: Request, res: Response) => {
       organization,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Organization.controller/update",
     });
     return res.status(500).json({

@@ -48,7 +48,7 @@ router.post("/claim", authMiddleware, async (req: Request, res: Response) => {
       promotions: promoBalance
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Promotion.controller/claim",
     });
     return res.status(500).json({

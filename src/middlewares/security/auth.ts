@@ -7,7 +7,6 @@ import { User } from '../../models/User.model'
 import { Client } from 'colyseus'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import { Analytics } from '../../models/Analytics.model'
-import { AnalyticsManager } from '../../logic/Analytics.logic'
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const sessionToken = extractToken(req)
@@ -79,7 +78,7 @@ export async function vlmAdminMiddleware(req: Request, res: Response, next: Next
 export async function analyticsAuthMiddleware(
   client: Client,
   message: { sessionToken: string; sceneId: string },
-  next: (auth?: { session: Partial<Analytics.Session.Config>; user: Partial<Analytics.User.Account> }) => void
+  next: (auth?: { session: Partial<Analytics.Session.Config>; user: Partial<User.Account> }) => void
 ) {
   let session: Partial<Analytics.Session.Config>
   const { sessionToken, sceneId } = message
@@ -99,7 +98,7 @@ export async function analyticsAuthMiddleware(
   }
 
   if (session) {
-    let user = await AnalyticsManager.getUserById(session.userId)
+    let user = await UserManager.getById(session.userId)
     next({ session, user })
     return
   }
@@ -133,5 +132,9 @@ export async function userAuthMiddleware(
 }
 
 export async function alchemyWebhook(req: Request, res: Response, next: NextFunction) {
+  if (req.clientIp !== process.env.ALCHEMY_IP_A && req.clientIp !== process.env.ALCHEMY_IP_B) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid Origin' })
+  }
+
   next()
 }

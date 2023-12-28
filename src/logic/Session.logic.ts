@@ -212,10 +212,19 @@ export abstract class SessionManager {
 
   static getAnalyticsSession: CallableFunction = async (config: Analytics.Session.Config) => {
     try {
-      const session = new Analytics.Session.Config(config)
-      return await SessionDbManager.get(session)
+      return await SessionDbManager.get(config)
     } catch (error) {
       AdminLogManager.logError('Failed to get analytics session', config)
+      console.log(error)
+      return
+    }
+  }
+
+  static getAnalyticsSessionForUserId: CallableFunction = async (userId: string) => {
+    try {
+      return await SessionDbManager.getRecentAnalyticsSession(userId)
+    } catch (error) {
+      AdminLogManager.logError('Failed to get recent analytics session', userId)
       console.log(error)
       return
     }

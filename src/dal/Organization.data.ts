@@ -1,8 +1,7 @@
-import { docClient, vlmMainTable } from "./common.data";
+import { docClient, largeQuery, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Organization } from "../models/Organization.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { largeQuery } from "../helpers/data";
 import { DateTime } from "luxon";
 
 export abstract class OrganizationDbManager {
@@ -10,7 +9,7 @@ export abstract class OrganizationDbManager {
     try {
       return await OrganizationDbManager.getById(org.sk);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/get",
       });
       return;
@@ -33,7 +32,7 @@ export abstract class OrganizationDbManager {
       const organizationRecord = await docClient.get(params).promise();
       return organizationRecord.Item as Organization.Account;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getById",
       });
       return;
@@ -65,7 +64,7 @@ export abstract class OrganizationDbManager {
       const organizations = await docClient.transactGet(params).promise();
       return organizations.Responses.map((item) => item.Item);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getOrgsFromIds",
         sks,
       });
@@ -88,7 +87,7 @@ export abstract class OrganizationDbManager {
       const userConRecord = await docClient.get(params).promise();
       return userConRecord.Item as Organization.UserConnector;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getUserConById",
       });
       return;
@@ -108,7 +107,7 @@ export abstract class OrganizationDbManager {
       const organizationRecord = await docClient.get(params).promise();
       return organizationRecord.Item as Organization.UserConnector;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getUserConById",
       });
       return;
@@ -146,7 +145,7 @@ export abstract class OrganizationDbManager {
         (userCon: Organization.UserConnector) => userCon.userRole === roleFilter
       );
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getUserConsByUserId",
       });
       return;
@@ -166,7 +165,7 @@ export abstract class OrganizationDbManager {
       const organizationRecord = await docClient.get(params).promise();
       return organizationRecord.Item as Organization.Balance;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getBalance",
       });
       return;
@@ -184,7 +183,7 @@ export abstract class OrganizationDbManager {
       ExpressionAttributeNames: { "#ts": "ts" },
       ExpressionAttributeValues: {
         ":sessionTs": organization.ts,
-        ":ts": DateTime.now().toUnixInteger(),
+        ":ts": DateTime.now().toMillis(),
       },
     };
 
@@ -192,7 +191,7 @@ export abstract class OrganizationDbManager {
       await docClient.update(params).promise();
       return await OrganizationDbManager.get(organization);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/update",
         organization,
       });
@@ -211,7 +210,7 @@ export abstract class OrganizationDbManager {
       ExpressionAttributeNames: { "#ts": "ts" },
       ExpressionAttributeValues: {
         ":sessionTs": balance.ts,
-        ":ts": DateTime.now().toUnixInteger(),
+        ":ts": DateTime.now().toMillis(),
       },
     };
 
@@ -219,7 +218,7 @@ export abstract class OrganizationDbManager {
       await docClient.update(params).promise();
       return await OrganizationDbManager.getBalance(balance);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/update",
         balance,
       });
@@ -239,7 +238,7 @@ export abstract class OrganizationDbManager {
       await docClient.put(params).promise();
       return await OrganizationDbManager.getUserCon(orgUserCon);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/addMember",
         orgUserCon,
       });
@@ -299,7 +298,7 @@ export abstract class OrganizationDbManager {
       await docClient.transactWrite(params).promise();
       return orgAccount;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/put",
         orgAccount,
         orgUserCon,
@@ -334,7 +333,7 @@ export abstract class OrganizationDbManager {
       const userCons = await docClient.transactGet(params).promise();
       return userCons.Responses.map((item) => item.Item);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/getUserConsFromIds",
         sks,
       });
@@ -355,7 +354,7 @@ export abstract class OrganizationDbManager {
       await docClient.put(params).promise();
       return organization;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Organization.data/put",
         Organization,
       });

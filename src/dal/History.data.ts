@@ -20,7 +20,7 @@ export abstract class HistoryDbManager {
       const historyRecord = await docClient.get(params).promise();
       return historyRecord.Item;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "History.data/get",
         history,
       });
@@ -41,7 +41,7 @@ export abstract class HistoryDbManager {
       const historyRecord = await docClient.get(params).promise();
       return historyRecord.Item;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "History.data/getById",
         sk,
       });
@@ -77,7 +77,7 @@ export abstract class HistoryDbManager {
         );
       return historys?.length ? historys : [];
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "History.data/getHistoryLinksFromIds",
         sks,
       });
@@ -90,7 +90,7 @@ export abstract class HistoryDbManager {
     root: History.Root,
     update: History.Update
   ) => {
-    const ts = DateTime.now().toUnixInteger();
+    const ts = DateTime.now().toMillis();
 
     const params: DocumentClient.TransactWriteItemsInput = {
       TransactItems: [
@@ -131,7 +131,7 @@ export abstract class HistoryDbManager {
       await docClient.transactWrite(params).promise();
       return config;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "History.data/initHistory",
       });
       return;
@@ -180,7 +180,7 @@ export abstract class HistoryDbManager {
       await docClient.transactWrite(params).promise();
       return { history, update };
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "History.data/addUpdateToHistory",
       });
       return;
@@ -200,7 +200,7 @@ export abstract class HistoryDbManager {
       await docClient.put(params).promise();
       return await HistoryDbManager.get(history);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "History.data/put",
         history,
       });

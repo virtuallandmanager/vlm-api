@@ -8,7 +8,7 @@ export namespace Cache {
     pk?: string = Config.pk
     sk?: RedisKey = uuidv4()
     data?: { [key: string]: any } = {}
-    ts?: EpochTimeStamp = DateTime.now().toUnixInteger()
+    ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config: Config) {
       this.sk = config.sk || this.sk

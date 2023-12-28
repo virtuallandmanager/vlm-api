@@ -47,7 +47,7 @@ export namespace Organization {
     startTime?: EpochTimeStamp;
     endTime?: EpochTimeStamp;
     permissions?: Permissions;
-    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    ts?: EpochTimeStamp = DateTime.now().toMillis();
 
     constructor(config?: Invite) {
       if (!config) {
@@ -70,7 +70,7 @@ export namespace Organization {
     orgId?: string;
     type?: BalanceType;
     value?: number;
-    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    ts?: EpochTimeStamp = DateTime.now().toMillis();
 
 
     constructor(config: Balance) {
@@ -89,7 +89,7 @@ export namespace Organization {
     orgId: string;
     type: BalanceType;
     value: number;
-    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    ts?: EpochTimeStamp = DateTime.now().toMillis();
 
     constructor(config: Balance) {
       this.sk = config?.sk || this.sk;

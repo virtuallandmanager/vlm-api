@@ -23,7 +23,7 @@ export abstract class PromotionManager {
     try {
       return await PromotionDbManager.obtainUserPromoClaim(userId, promoId);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/obtainUserPromoClaim",
         userId,
         promoId,

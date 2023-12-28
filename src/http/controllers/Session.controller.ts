@@ -20,7 +20,7 @@ router.get("/end", async (req: Request, res: Response) => {
       text: "Successfully ended session.",
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Session.controller/demo",
     });
     return res.status(500).json({

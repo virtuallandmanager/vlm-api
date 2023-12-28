@@ -1,7 +1,5 @@
-import { IDbItem, daxClient, docClient, vlmMainTable } from './common.data'
+import { IDbItem, daxClient, docClient, largeQuery, vlmMainTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
-import { largeQuery } from '../helpers/data'
-import { VLMRecord } from '../models/VLM.model'
 import { DateTime } from 'luxon'
 
 export abstract class GenericDbManager {
@@ -14,7 +12,7 @@ export abstract class GenericDbManager {
 
       return finalData
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/obtain',
         dataConfig,
       })
@@ -37,7 +35,7 @@ export abstract class GenericDbManager {
       const record = await docClient.get(params).promise()
       return record.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/get',
         dataConfig,
       })
@@ -66,7 +64,7 @@ export abstract class GenericDbManager {
       const records = await largeQuery(params)
       return records || []
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/query',
         dataConfig,
       })
@@ -98,7 +96,7 @@ export abstract class GenericDbManager {
       const record = await docClient.get(params).promise()
       return record.Item
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/getFragment',
         dataConfig,
       })
@@ -125,7 +123,7 @@ export abstract class GenericDbManager {
       const records = await largeQuery(params)
       return records
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/get',
         pk,
         userId,
@@ -153,7 +151,7 @@ export abstract class GenericDbManager {
       const records = await largeQuery(params)
       return records
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/get',
         pk,
         orgId,
@@ -180,7 +178,7 @@ export abstract class GenericDbManager {
       const dbItem = await this.get(dataConfig)
       return dbItem
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: 'Generic.data/put',
         dataConfig,
       })

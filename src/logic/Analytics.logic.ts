@@ -1,49 +1,67 @@
-import { AnalyticsUserDbManager } from "../dal/AnalyticsUser.data";
-import { UserWalletDbManager } from "../dal/UserWallet.data";
-import { Analytics } from "../models/Analytics.model";
-import { BaseWallet } from "../models/Wallet.model";
-import { UserManager } from "./User.logic";
+import { DateTime } from 'luxon'
+import { AnalyticsDbManager } from '../dal/Analytics.data'
+import { Analytics } from '../models/Analytics.model'
 
 export abstract class AnalyticsManager {
-  static createUser: CallableFunction = async (userConfig: Analytics.User.Account) => {
-    return await AnalyticsUserDbManager.put(userConfig);
-  };
-
-  static getUser: CallableFunction = async (userConfig: Analytics.User.Account) => {
-    return await AnalyticsUserDbManager.get(userConfig);
-  };
-
-  static getUserById: CallableFunction = async (sk: string) => {
-    return await AnalyticsUserDbManager.getById(sk);
-  };
-
-  static getUserByWallet: CallableFunction = async (wallet: string) => {
-    return await AnalyticsUserDbManager.getByWallet(wallet)
-  };
-
-  static updateUser: CallableFunction = async (userConfig: Analytics.User.Account) => {
-    return await AnalyticsUserDbManager.put(userConfig);
-  };
-
-  static obtainUserByWallet: CallableFunction = async (walletConfig: BaseWallet, userConfig: Analytics.User.Config) => {
-    try {
-      const wallet = new Analytics.User.Wallet(walletConfig);
-      const dbWallet = await UserWalletDbManager.obtain(wallet);
-      const user = new Analytics.User.Account({ connectedWallet: dbWallet.sk, ...userConfig });
-      const dbUser = await AnalyticsUserDbManager.obtainByWallet(user);
-      return dbUser;
-    } catch (error: any) {
-      console.log(error);
-      return;
-    }
-  };
-
-  static obtainUser: CallableFunction = async (userConfig?: Analytics.User.Config) => {
-    const user = new Analytics.User.Account(userConfig);
-    return await AnalyticsUserDbManager.obtain(user);
-  };
-
   static getRecentSceneMetrics: CallableFunction = async (sceneId: string) => {
-    return await AnalyticsUserDbManager.getRecentSceneMetrics(sceneId);
+    const recentSceneMetricsFull = await AnalyticsDbManager.getRecentSceneMetrics(sceneId)
+    // group each metric by the action property and count how many of each action took place during each minute
+    let byMinute = recentSceneMetricsFull.reduce((acc: any, metric: Analytics.Session.Action) => {
+        const { name, ts } = metric
+        const minute = DateTime.fromMillis(ts)
+          .toUTC()
+          .startOf('minute')
+          .toISO()
+        if (!acc[minute]) {
+          acc[minute] = {}
+        }
+        if (!acc[minute][name]) {
+          acc[minute][name] = 0
+        }
+        acc[minute][name]++
+        return acc
+      }, {}),
+      byHour = recentSceneMetricsFull.reduce((acc: any, metric: Analytics.Session.Action) => {
+        const { name, ts } = metric
+        const hour = DateTime.fromMillis(ts)
+          .toUTC()
+          .startOf('hour')
+          .toISO()
+        if (!acc[hour]) {
+          acc[hour] = {}
+        }
+        if (!acc[hour][name]) {
+          acc[hour][name] = 0
+        }
+        acc[hour][name]++
+        return acc
+      }, {}),
+      byDay = recentSceneMetricsFull.reduce((acc: any, metric: Analytics.Session.Action) => {
+        const { name, ts } = metric
+        const day = DateTime.fromMillis(ts)
+          .toUTC()
+          .startOf('day')
+          .toISO()
+        if (!acc[day]) {
+          acc[day] = {}
+        }
+        if (!acc[day][name]) {
+          acc[day][name] = 0
+        }
+        acc[day][name]++
+        return acc
+      }, {})
+
+    return { byMinute, byHour, byDay }
+  }
+
+  static getHistoricalSceneMetrics: CallableFunction = async (queryOptions: {
+    sceneId: string
+    start: EpochTimeStamp
+    end: EpochTimeStamp
+    scale: Analytics.AggregateScale
+  }) => {
+    const { sceneId, start, end, scale } = queryOptions
+    return await AnalyticsDbManager.getHistoricalSceneMetrics({ sceneId, start, end, scale })
   }
 }

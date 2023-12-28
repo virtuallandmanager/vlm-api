@@ -1,11 +1,10 @@
-import { docClient, vlmMainTable } from "./common.data";
+import { docClient, largeQuery, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { User } from "../models/User.model";
 import { GenericDbManager } from "./Generic.data";
 import { Organization } from "../models/Organization.model";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { VLMRecord } from "../models/VLM.model";
-import { largeQuery } from "../helpers/data";
 import { BalanceType } from "../models/Balance.model";
 import { DateTime } from "luxon";
 
@@ -22,7 +21,7 @@ export abstract class BalanceDbManager {
 
       return balanceIds;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/getById",
         userId,
       });
@@ -42,7 +41,7 @@ export abstract class BalanceDbManager {
 
       return balanceIds;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/getById",
         orgId,
       });
@@ -62,7 +61,7 @@ export abstract class BalanceDbManager {
 
       return existingBalance || createdBalance;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/obtain",
         balance,
       });
@@ -100,7 +99,7 @@ export abstract class BalanceDbManager {
         return balancesOfType[0];
       }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/getBalanceTypeForUser",
         userId,
         balanceType,
@@ -137,7 +136,7 @@ export abstract class BalanceDbManager {
         return balancesOfType[0];
       }
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/obtainBalanceTypeForOrg",
         orgId,
         balanceType,
@@ -159,7 +158,7 @@ export abstract class BalanceDbManager {
       const balance = balanceRecord.Item as User.Balance;
       return balance;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/getUserBalanceById",
         sk,
       });
@@ -193,7 +192,7 @@ export abstract class BalanceDbManager {
 
       return balances;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/obtainBalances",
         userId,
       });
@@ -225,7 +224,7 @@ export abstract class BalanceDbManager {
             ExpressionAttributeValues: {
               ":balanceIds": balanceIds,
               ":userTs": userAccount.ts || 0,
-              ":ts": DateTime.now().toUnixInteger(),
+              ":ts": DateTime.now().toMillis(),
               TableName: vlmMainTable,
             },
           },
@@ -252,7 +251,7 @@ export abstract class BalanceDbManager {
       await docClient.transactWrite(params).promise();
       return userAccount;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/createNewBalance",
         userAccount,
       });
@@ -272,7 +271,7 @@ export abstract class BalanceDbManager {
       ExpressionAttributeValues: {
         ":value": balance.value || 0,
         ":balanceTs": balance.ts || 0,
-        ":ts": DateTime.now().toUnixInteger(),
+        ":ts": DateTime.now().toMillis(),
       },
     };
 
@@ -280,7 +279,7 @@ export abstract class BalanceDbManager {
       await docClient.update(params).promise();
       return await this.obtain(balance);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/updateBalance",
         balance,
       });
@@ -359,7 +358,7 @@ export abstract class BalanceDbManager {
       const user = userRecord.Item;
       return user;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/get",
         balance,
       });
@@ -381,7 +380,7 @@ export abstract class BalanceDbManager {
       await docClient.put(params).promise();
       return balance;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Balance.data/put",
         balance,
       });

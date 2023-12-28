@@ -11,7 +11,7 @@ router.post("/error", async (req: Request, res: Response) => {
       text: "Logged error successfully.",
     });
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Log.controller/error",
     });
     return res.status(error?.status || 500).json({
@@ -30,7 +30,7 @@ router.post("/warning", async (req: Request, res: Response) => {
       text: "Logged error successfully.",
     });
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Log.controller/error",
     });
     return res.status(error?.status || 500).json({
@@ -49,7 +49,7 @@ router.post("/info", async (req: Request, res: Response) => {
       text: "Logged error successfully.",
     });
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Log.controller/error",
     });
     return res.status(error?.status || 500).json({
@@ -68,7 +68,7 @@ router.post("/wat", async (req: Request, res: Response) => {
       text: "Logged error successfully.",
     });
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "Log.controller/error",
     });
     return res.status(error?.status || 500).json({

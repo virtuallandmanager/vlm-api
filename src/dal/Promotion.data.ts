@@ -1,4 +1,4 @@
-import { docClient, vlmMainTable } from "./common.data";
+import { docClient, largeQuery, vlmMainTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { Promotion } from "../models/Promotion.model";
 import { GenericDbManager } from "./Generic.data";
@@ -8,7 +8,6 @@ import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { BalanceDbManager } from "./Balance.data";
 import { Accounting } from "../models/Accounting.model";
 import { TransactionDbManager } from "./Transaction.data";
-import { largeQuery } from "../helpers/data";
 import { DateTime } from "luxon";
 
 export abstract class PromotionDbManager {
@@ -19,7 +18,7 @@ export abstract class PromotionDbManager {
 
       return balanceIds;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/getClaimIdsForUser",
         userId,
       });
@@ -35,7 +34,7 @@ export abstract class PromotionDbManager {
 
       return claimIds;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/getClaimIdsForOrg",
         orgId,
       });
@@ -54,7 +53,7 @@ export abstract class PromotionDbManager {
       }
       return claimAggregate;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/obtainClaimAggregateForUser",
         userId,
       });
@@ -73,7 +72,7 @@ export abstract class PromotionDbManager {
       }
       return claimAggregate;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/obtainClaimAggregateForOrg",
         orgId,
       });
@@ -87,7 +86,7 @@ export abstract class PromotionDbManager {
       const claimAggregates = await GenericDbManager.getAllForUser(Promotion.ClaimAggregate.pk, userId) as Promotion.ClaimAggregate;
       return claimAggregates;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/getClaimIdsForUser",
         userId,
       });
@@ -106,7 +105,7 @@ export abstract class PromotionDbManager {
 
       return existingPromo || newPromo;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/obtain",
         promo,
       });
@@ -140,7 +139,7 @@ export abstract class PromotionDbManager {
       const promos = promoRecords as Promotion.Config[];
       return promos;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/getActive",
       });
       console.log(error);
@@ -174,7 +173,7 @@ export abstract class PromotionDbManager {
 
       return existingPromoClaim || newPromoClaim;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/obtainUserPromoClaim",
         userId,
         promoId,
@@ -201,7 +200,7 @@ export abstract class PromotionDbManager {
 
       return existingPromo || newPromo;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/obtainOrgPromoClaim",
         orgId,
         promoId,
@@ -225,7 +224,7 @@ export abstract class PromotionDbManager {
       const promo = promoRecord.Item as Promotion.Config;
       return promo;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/getPromoById",
         sk,
       });
@@ -288,7 +287,7 @@ export abstract class PromotionDbManager {
 
       return adjustedBalance;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/claimPromoBalance",
         promotion,
       });
@@ -317,7 +316,7 @@ export abstract class PromotionDbManager {
       const promo = promoRecord.Item as Promotion.Config;
       return promo;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/get",
         promotion,
       });
@@ -341,7 +340,7 @@ export abstract class PromotionDbManager {
       const promo = promoRecord.Item as Promotion.Config;
       return promo;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/get",
         promoId,
       });
@@ -366,7 +365,7 @@ export abstract class PromotionDbManager {
       const claim = claimRecord.Item as Promotion.Claim;
       return claim;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/getClaim",
         claim,
       });
@@ -388,7 +387,7 @@ export abstract class PromotionDbManager {
       await docClient.put(params).promise();
       return promotion;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/put",
         promotion,
       });
@@ -414,7 +413,7 @@ export abstract class PromotionDbManager {
       await docClient.put(params).promise();
       return this.getClaim(claim);
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Promotion.data/put",
         promotion,
       });

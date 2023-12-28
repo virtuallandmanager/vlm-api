@@ -28,7 +28,7 @@ router.get('/cards', authMiddleware, async (req: Request, res: Response) => {
       scenes: scenes || [],
     })
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Authentication.controller/cards',
     })
     return res.status(500).json({
@@ -52,7 +52,7 @@ router.post('/create', authMiddleware, async (req: Request, res: Response) => {
       sceneLink,
     })
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Scene.controller/create',
     })
     return res.status(500).json({
@@ -81,7 +81,7 @@ router.post('/invite/user', authMiddleware, async (req: Request, res: Response) 
       invite,
     })
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Scene.controller/invite/user',
     })
     return res.status(500).json({
@@ -100,7 +100,7 @@ router.get('/demo', authMiddleware, async (req: Request, res: Response) => {
       scene,
     })
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Scene.controller/demo',
     })
     return res.status(500).json({
@@ -121,7 +121,7 @@ router.get('/:sceneId', authMiddleware, async (req: Request, res: Response) => {
       scene,
     })
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Scene.controller/:sceneId',
     })
     return res.status(500).json({

@@ -14,7 +14,7 @@ export abstract class AdvertisementDbManager {
 
       return createdAdvertisement || existingAdvertisement;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Advertisement.data/obtain",
         adConfig,
       });
@@ -38,7 +38,7 @@ export abstract class AdvertisementDbManager {
       const adRecord = await docClient.get(params).promise();
       return adRecord.Item;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Advertisement.data/get",
         adConfig,
       });
@@ -61,7 +61,7 @@ export abstract class AdvertisementDbManager {
       const adRecord = await docClient.put(params).promise();
       return adRecord.Attributes;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Advertisement.data/put",
         adConfig,
       });

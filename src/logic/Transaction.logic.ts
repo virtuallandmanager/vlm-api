@@ -8,7 +8,7 @@ import dclAbi from "../abi/dclCollectable.json";
 
 const dclAbiInterface: Interface = new Interface(dclAbi);
 const network = process.env.NODE_ENV === 'production' ? 137 : 80001;
-const apiKey = process.env.NODE_ENV === 'production' ? process.env.ALCHEMY_MAIN_POLY : process.env.ALCHEMY_TEST_POLY;
+const apiKey = process.env.NODE_ENV === 'production' ? process.env.ALCHEMY_API_KEY_MAINNET_MATIC : process.env.ALCHEMY_API_KEY_MAINNET_MATIC;
 const prodProvider = new AlchemyProvider(137, apiKey);
 const provider = new AlchemyProvider(network, apiKey);
 
@@ -73,7 +73,7 @@ export abstract class TransactionManager {
           const txReceipt = await this.broadcastTransaction(signedTx);
           txReceipts.push(txReceipt);
         } catch (error) {
-          AdminLogManager.logError(JSON.stringify(error), {
+          AdminLogManager.logError(error, {
             from: "Transaction.controller/broadcast",
           });
           return;
@@ -82,7 +82,7 @@ export abstract class TransactionManager {
 
       return { txReceipts };
     } catch (error: any) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "Transaction.controller/broadcast",
       });
       return;

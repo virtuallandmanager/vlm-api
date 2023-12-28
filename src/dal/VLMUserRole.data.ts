@@ -17,7 +17,7 @@ export abstract class VLMUserRoleDbManager {
       const VLMUserRoleRecord = await docClient.get(params).promise();
       return VLMUserRoleRecord.Item as User.Role;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "VLMUserRole.data/get",
       });
     }
@@ -36,7 +36,7 @@ export abstract class VLMUserRoleDbManager {
       await docClient.put(params).promise();
       return vlmUserRole;
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
+      AdminLogManager.logError(error, {
         from: "VLMUserRole.data/put",
         vlmUserRole,
       });

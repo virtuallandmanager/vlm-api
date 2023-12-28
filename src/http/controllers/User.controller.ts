@@ -20,7 +20,7 @@ router.post("/vlm/update", authMiddleware, async (req: Request, res: Response) =
       userInfo,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "User.controller/vlm/update",
     });
     return res.status(500).json({
@@ -41,7 +41,7 @@ router.get("/notifications", authMiddleware, async (req: Request, res: Response)
       ...invites,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "User.controller/invites",
     });
     return res.status(500).json({
@@ -90,7 +90,7 @@ router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
       userOrgs,
     });
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: "User.controller/setup",
     });
     return res.status(500).json({

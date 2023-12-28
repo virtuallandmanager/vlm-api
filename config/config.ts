@@ -17,11 +17,11 @@ export default {
     region: process.env.AWS_REGION,
   },
   alchemy_polygon: {
-    apiKey: process.env.ALCHEMY_POLYGON_API_KEY,
+    apiKey: process.env.ALCHEMY_API_KEY_MAINNET_MATIC,
     network: Network.MATIC_MAINNET,
   },
   alchemy_eth: {
-    apiKey: process.env.ALCHEMY_API_KEY,
+    apiKey: process.env.ALCHEMY_API_KEY_MAINNET_MAINNET,
     network: Network.ETH_MAINNET,
   },
   vpn_api: {

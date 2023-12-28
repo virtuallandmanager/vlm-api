@@ -1,107 +1,109 @@
-import { docClient, vlmMainTable } from "./common.data";
-import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { BaseWallet } from "../models/Wallet.model";
-import { GenericDbManager } from "./Generic.data";
-import { Accounting } from "../models/Accounting.model";
-import { DateTime } from "luxon";
+import { docClient, vlmMainTable } from './common.data'
+import { AdminLogManager } from '../logic/ErrorLogging.logic'
+import { WalletConfig } from '../models/Wallet.model'
+import { GenericDbManager } from './Generic.data'
+import { Accounting } from '../models/Accounting.model'
+import { DateTime } from 'luxon'
 
 export abstract class TransactionDbManager {
-  static get: CallableFunction = async (wallet: BaseWallet) => {
+  static get: CallableFunction = async (wallet: WalletConfig) => {
     const params = {
       TableName: vlmMainTable,
       Key: {
         pk: Accounting.Transaction.pk,
         sk: wallet.address,
       },
-    };
+    }
 
     try {
-      const walletRecord = await docClient.get(params).promise();
-      return walletRecord.Item as Accounting.Transaction;
+      const walletRecord = await docClient.get(params).promise()
+      return walletRecord.Item as Accounting.Transaction
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Transaction.data/get",
+      AdminLogManager.logError(error, {
+        from: 'Transaction.data/get',
         wallet,
-      });
+      })
     }
-  };
+  }
 
   static getIdsForUser: CallableFunction = async (userId: string) => {
     try {
       const partialTransactions = await GenericDbManager.getAllForUser(Accounting.Transaction.pk, userId),
-        transactionIds = partialTransactions.map((transaction: Accounting.Transaction) => transaction.sk);
+        transactionIds = partialTransactions.map((transaction: Accounting.Transaction) => transaction.sk)
 
-      return transactionIds;
+      return transactionIds
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Transaction.data/getById",
+      AdminLogManager.logError(error, {
+        from: 'Transaction.data/getById',
         userId,
-      });
+      })
     }
-  };
+  }
 
   // TODO: Extend to allow for shared and dedicated minters
   static getMinter: CallableFunction = async () => {
     const params = {
       TableName: vlmMainTable,
-      KeyConditionExpression: "#pk = :pk",
+      KeyConditionExpression: '#pk = :pk',
       ExpressionAttributeNames: {
-        "#pk": "pk",
+        '#pk': 'pk',
       },
       ExpressionAttributeValues: {
-        ":pk": Accounting.Minter.pk,
+        ':pk': Accounting.Minter.pk,
       },
-    };
+    }
 
     try {
-      const walletRecord = await docClient.query(params).promise();
-      const minters = walletRecord.Items as Accounting.Minter[];
-      const activeMinter = minters.find((minter) => minter.active);
-      return activeMinter.address;
+      const walletRecord = await docClient.query(params).promise()
+      const minters = walletRecord.Items as Accounting.Minter[]
+      const activeMinter = minters.find((minter) => minter.active)
+      return activeMinter.address
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Transaction.data/getMinter",
-      });
+      AdminLogManager.logError(error, {
+        from: 'Transaction.data/getMinter',
+      })
     }
-  };
+  }
 
   static updateTransactionStatus: CallableFunction = async (transactionSk: string, newStatus: string) => {
     try {
-      await docClient.update({
-        TableName: vlmMainTable,
-        Key: { pk: Accounting.Transaction.pk, sk: transactionSk },
-        UpdateExpression: "SET #status = :newStatus",
-        ExpressionAttributeNames: {
-          "#status": "status"
-        },
-        ExpressionAttributeValues: {
-          ":newStatus": newStatus
-        }
-      }).promise();
+      await docClient
+        .update({
+          TableName: vlmMainTable,
+          Key: { pk: Accounting.Transaction.pk, sk: transactionSk },
+          UpdateExpression: 'SET #status = :newStatus',
+          ExpressionAttributeNames: {
+            '#status': 'status',
+          },
+          ExpressionAttributeValues: {
+            ':newStatus': newStatus,
+          },
+        })
+        .promise()
     } catch (error) {
-      AdminLogManager.logError(error, `Failed to update transaction status: ${JSON.stringify(error)}`);
-      console.log(error);
-      return;
+      AdminLogManager.logError(error, `Failed to update transaction status: ${JSON.stringify(error)}`)
+      console.log(error)
+      return
     }
-  };
+  }
 
-  static put: CallableFunction = async (wallet: BaseWallet) => {
+  static put: CallableFunction = async (wallet: WalletConfig) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...wallet,
         ts: DateTime.now().toUnixInteger(),
       },
-    };
+    }
 
     try {
-      await docClient.put(params).promise();
-      return wallet;
+      await docClient.put(params).promise()
+      return wallet
     } catch (error) {
-      AdminLogManager.logError(JSON.stringify(error), {
-        from: "Transaction.data/put",
+      AdminLogManager.logError(error, {
+        from: 'Transaction.data/put',
         wallet,
-      });
+      })
     }
-  };
+  }
 }

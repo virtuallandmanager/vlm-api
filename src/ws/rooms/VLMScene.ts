@@ -102,7 +102,7 @@ export class VLMScene extends Room<VLMSceneState> {
   async onAuth(client: Client, sessionConfig: Session.Config) {
     const { sessionToken, refreshToken, sceneId } = sessionConfig
     try {
-      let auth: { session: Partial<Analytics.Session.Config | Session.Config>; user: Partial<Analytics.User.Account | User.Account> } = {
+      let auth: { session: Partial<Analytics.Session.Config | Session.Config>; user: Partial<User.Account> } = {
         session: sessionConfig,
         user: {},
       }
@@ -143,15 +143,11 @@ export class VLMScene extends Room<VLMSceneState> {
     }
   }
 
-  async onJoin(
-    client: Client,
-    sessionConfig: Session.Config,
-    auth: { session: Session.Config; user: User.Account | Analytics.User.Account; sceneId: string }
-  ) {
+  async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | User.Account; sceneId: string }) {
     handleSendActiveUsers(client, { user: auth?.user, session: auth?.session }, this)
   }
 
-  async connectAnalyticsUser(client: Client, sessionConfig: Partial<Analytics.Session.Config>, userConfig: Partial<Analytics.User.Account>) {
+  async connectAnalyticsUser(client: Client, sessionConfig: Partial<Analytics.Session.Config>, userConfig: Partial<User.Account>) {
     const session = await SessionManager.initAnalyticsSession(sessionConfig)
     console.log(
       `${userConfig?.displayName} joined in ${sessionConfig.location.world || 'world'} at ${sessionConfig.location.location} - ${client.sessionId}.`

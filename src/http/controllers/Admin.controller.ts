@@ -6,8 +6,6 @@ import { AdminManager } from '../../logic/Admin.logic'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import { MigrationDbManager } from '../../dal/Migration.data'
 import { SessionManager } from '../../logic/Session.logic'
-import { DateTime } from 'luxon'
-import { docClient } from '../../dal/common.data'
 
 const router = express.Router()
 
@@ -20,7 +18,7 @@ router.get('/panel', authMiddleware, vlmAdminMiddleware, async (req: Request, re
       ...adminPanelKeys,
     })
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Admin.controller/users',
     })
     return res.status(error?.status || 500).json({
@@ -38,7 +36,7 @@ router.get('/server/restrictions', authMiddleware, vlmAdminMiddleware, async (re
       serverRestrictions,
     })
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Admin.controller/users',
     })
     return res.status(error?.status || 500).json({
@@ -61,7 +59,7 @@ router.get('/logs', authMiddleware, vlmAdminMiddleware, async (req: Request, res
       adminLogs,
     })
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Admin.controller/logs',
     })
     return res.status(error?.status || 500).json({
@@ -84,7 +82,7 @@ router.get('/users', authMiddleware, vlmAdminMiddleware, async (req: Request, re
       users,
     })
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Admin.controller/users',
     })
     return res.status(error?.status || 500).json({
@@ -116,7 +114,7 @@ router.get('/events', authMiddleware, vlmAdminMiddleware, async (req: Request, r
       events,
     })
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Admin.controller/users',
     })
     return res.status(error?.status || 500).json({
@@ -137,7 +135,7 @@ router.post('/update', authMiddleware, vlmAdminMiddleware, async (req: Request, 
       organization,
     })
   } catch (error: any) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Admin.controller/update',
     })
     return res.status(error?.status || 500).json({
@@ -150,12 +148,12 @@ router.post('/update', authMiddleware, vlmAdminMiddleware, async (req: Request, 
 router.get('/migrate/:pk', async (req: Request, res: Response) => {
   try {
     const { pk } = req.params
-    await MigrationDbManager.moveDataInBatches(pk, 'vlm_main', 'vlm_sessions', 25)
+    await MigrationDbManager.moveDataInBatches(pk, 'vlm_main', 'vlm_analytics', 25)
     return res.status(200).json({
       text: 'Successfully migrated data.',
     })
   } catch (error: unknown) {
-    AdminLogManager.logError(JSON.stringify(error), {
+    AdminLogManager.logError(error, {
       from: 'Session.controller/migrate',
     })
     return res.status(500).json({

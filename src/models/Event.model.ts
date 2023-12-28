@@ -22,7 +22,7 @@ export namespace Event {
     locationUrl?: string;
     worlds?: Array<Metaverse.World>;
     claimLimits?: Giveaway.ClaimLimits = {}; // caps total number of giveaway claims allowed for this event
-    ts?: EpochTimeStamp = DateTime.now().toUnixInteger();
+    ts?: EpochTimeStamp = DateTime.now().toMillis();
 
     constructor(config: Event.Config) {
       this.sk = config?.sk || this.sk;

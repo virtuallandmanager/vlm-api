@@ -25,8 +25,10 @@ export abstract class AdminLogManager {
       return
     }
   }
-  static logError = async (log: unknown, metadata: any, userInfo?: User.Account, noCatch?: boolean) => {
+  static logError = async (log: string | Object, metadata: any, userInfo?: User.Account, noCatch?: boolean) => {
     try {
+      log = convertBigIntToString(log as Record<string, any>)
+      
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR)
 
       if (!noCatch) {
@@ -64,6 +66,7 @@ export abstract class AdminLogManager {
   }
   static logExternalError = async (log: unknown, metadata: any, userInfo?: User.Account) => {
     try {
+      log = convertBigIntToString(log as Record<string, any>)
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR)
       this.logErrorToDiscord(`
       :rotating_light: -- ${userInfo ? 'USER-REPORTED ' : ''}ERROR LOGGED FROM ${config.environment.toUpperCase()} -- :rotating_light:\n
@@ -101,4 +104,18 @@ export abstract class AdminLogManager {
       return
     }
   }
+}
+
+function convertBigIntToString(obj: Record<string, any>): Record<string, any> {
+  const convertedObject: Record<string, any> = {}
+
+  for (const key in obj) {
+    if (typeof obj[key] === 'bigint') {
+      convertedObject[key] = obj[key].toString()
+    } else {
+      convertedObject[key] = obj[key]
+    }
+  }
+
+  return convertedObject
 }
