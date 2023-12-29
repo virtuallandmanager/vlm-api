@@ -11,11 +11,13 @@ import { SceneStream, VLMSceneState } from './schema/VLMSceneState'
 import { ArraySchema } from '@colyseus/schema'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import https from 'https'
+import { SceneManager } from '../../logic/Scene.logic'
 
 export class VLMScene extends Room<VLMSceneState> {
-  onCreate(options: any) {
+  async onCreate(options: any) {
     bindEvents(this)
-    this.setState(new VLMSceneState(options.sceneId))
+    const scene = await SceneManager.getSceneById(options.sceneId)
+    this.setState(new VLMSceneState(scene))
     this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000)
   }
 

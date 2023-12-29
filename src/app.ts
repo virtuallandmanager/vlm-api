@@ -3,6 +3,7 @@ import bodyParser from 'body-parser'
 import requestIp from 'request-ip'
 import cors, { CorsOptions } from 'cors'
 import { monitor } from '@colyseus/monitor'
+import basicAuth from 'express-basic-auth'
 import healthCheck from './healthCheck'
 import userController from './http/controllers/User.controller'
 import authController from './http/controllers/Authentication.controller'
@@ -33,6 +34,13 @@ app.use((req, res, next) => {
 const jsonParser = bodyParser.json({ limit: '5mb' })
 const urlencodedParser = bodyParser.urlencoded({ limit: '5mb', extended: true })
 
+const adminAuth = (username: string, password: string) => {
+  const userMatches = basicAuth.safeCompare(username, process.env.ADMIN_USERNAME)
+  const passwordMatches = basicAuth.safeCompare(password, process.env.ADMIN_PASSWORD)
+
+  return userMatches && passwordMatches
+}
+
 const corsOptions: CorsOptions = {
   origin: [
     /^https:\/\/([a-z0-9]+\.)?decentraland\.org\/?$/,
@@ -62,7 +70,15 @@ app.use('/promotion', jsonParser, urlencodedParser, promotionController)
 app.use('/balance', jsonParser, urlencodedParser, balanceController)
 app.use('/analytics', jsonParser, urlencodedParser, analyticsController)
 app.use('/media', mediaController) // No body-parser middleware applied to this route
-app.use('/_status', monitor())
+app.use(
+  '/_status',
+  basicAuth({
+    authorizer: adminAuth,
+    challenge: true, // This will cause browsers to show a login dialog
+    unauthorizedResponse: (req: Request) => 'Access Denied',
+  }),
+  monitor()
+)
 app.use('/log', jsonParser, urlencodedParser, logController)
 
 export default app
