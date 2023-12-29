@@ -22,8 +22,8 @@ export abstract class SessionDbManager {
         '#ttl': 'ttl',
       },
       ExpressionAttributeValues: {
-        ':sessionStart': startTime.toMillis(),
-        ':ts': startTime.toMillis(),
+        ':sessionStart': Number(startTime.toMillis()),
+        ':ts': Number(startTime.toMillis()),
       },
       UpdateExpression: 'SET #ts = :ts, #sessionStart = :sessionStart REMOVE #ttl', // Added "REMOVE #ttl"
     }
@@ -258,7 +258,7 @@ export abstract class SessionDbManager {
         ':sessionToken': session.sessionToken || '',
         ':signatureToken': session.signatureToken || '',
         ':expires': session.expires,
-        ':ts': DateTime.now().toMillis(),
+        ':ts': Number(DateTime.now().toMillis()),
       },
     }
 
@@ -323,8 +323,8 @@ export abstract class SessionDbManager {
         UpdateExpression: 'set #ts = :ts, #sessionEnd = :sessionEnd',
         ExpressionAttributeNames: { '#ts': 'ts', '#sessionEnd': 'sessionEnd' },
         ExpressionAttributeValues: {
-          ':sessionEnd': endTime,
-          ':ts': endTime,
+          ':sessionEnd': Number(endTime),
+          ':ts': Number(endTime),
         },
       }
 
@@ -382,41 +382,70 @@ export abstract class SessionDbManager {
     }
   }
 
-  static createPath: CallableFunction = async (path: Analytics.Path, pathSegment: Analytics.PathSegment) => {
+  static createPath: CallableFunction = async (session: Analytics.Session.Config, path: Analytics.Path, pathSegment: Analytics.PathSegment) => {
     const ts = DateTime.now().toMillis()
 
-    const params: DocumentClient.TransactWriteItemsInput = {
-      TransactItems: [
-        {
-          Put: {
-            // Add a path
-            Item: {
-              ...path,
-              ts,
-            },
-            TableName: vlmAnalyticsTable,
-          },
-        },
-        {
-          Put: {
-            // Add the first path segment
-            Item: {
-              ...pathSegment,
-              ts,
-            },
-            TableName: vlmAnalyticsTable,
-          },
-        },
-      ],
-    }
-
     try {
+      if (!session.paths.includes(path.sk)) {
+        session.paths.push(path.sk)
+      }
+      
+      if (!path.segments.includes(pathSegment.sk)) {
+        path.segments.push(pathSegment.sk)
+      }
+
+      const params: DocumentClient.TransactWriteItemsInput = {
+        TransactItems: [
+          {
+            Update: {
+              // Update the path with the new path segments
+              TableName: vlmAnalyticsTable,
+              Key: {
+                pk: Analytics.Session.Config.pk,
+                sk: session.sk,
+              },
+              UpdateExpression: 'set #paths = list_append(if_not_exists(#paths, :emptyList), :paths), #ts = :ts',
+              ExpressionAttributeNames: {
+                '#paths': 'paths',
+                '#ts': 'ts',
+              },
+              ExpressionAttributeValues: {
+                ':paths': session.paths,
+                ':emptyList': [],
+                ':ts': Number(ts),
+              },
+            },
+          },
+          {
+            Put: {
+              // Add a path
+              Item: {
+                ...path,
+                ts,
+              },
+              TableName: vlmAnalyticsTable,
+            },
+          },
+          {
+            Put: {
+              // Add the first path segment
+              Item: {
+                ...pathSegment,
+                ts,
+              },
+              TableName: vlmAnalyticsTable,
+            },
+          },
+        ],
+      }
+
       await docClient.transactWrite(params).promise()
       return await SessionDbManager.getPath(path)
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Session.data/createPath',
       })
+      throw error
     }
   }
 
@@ -456,7 +485,7 @@ export abstract class SessionDbManager {
           ExpressionAttributeValues: {
             ':pathSegments': pathSegments.map((segment) => segment.sk),
             ':emptyList': [],
-            ':ts': ts,
+            ':ts': Number(ts),
           },
         },
       })

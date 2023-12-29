@@ -357,7 +357,7 @@ export abstract class UserDbManager {
       UpdateExpression: 'set #ts = :ts, lastIp = :lastIp',
       ExpressionAttributeNames: { '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ':ts': DateTime.now().toMillis(),
+        ':ts': Number(DateTime.now().toMillis()),
         ':lastIp': user.lastIp,
       },
     }

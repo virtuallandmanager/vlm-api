@@ -9,24 +9,27 @@ export namespace Analytics {
       static pk: string = 'vlm:analytics:session'
       pk: string = Config.pk
       device?: string
-      paths?: string[]
+      paths?: string[] = []
       location?: Metaverse.Location
       environment?: string
       serverAuthenticated?: boolean = false
       peerAuthenticated?: boolean = false
       hasConnectedWeb3?: boolean = false
       sessionRole?: Role = Role.VISITOR
+      ts?: EpochTimeStamp = DateTime.now().toMillis()
       ttl?: EpochTimeStamp
 
       constructor(config: Partial<Config> = {}) {
         super(config)
         this.device = config.device
+        this.paths = config.paths || this.paths
         this.location = config.location
         this.environment = config.environment
         this.serverAuthenticated = config.serverAuthenticated
         this.peerAuthenticated = config.peerAuthenticated
         this.hasConnectedWeb3 = config.hasConnectedWeb3
         this.sessionRole = config.sessionRole
+        this.ts = config.ts || this.ts
         this.ttl = config.ttl
       }
     }
@@ -110,11 +113,13 @@ export namespace Analytics {
     static pk: string = 'vlm:analytics:path' // Partition Key
     pk?: string = Path.pk
     sk?: string = uuidv4() // Sort Key
-    segments?: PathSegment[] = []
+    segments?: string[] = []
+    ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config?: Path) {
       this.sk = config?.sk || this.sk
       this.segments = config?.segments || this.segments
+      this.ts = config?.ts || this.ts
     }
   }
 
@@ -124,7 +129,7 @@ export namespace Analytics {
     sk?: string = uuidv4() // Sort Key
     pathId?: string
     type?: SegmentType
-    path?: PathPoint[]
+    path?: PathPoint[] = []
 
     constructor(config: PathSegment) {
       this.sk = config.sk || this.sk

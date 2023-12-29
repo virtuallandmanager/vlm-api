@@ -648,18 +648,17 @@ export abstract class SessionManager {
   }
 
   static createSessionPath: CallableFunction = async (sessionConfig: Analytics.Session.Config, sessionPathConfig?: Analytics.Path) => {
-    const sessionPath = new Analytics.Path(sessionPathConfig)
-    await SessionDbManager.createPath(sessionConfig, sessionPath)
+    const session = new Analytics.Session.Config(sessionConfig),
+      sessionPath = new Analytics.Path(sessionPathConfig),
+      pathSegment = new Analytics.PathSegment({ pathId: sessionPath.sk, type: Analytics.SegmentType.LOADING })
+
+    await SessionDbManager.createPath(session, sessionPath, pathSegment)
     return sessionPath
   }
 
   static extendPath: CallableFunction = async (pathId: string, pathSegments: Analytics.PathSegment[]) => {
     const segments = pathSegments.map((segment: Analytics.PathSegment) => new Analytics.PathSegment({ ...segment, pathId }))
     return await SessionDbManager.addPathSegments(pathId, segments)
-  }
-
-  static addPath: CallableFunction = async (userSessionPath: Analytics.Path) => {
-    return await SessionDbManager.createPath(userSessionPath)
   }
 
   static getSessionPath: CallableFunction = async (userSessionPath?: Analytics.Path) => {

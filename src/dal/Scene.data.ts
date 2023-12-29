@@ -1040,7 +1040,7 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Key: { pk: elementData.pk, sk: elementData.sk },
       UpdateExpression: 'set #prop = :prop, #ts = :ts',
-      ConditionExpression: '#ts < :elementTs',
+      ConditionExpression: '#ts <= :elementTs',
       ExpressionAttributeNames: { '#prop': property, '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':prop': elementData[valueProp],
