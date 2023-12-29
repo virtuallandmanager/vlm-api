@@ -27,8 +27,12 @@ export abstract class AdminLogManager {
   }
   static logError = async (log: string | Object, metadata: any, userInfo?: User.Account, noCatch?: boolean) => {
     try {
-      log = convertBigIntToString(log as Record<string, any>)
-      
+      if (typeof log === 'string') {
+        log = { text: log }
+      } else {
+        log = convertBigIntToString(log as Record<string, any>)
+      }
+
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR)
 
       if (!noCatch) {
