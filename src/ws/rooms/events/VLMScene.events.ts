@@ -255,7 +255,7 @@ async function handleSessionAction(
     if (message.pathPoint && message.pathPoint[0]) {
       message.pathPoint[0] = message.pathPoint[0].toString().length >= 13 ? message.pathPoint[0] / 1000 : message.pathPoint[0]
     }
-    const timestamp = DateTime.now().toUnixInteger(),
+    const timestamp = DateTime.now().toMillis(),
       { action, metadata, pathPoint } = message,
       { session, user } = client.auth,
       { displayName } = user

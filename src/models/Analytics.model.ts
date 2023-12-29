@@ -62,15 +62,15 @@ export namespace Analytics {
       pk?: string = Aggregate.pk
       sk?: string = `${DateTime.now().minus({ days: 1 }).startOf('day').toISODate()}:${AggregateScale.MINUTE}` // Sort Key
       sceneId?: string
-      startDateTime: EpochTimeStamp = DateTime.now().minus({ days: 1 }).startOf('day').toUnixInteger()
-      endDateTime: EpochTimeStamp = DateTime.now().minus({ days: 1 }).endOf('day').toUnixInteger()
+      startDateTime: EpochTimeStamp = DateTime.now().minus({ days: 1 }).startOf('day').toMillis()
+      endDateTime: EpochTimeStamp = DateTime.now().minus({ days: 1 }).endOf('day').toMillis()
       actionCounts: ActionAggregate = {}
       actionNames: string[] = []
       scale?: AggregateScale = AggregateScale.MINUTE
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Aggregate) {
-        this.sk = DateTime.fromSeconds(config.startDateTime).toUTC().startOf('day').toISODate() + ':' + config.scale
+        this.sk = DateTime.fromMillis(config.startDateTime).toUTC().startOf('day').toISODate() + ':' + config.scale
         this.sceneId = config.sceneId
         this.startDateTime = config.startDateTime || this.startDateTime
         this.endDateTime = config.endDateTime || this.endDateTime

@@ -11,7 +11,7 @@ import { EventManager } from './Event.logic'
 export abstract class GiveawayManager {
   static create: CallableFunction = async (giveawayConfig: Giveaway.Config) => {
     const giveaway = new Giveaway.Config(giveawayConfig)
-    giveaway.createdAt = DateTime.now().toUnixInteger()
+    giveaway.createdAt = DateTime.now().toMillis()
     return await GiveawayDbManager.put(giveaway)
   }
 
@@ -214,7 +214,7 @@ export abstract class GiveawayManager {
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.PAUSED }
     }
 
-    const now = DateTime.now().toUnixInteger()
+    const now = DateTime.now().toMillis()
     const event = events.find((event: Event.Config) => event.sk === giveaway.eventId)
     // check if event has not yet started
     if (event.eventStart > now) {

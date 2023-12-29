@@ -115,7 +115,7 @@ export abstract class PromotionDbManager {
   };
 
   static getActive: CallableFunction = async () => {
-    const currentTime = DateTime.now().toUnixInteger();
+    const currentTime = DateTime.now().toMillis();
 
     const params = {
       TableName: vlmMainTable,
@@ -379,7 +379,7 @@ export abstract class PromotionDbManager {
       TableName: vlmMainTable,
       Item: {
         ...promotion,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 
@@ -405,7 +405,7 @@ export abstract class PromotionDbManager {
       TableName: vlmMainTable,
       Item: {
         ...claim,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 

@@ -17,7 +17,7 @@ export namespace Giveaway {
     paused?: boolean
     items?: Array<string | Item> = []
     allocatedCredits?: number = 0
-    createdAt?: number = DateTime.now().toUnixInteger()
+    createdAt?: number = DateTime.now().toMillis()
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config: Partial<Config> = {}) {

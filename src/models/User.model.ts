@@ -23,7 +23,7 @@ export namespace User {
     connectedWallet?: string
     lastIp?: string
     activeSessionId?: string
-    createdAt?: number = DateTime.now().toUnixInteger()
+    createdAt?: number = DateTime.now().toMillis()
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config: Account & ExternalUserConfigs = {}) {
@@ -171,7 +171,7 @@ export namespace User {
     export class Config extends BaseSession.Config {
       static pk: string = 'vlm:user:session'
       pk: string = Config.pk
-      ttl?: EpochTimeStamp = DateTime.now().plus({ hours: 12 }).toUnixInteger()
+      ttl?: EpochTimeStamp = DateTime.now().plus({ hours: 12 }).toMillis()
 
       constructor(config: Partial<Config>) {
         super(config)

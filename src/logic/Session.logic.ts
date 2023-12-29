@@ -68,7 +68,7 @@ const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Sess
 
   try {
     const sceneActionKey = `${config.sceneId}:${config.name}`,
-      currentTimestamp = DateTime.now().toUnixInteger()
+      currentTimestamp = DateTime.now().toMillis()
 
     // Deny request if scene has been restricted from submitting this action
     if (analyticsRestrictedScenes.includes(sceneActionKey)) {
@@ -362,14 +362,14 @@ export abstract class SessionManager {
   }
 
   static issueUserSessionToken: CallableFunction = (session: User.Session.Config) => {
-    session.expires = DateTime.now().plus({ minutes: 30 }).toUnixInteger()
+    session.expires = DateTime.now().plus({ minutes: 30 }).toMillis()
     session.sessionToken = jwt.sign(
       {
         pk: session.pk,
         sk: session.sk,
         userId: session.userId,
-        iat: DateTime.now().toUnixInteger(),
-        nonce: DateTime.now().toUnixInteger(),
+        iat: DateTime.now().toMillis(),
+        nonce: DateTime.now().toMillis(),
       },
       process.env.JWT_ACCESS,
       {
@@ -380,14 +380,14 @@ export abstract class SessionManager {
   }
 
   static issueAnalyticsSessionToken: CallableFunction = (session: Analytics.Session.Config) => {
-    session.expires = DateTime.now().plus({ hours: 12 }).toUnixInteger()
+    session.expires = DateTime.now().plus({ hours: 12 }).toMillis()
     session.sessionToken = jwt.sign(
       {
         pk: session.pk,
         sk: session.sk,
         userId: session.userId,
-        iat: DateTime.now().toUnixInteger(),
-        nonce: DateTime.now().toUnixInteger(),
+        iat: DateTime.now().toMillis(),
+        nonce: DateTime.now().toMillis(),
       },
       process.env.JWT_ANALYTICS,
       {
@@ -398,13 +398,13 @@ export abstract class SessionManager {
   }
 
   static issueRefreshToken: CallableFunction = (session: User.Session.Config) => {
-    session.expires = DateTime.now().plus({ days: 14 }).toUnixInteger()
+    session.expires = DateTime.now().plus({ days: 14 }).toMillis()
     session.refreshToken = jwt.sign(
       {
         sk: session.sk,
         userId: session.userId,
-        iat: DateTime.now().toUnixInteger(),
-        nonce: DateTime.now().toUnixInteger(),
+        iat: DateTime.now().toMillis(),
+        nonce: DateTime.now().toMillis(),
       },
       process.env.JWT_REFRESH,
       {
@@ -420,8 +420,8 @@ export abstract class SessionManager {
         pk: session.pk,
         sk: session.sk,
         userId: session.userId,
-        iat: DateTime.now().toUnixInteger(),
-        nonce: DateTime.now().toUnixInteger(),
+        iat: DateTime.now().toMillis(),
+        nonce: DateTime.now().toMillis(),
       },
       process.env.JWT_SIGNATURE,
       {
@@ -456,7 +456,7 @@ export abstract class SessionManager {
           decodedSession,
         })
         return
-      } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
+      } else if (dbSession.sessionEnd >= DateTime.now().toMillis()) {
         AdminLogManager.logInfo('Session Has Ended', {
           from: 'Session Validation Middleware',
           decodedSession,
@@ -499,7 +499,7 @@ export abstract class SessionManager {
           decodedSession,
         })
         return
-      } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
+      } else if (dbSession.sessionEnd >= DateTime.now().toMillis()) {
         AdminLogManager.logInfo('Session Has Ended', {
           from: 'Session Validation Middleware',
           decodedSession,
@@ -550,7 +550,7 @@ export abstract class SessionManager {
         return
       }
 
-      if (dbSession.sessionEnd > DateTime.now().toUnixInteger()) {
+      if (dbSession.sessionEnd > DateTime.now().toMillis()) {
         AdminLogManager.logError('Session Already Ended.', {
           from: 'Signature Validation Middleware',
           decodedSession,
@@ -625,7 +625,7 @@ export abstract class SessionManager {
           decodedSession,
         })
         return
-      } else if (dbSession.sessionEnd >= DateTime.now().toUnixInteger()) {
+      } else if (dbSession.sessionEnd >= DateTime.now().toMillis()) {
         AdminLogManager.logInfo('Session Has Ended', {
           from: 'Session Validation Middleware',
           decodedSession,

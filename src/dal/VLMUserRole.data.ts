@@ -28,7 +28,7 @@ export abstract class VLMUserRoleDbManager {
       TableName: vlmMainTable,
       Item: {
         ...vlmUserRole,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 

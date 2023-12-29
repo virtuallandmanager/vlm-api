@@ -80,7 +80,7 @@ router.post("/setup", authMiddleware, async (req: Request, res: Response) => {
         real_tip: "Use the user/vlm/update endpoint.",
       });
     }
-    userInfo.registeredAt = DateTime.now().toUnixInteger();
+    userInfo.registeredAt = DateTime.now().toMillis();
     userInfo = await UserManager.update(userInfo);
     userOrgs = await OrganizationManager.getUserOrgs(dbUser.sk, Organization.Roles.ORG_OWNER);
 

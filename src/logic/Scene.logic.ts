@@ -222,9 +222,9 @@ export abstract class SceneManager {
     if (scene.settings.length > new Scene.DefaultSettings(scene).settings.length) {
       scene.settings.forEach((setting: string | Scene.Setting) => {
         if (typeof setting === 'string') {
-          GenericDbManager.put({ pk: Scene.Setting.pk, sk: setting, ttl: DateTime.now().toUnixInteger() })
+          GenericDbManager.put({ pk: Scene.Setting.pk, sk: setting, ttl: DateTime.now().toMillis() })
         } else {
-          GenericDbManager.put({ pk: Scene.Setting.pk, sk: setting.sk, ttl: DateTime.now().toUnixInteger() })
+          GenericDbManager.put({ pk: Scene.Setting.pk, sk: setting.sk, ttl: DateTime.now().toMillis() })
         }
       })
 

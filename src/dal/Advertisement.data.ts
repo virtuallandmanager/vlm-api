@@ -53,7 +53,7 @@ export abstract class AdvertisementDbManager {
       TableName: vlmMainTable,
       Item: {
         ...ad,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 

@@ -23,7 +23,7 @@ export namespace Promotion {
     promoStart?: EpochTimeStamp;
     promoEnd?: EpochTimeStamp;
     enabled?: boolean;
-    ts: number = DateTime.now().toUnixInteger();
+    ts: number = DateTime.now().toMillis();
 
     constructor(config: Config) {
       this.sk = config?.sk || this.sk;
@@ -47,7 +47,7 @@ export namespace Promotion {
     promoId?: string;
     transactionId?: string;
     amount?: number = 0;
-    ts?: number = DateTime.now().toUnixInteger();
+    ts?: number = DateTime.now().toMillis();
 
     constructor(config: Claim) {
       this.sk = config?.sk || this.sk;
@@ -70,7 +70,7 @@ export namespace Promotion {
     transactionId?: string;
     balance: number = 0;
     claims?: Array<{ claimId: string, amount: number, ts: number }> = [];
-    ts?: number = DateTime.now().toUnixInteger();
+    ts?: number = DateTime.now().toMillis();
 
     constructor(config: ClaimAggregate) {
       this.sk = config?.sk || this.sk;

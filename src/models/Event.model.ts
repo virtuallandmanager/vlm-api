@@ -13,7 +13,7 @@ export namespace Event {
     userId?: string;
     name?: string = "New Event";
     description?: string;
-    createdAt?: number = DateTime.now().toUnixInteger();
+    createdAt?: number = DateTime.now().toMillis();
     timeZone?: string = "UTC";
     eventStart: number;
     eventEnd?: number;

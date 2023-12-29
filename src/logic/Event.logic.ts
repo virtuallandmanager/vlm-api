@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 export abstract class EventManager {
   static create: CallableFunction = async (eventConfig?: Event.Config) => {
     const event = new Event.Config(eventConfig);
-    event.createdAt = DateTime.now().toUnixInteger();
+    event.createdAt = DateTime.now().toMillis();
     return await EventDbManager.put(event);
   };
 

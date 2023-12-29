@@ -262,15 +262,15 @@ export abstract class UserDbManager {
             // Add the balance id to the user's account
             Key: {
               ...userAccount,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             UpdateExpression: 'SET #ts = :ts, #attr = list_append(#attr, :balanceIds)',
             ConditionExpression: '#ts = :userTs',
             ExpressionAttributeNames: { '#ts': 'ts', '#value': 'value' },
             ExpressionAttributeValues: {
               ':balanceIds': balanceIds,
-              ':userTs': userAccount.ts || 0,
-              ':ts': DateTime.now().toMillis(),
+              ':userTs': Number(userAccount.ts) || 0,
+              ':ts': Number(DateTime.now().toMillis()),
               TableName: vlmMainTable,
             },
           },
@@ -285,7 +285,7 @@ export abstract class UserDbManager {
             // Add a connection from organization to user
             Item: {
               ...userBalance,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -313,8 +313,8 @@ export abstract class UserDbManager {
       ExpressionAttributeNames: { '#ts': 'ts', '#value': 'value' },
       ExpressionAttributeValues: {
         ':value': balance.value || 0,
-        ':balanceTs': balance.ts || 0,
-        ':ts': DateTime.now().toMillis(),
+        ':balanceTs': Number(balance.ts) || 0,
+        ':ts': Number(DateTime.now().toMillis()),
       },
     }
 
@@ -379,7 +379,7 @@ export abstract class UserDbManager {
       TableName: vlmMainTable,
       Item: {
         ...user,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 
@@ -398,7 +398,7 @@ export abstract class UserDbManager {
       TableName: vlmMainTable,
       Item: {
         ...balance,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 

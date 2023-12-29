@@ -13,7 +13,7 @@ export namespace Organization {
     legalName: string = "";
     emailAddress?: string;
     discordChannel?: string;
-    createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger();;
+    createdAt?: EpochTimeStamp = DateTime.now().toMillis();;
     [key: string]: any;
 
     constructor(config: Organization.Config) {

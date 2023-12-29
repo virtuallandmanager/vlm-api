@@ -20,7 +20,7 @@ export namespace Log {
     metadata: MetadataConfig;
     environment: string;
     userInfo?: User.Account;
-    ts?: number = DateTime.now().toUnixInteger();
+    ts?: number = DateTime.now().toMillis();
     constructor(log: AdminLog) {
       this.pk = log.pk;
       this.sk = log.sk || this.sk;

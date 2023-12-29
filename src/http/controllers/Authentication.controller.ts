@@ -195,7 +195,7 @@ router.post(
           sk: user.userId,
           currency: 'ETH',
           type: WalletType.USER,
-          ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toUnixInteger() : undefined,
+          ttl: user.hasConnectedWeb3 ? DateTime.now().plus({ hours: 24 }).toMillis() : undefined,
         },
         { displayName: user?.displayName, hasConnectedWeb3: user?.hasConnectedWeb3, lastIp: clientIp }
       )
@@ -222,9 +222,9 @@ router.post(
           sessionRole,
           device: subPlatform,
           serverAuthenticated,
-          sessionStart: DateTime.now().toUnixInteger(),
+          sessionStart: DateTime.now().toMillis(),
           hasConnectedWeb3: user.hasConnectedWeb3,
-          ttl: environment === 'prod' ? undefined : DateTime.now().plus({ hours: 24 }).toUnixInteger(),
+          ttl: environment === 'prod' ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
         })
       await SessionManager.getIpData(session)
       SessionManager.issueAnalyticsSessionToken(session)

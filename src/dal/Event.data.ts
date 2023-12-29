@@ -345,7 +345,7 @@ export abstract class EventDbManager {
       TableName: vlmMainTable,
       Item: {
         ...event,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 
@@ -404,7 +404,7 @@ export abstract class EventDbManager {
       TableName: vlmMainTable,
       Item: {
         ...link,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 
@@ -425,7 +425,7 @@ export abstract class EventDbManager {
       TableName: vlmMainTable,
       Item: {
         ...link,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 

@@ -92,7 +92,7 @@ export abstract class TransactionDbManager {
       TableName: vlmMainTable,
       Item: {
         ...wallet,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 

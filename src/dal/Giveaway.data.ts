@@ -214,7 +214,7 @@ export abstract class GiveawayDbManager {
       TableName: vlmMainTable,
       Item: {
         ...giveaway,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 
@@ -237,7 +237,7 @@ export abstract class GiveawayDbManager {
         TableName: vlmMainTable,
         Item: {
           ...giveawayItem,
-          ts: DateTime.now().toUnixInteger(),
+          ts: DateTime.now().toMillis(),
         },
       },
     }
@@ -283,7 +283,7 @@ export abstract class GiveawayDbManager {
       TableName: vlmMainTable,
       Item: {
         ...link,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 
@@ -438,7 +438,7 @@ export abstract class GiveawayDbManager {
       TableName: vlmMainTable,
       Item: {
         ...claim,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 

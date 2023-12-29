@@ -62,7 +62,7 @@ export abstract class UserWalletDbManager {
       TableName: vlmMainTable,
       Item: {
         ...wallet,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 

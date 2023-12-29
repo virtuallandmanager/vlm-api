@@ -1,24 +1,24 @@
-import { docClient, largeQuery, vlmMainTable } from "./common.data";
-import { AdminLogManager } from "../logic/ErrorLogging.logic";
-import { Organization } from "../models/Organization.model";
-import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import { DateTime } from "luxon";
+import { docClient, largeQuery, vlmMainTable } from './common.data'
+import { AdminLogManager } from '../logic/ErrorLogging.logic'
+import { Organization } from '../models/Organization.model'
+import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import { DateTime } from 'luxon'
 
 export abstract class OrganizationDbManager {
   static get: CallableFunction = async (org: Organization.Account) => {
     try {
-      return await OrganizationDbManager.getById(org.sk);
+      return await OrganizationDbManager.getById(org.sk)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/get",
-      });
-      return;
+        from: 'Organization.data/get',
+      })
+      return
     }
-  };
+  }
 
   static getById: CallableFunction = async (orgId: string) => {
     if (!orgId) {
-      return;
+      return
     }
     const params = {
       TableName: vlmMainTable,
@@ -26,26 +26,26 @@ export abstract class OrganizationDbManager {
         pk: Organization.Account.pk,
         sk: orgId,
       },
-    };
+    }
 
     try {
-      const organizationRecord = await docClient.get(params).promise();
-      return organizationRecord.Item as Organization.Account;
+      const organizationRecord = await docClient.get(params).promise()
+      return organizationRecord.Item as Organization.Account
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getById",
-      });
-      return;
+        from: 'Organization.data/getById',
+      })
+      return
     }
-  };
+  }
 
   static getByIds: CallableFunction = async (sks: string[]) => {
     if (!sks?.length) {
-      return;
+      return
     }
     const params: DocumentClient.TransactGetItemsInput = {
       TransactItems: [],
-    };
+    }
 
     sks.forEach((sk: string) => {
       params.TransactItems.push({
@@ -57,42 +57,40 @@ export abstract class OrganizationDbManager {
           },
           TableName: vlmMainTable,
         },
-      });
-    });
+      })
+    })
 
     try {
-      const organizations = await docClient.transactGet(params).promise();
-      return organizations.Responses.map((item) => item.Item);
+      const organizations = await docClient.transactGet(params).promise()
+      return organizations.Responses.map((item) => item.Item)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getOrgsFromIds",
+        from: 'Organization.data/getOrgsFromIds',
         sks,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static getUserCon: CallableFunction = async (
-    userCon: Organization.UserConnector
-  ) => {
+  static getUserCon: CallableFunction = async (userCon: Organization.UserConnector) => {
     const params = {
       TableName: vlmMainTable,
       Key: {
         pk: Organization.UserConnector.pk,
         sk: userCon.sk,
       },
-    };
+    }
 
     try {
-      const userConRecord = await docClient.get(params).promise();
-      return userConRecord.Item as Organization.UserConnector;
+      const userConRecord = await docClient.get(params).promise()
+      return userConRecord.Item as Organization.UserConnector
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getUserConById",
-      });
-      return;
+        from: 'Organization.data/getUserConById',
+      })
+      return
     }
-  };
+  }
 
   static getUserConById: CallableFunction = async (sk: string) => {
     const params = {
@@ -101,56 +99,49 @@ export abstract class OrganizationDbManager {
         pk: Organization.UserConnector.pk,
         sk,
       },
-    };
+    }
 
     try {
-      const organizationRecord = await docClient.get(params).promise();
-      return organizationRecord.Item as Organization.UserConnector;
+      const organizationRecord = await docClient.get(params).promise()
+      return organizationRecord.Item as Organization.UserConnector
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getUserConById",
-      });
-      return;
+        from: 'Organization.data/getUserConById',
+      })
+      return
     }
-  };
+  }
 
-  static getUserConsByUserId: CallableFunction = async (
-    userId: string,
-    roleFilter: Organization.Roles
-  ) => {
+  static getUserConsByUserId: CallableFunction = async (userId: string, roleFilter: Organization.Roles) => {
     const params: DocumentClient.QueryInput = {
       TableName: vlmMainTable,
-      IndexName: "userId-index",
+      IndexName: 'userId-index',
       ExpressionAttributeNames: {
-        "#pk": "pk",
-        "#userId": "userId",
+        '#pk': 'pk',
+        '#userId': 'userId',
       },
       ExpressionAttributeValues: {
-        ":pk": Organization.UserConnector.pk,
-        ":userId": userId,
+        ':pk': Organization.UserConnector.pk,
+        ':userId': userId,
       },
-      KeyConditionExpression: "#pk = :pk and #userId = :userId",
-    };
+      KeyConditionExpression: '#pk = :pk and #userId = :userId',
+    }
 
     try {
-      const userConRecords = await largeQuery(params);
+      const userConRecords = await largeQuery(params)
       if (!userConRecords?.length) {
-        return [];
+        return []
       }
-      const userConIds = userConRecords.map(
-        (fragment: { pk: string; sk: string }) => fragment.sk
-      );
-      const userCons = await this.getUserConsFromIds(userConIds);
-      return userCons.filter(
-        (userCon: Organization.UserConnector) => userCon.userRole === roleFilter
-      );
+      const userConIds = userConRecords.map((fragment: { pk: string; sk: string }) => fragment.sk)
+      const userCons = await this.getUserConsFromIds(userConIds)
+      return userCons.filter((userCon: Organization.UserConnector) => userCon.userRole === roleFilter)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getUserConsByUserId",
-      });
-      return;
+        from: 'Organization.data/getUserConsByUserId',
+      })
+      return
     }
-  };
+  }
 
   static getBalance: CallableFunction = async (id: number | string) => {
     const params = {
@@ -159,92 +150,86 @@ export abstract class OrganizationDbManager {
         pk: Organization.Balance.pk,
         sk: String(id),
       },
-    };
+    }
 
     try {
-      const organizationRecord = await docClient.get(params).promise();
-      return organizationRecord.Item as Organization.Balance;
+      const organizationRecord = await docClient.get(params).promise()
+      return organizationRecord.Item as Organization.Balance
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getBalance",
-      });
-      return;
+        from: 'Organization.data/getBalance',
+      })
+      return
     }
-  };
+  }
 
-  static update: CallableFunction = async (
-    organization: Organization.Account
-  ) => {
+  static update: CallableFunction = async (organization: Organization.Account) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: organization.pk, sk: organization.sk },
-      UpdateExpression: "set #ts = :ts",
-      ConditionExpression: "#ts = :sessionTs",
-      ExpressionAttributeNames: { "#ts": "ts" },
+      UpdateExpression: 'set #ts = :ts',
+      ConditionExpression: '#ts = :sessionTs',
+      ExpressionAttributeNames: { '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ":sessionTs": organization.ts,
-        ":ts": DateTime.now().toMillis(),
+        ':sessionTs': Number(organization.ts),
+        ':ts': Number(DateTime.now().toMillis()),
       },
-    };
+    }
 
     try {
-      await docClient.update(params).promise();
-      return await OrganizationDbManager.get(organization);
+      await docClient.update(params).promise()
+      return await OrganizationDbManager.get(organization)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/update",
+        from: 'Organization.data/update',
         organization,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static updateBalance: CallableFunction = async (
-    balance: Organization.Balance
-  ) => {
+  static updateBalance: CallableFunction = async (balance: Organization.Balance) => {
     const params: DocumentClient.UpdateItemInput = {
       TableName: vlmMainTable,
       Key: { pk: balance.pk, sk: balance.sk },
-      UpdateExpression: "set #ts = :ts",
-      ConditionExpression: "#ts = :sessionTs",
-      ExpressionAttributeNames: { "#ts": "ts" },
+      UpdateExpression: 'set #ts = :ts',
+      ConditionExpression: '#ts = :sessionTs',
+      ExpressionAttributeNames: { '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ":sessionTs": balance.ts,
-        ":ts": DateTime.now().toMillis(),
+        ':sessionTs': Number(balance.ts),
+        ':ts': Number(DateTime.now().toMillis()),
       },
-    };
+    }
 
     try {
-      await docClient.update(params).promise();
-      return await OrganizationDbManager.getBalance(balance);
+      await docClient.update(params).promise()
+      return await OrganizationDbManager.getBalance(balance)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/update",
+        from: 'Organization.data/update',
         balance,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
-  static addMember: CallableFunction = async (
-    orgUserCon: Organization.UserConnector
-  ) => {
+  static addMember: CallableFunction = async (orgUserCon: Organization.UserConnector) => {
     const params: DocumentClient.PutItemInput = {
       TableName: vlmMainTable,
       Item: { ...orgUserCon },
-    };
+    }
 
     try {
-      await docClient.put(params).promise();
-      return await OrganizationDbManager.getUserCon(orgUserCon);
+      await docClient.put(params).promise()
+      return await OrganizationDbManager.getUserCon(orgUserCon)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/addMember",
+        from: 'Organization.data/addMember',
         orgUserCon,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static init: CallableFunction = async (
     orgAccount: Organization.Account,
@@ -258,13 +243,13 @@ export abstract class OrganizationDbManager {
             // Add an organization
             Item: {
               ...orgAccount,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
         },
       ],
-    };
+    }
 
     if (orgUserCon) {
       params.TransactItems.push({
@@ -272,11 +257,11 @@ export abstract class OrganizationDbManager {
           // Add a connection from organization to user
           Item: {
             ...orgUserCon,
-            ts: DateTime.now().toUnixInteger(),
+            ts: DateTime.now().toMillis(),
           },
           TableName: vlmMainTable,
         },
-      });
+      })
     }
 
     if (orgBalances) {
@@ -286,35 +271,35 @@ export abstract class OrganizationDbManager {
             // Add a connection from organization to user
             Item: {
               ...orgBalance,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
-        });
-      });
+        })
+      })
     }
 
     try {
-      await docClient.transactWrite(params).promise();
-      return orgAccount;
+      await docClient.transactWrite(params).promise()
+      return orgAccount
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/put",
+        from: 'Organization.data/put',
         orgAccount,
         orgUserCon,
         orgBalances,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static getUserConsFromIds: CallableFunction = async (sks: string[]) => {
     if (!sks?.length) {
-      return;
+      return
     }
     const params: DocumentClient.TransactGetItemsInput = {
       TransactItems: [],
-    };
+    }
 
     sks.forEach((sk: string) => {
       params.TransactItems.push({
@@ -326,38 +311,38 @@ export abstract class OrganizationDbManager {
           },
           TableName: vlmMainTable,
         },
-      });
-    });
+      })
+    })
 
     try {
-      const userCons = await docClient.transactGet(params).promise();
-      return userCons.Responses.map((item) => item.Item);
+      const userCons = await docClient.transactGet(params).promise()
+      return userCons.Responses.map((item) => item.Item)
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/getUserConsFromIds",
+        from: 'Organization.data/getUserConsFromIds',
         sks,
-      });
-      return;
+      })
+      return
     }
-  };
+  }
 
   static put: CallableFunction = async (organization: Organization.Account) => {
     const params = {
       TableName: vlmMainTable,
       Item: {
         ...organization,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
-    };
+    }
 
     try {
-      await docClient.put(params).promise();
-      return organization;
+      await docClient.put(params).promise()
+      return organization
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: "Organization.data/put",
+        from: 'Organization.data/put',
         Organization,
-      });
+      })
     }
-  };
+  }
 }

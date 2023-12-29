@@ -207,7 +207,7 @@ export abstract class MigrationManager {
       }
 
       if (claim.claimedAt && DateTime.fromISO(claim.claimedAt).isValid) {
-        claimTs = DateTime.fromISO(claim.claimedAt).toUnixInteger();
+        claimTs = DateTime.fromISO(claim.claimedAt).toMillis();
       } else if (claim.timestamp && DateTime.fromMillis(claim.timestamp).isValid) {
         claimTs = claim.timestamp;
       } else {

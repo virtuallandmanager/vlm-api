@@ -105,8 +105,8 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { '#prop': 'state', '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':prop': newState,
-        ':stateTs': state.ts || DateTime.now().toMillis(),
-        ':ts': DateTime.now().toMillis(),
+        ':stateTs': Number(state.ts) || Number(DateTime.now().toMillis()),
+        ':ts': Number(DateTime.now().toMillis()),
       },
     }
 
@@ -328,7 +328,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...scenePreset,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -394,7 +394,7 @@ export abstract class SceneDbManager {
           // Create a scene preset
           Item: {
             ...preset,
-            ts: DateTime.now().toUnixInteger(),
+            ts: DateTime.now().toMillis(),
           },
           TableName: vlmMainTable,
         },
@@ -455,7 +455,7 @@ export abstract class SceneDbManager {
               '#deleted': 'deleted',
             },
             ExpressionAttributeValues: {
-              ':ttl': DateTime.now().plus({ days: 90 }).toUnixInteger(),
+              ':ttl': DateTime.now().plus({ days: 90 }).toMillis(),
               ':deleted': true,
             },
             TableName: vlmMainTable,
@@ -508,7 +508,7 @@ export abstract class SceneDbManager {
           // Add a scene preset
           Item: {
             ...setting,
-            ts: DateTime.now().toUnixInteger(),
+            ts: DateTime.now().toMillis(),
           },
           TableName: vlmMainTable,
         },
@@ -559,7 +559,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneVideo,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -608,7 +608,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...instanceConfig,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -671,7 +671,7 @@ export abstract class SceneDbManager {
                 '#deleted': 'deleted',
               },
               ExpressionAttributeValues: {
-                ':ttl': DateTime.now().plus({ days: 30 }).toUnixInteger(),
+                ':ttl': DateTime.now().plus({ days: 30 }).toMillis(),
                 ':deleted': true,
               },
               TableName: vlmMainTable,
@@ -718,7 +718,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneImage,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -765,7 +765,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneNft,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -812,7 +812,7 @@ export abstract class SceneDbManager {
           Put: {
             Item: {
               ...sceneModel,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -860,7 +860,7 @@ export abstract class SceneDbManager {
             // Create a scene sound
             Item: {
               ...sceneSound,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -908,7 +908,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...sceneWidget,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -960,7 +960,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...claimPoint,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -970,7 +970,7 @@ export abstract class SceneDbManager {
             // Create a scene preset
             Item: {
               ...instance,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmMainTable,
           },
@@ -1003,8 +1003,8 @@ export abstract class SceneDbManager {
       ExpressionAttributeNames: { '#prop': property, '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':prop': newValue,
-        ':sceneTs': sceneConfig.ts || ts,
-        ':ts': ts,
+        ':sceneTs': Number(sceneConfig.ts) || Number(ts),
+        ':ts': Number(ts),
       },
     }
 
@@ -1127,7 +1127,7 @@ export abstract class SceneDbManager {
               '#deleted': 'deleted',
             },
             ExpressionAttributeValues: {
-              ':ttl': DateTime.now().plus({ days: 30 }).toUnixInteger(),
+              ':ttl': DateTime.now().plus({ days: 30 }).toMillis(),
               ':deleted': true,
             },
             TableName: vlmMainTable,
@@ -1153,7 +1153,7 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Item: {
         ...preset,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 
@@ -1175,7 +1175,7 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Item: {
         ...scene,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 
@@ -1254,7 +1254,7 @@ export abstract class SceneDbManager {
       TableName: vlmMainTable,
       Item: {
         ...message.instanceData,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 

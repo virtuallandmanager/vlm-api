@@ -148,7 +148,7 @@ router.post('/update', authMiddleware, vlmAdminMiddleware, async (req: Request, 
 router.get('/migrate/:pk', async (req: Request, res: Response) => {
   try {
     const { pk } = req.params
-    await MigrationDbManager.moveDataInBatches(pk, 'vlm_main', 'vlm_analytics', 25)
+    await MigrationDbManager.moveDataInBatches(pk, 'vlm_main', 'vlm_users', 25)
     return res.status(200).json({
       text: 'Successfully migrated data.',
     })

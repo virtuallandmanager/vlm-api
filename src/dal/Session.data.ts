@@ -22,7 +22,7 @@ export abstract class SessionDbManager {
         '#ttl': 'ttl',
       },
       ExpressionAttributeValues: {
-        ':sessionStart': startTime.toUnixInteger(),
+        ':sessionStart': startTime.toMillis(),
         ':ts': startTime.toMillis(),
       },
       UpdateExpression: 'SET #ts = :ts, #sessionStart = :sessionStart REMOVE #ttl', // Added "REMOVE #ttl"
@@ -40,7 +40,7 @@ export abstract class SessionDbManager {
   }
 
   static create: CallableFunction = async (session: BaseSession.Config, expirationTime?: { hours: number; minutes: number; seconds: number }) => {
-    const ttl = expirationTime ? DateTime.now().plus(expirationTime).toUnixInteger() : undefined
+    const ttl = expirationTime ? DateTime.now().plus(expirationTime).toMillis() : undefined
 
     const table = session.pk === Analytics.Session.Config.pk ? vlmAnalyticsTable : vlmSessionsTable
 
@@ -48,7 +48,7 @@ export abstract class SessionDbManager {
       TableName: table,
       Item: {
         ...session,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
         ttl,
       },
     }
@@ -70,8 +70,8 @@ export abstract class SessionDbManager {
         TableName: vlmAnalyticsTable,
         Item: {
           ...config,
-          ts: DateTime.now().toUnixInteger(),
-          ttl: DateTime.now().plus({ months: 12 }).toUnixInteger(),
+          ts: DateTime.now().toMillis(),
+          ttl: DateTime.now().plus({ months: 12 }).toMillis(),
         },
       }
 
@@ -153,7 +153,7 @@ export abstract class SessionDbManager {
   }
 
   static getRecentAnalyticsSession: CallableFunction = async (userId: string): Promise<Analytics.Session.Config> => {
-    const sessionStartBuffer = DateTime.now().minus({ minutes: 5 }).toUnixInteger()
+    const sessionStartBuffer = DateTime.now().minus({ minutes: 5 }).toMillis()
     const params = {
       TableName: vlmAnalyticsTable,
       IndexName: 'userId-index',
@@ -197,8 +197,8 @@ export abstract class SessionDbManager {
       ConditionExpression: '#ts = :sessionTs',
       ExpressionAttributeNames: { '#ts': 'ts' },
       ExpressionAttributeValues: {
-        ':sessionTs': session.ts,
-        ':ts': DateTime.now().toMillis(),
+        ':sessionTs': Number(session.ts),
+        ':ts': Number(DateTime.now().toMillis()),
       },
     }
 
@@ -222,9 +222,9 @@ export abstract class SessionDbManager {
       ExpressionAttributeNames: { '#ts': 'ts', '#pathIds': 'pathIds' },
       ExpressionAttributeValues: {
         ':pathIds': [path.sk],
-        ':sessionTs': session.ts,
+        ':sessionTs': Number(session.ts),
         ':emptyList': new Array(),
-        ':ts': DateTime.now().toMillis(),
+        ':ts': Number(DateTime.now().toMillis()),
       },
     }
 
@@ -291,13 +291,13 @@ export abstract class SessionDbManager {
         '#expires': 'expires',
       },
       ExpressionAttributeValues: {
-        ':sessionTs': session.ts,
+        ':sessionTs': Number(session.ts),
         ':sessionEnd': null,
         ':sessionToken': session.sessionToken || null,
         ':signatureToken': session.signatureToken || null,
         ':refreshToken': session.refreshToken || null,
         ':expires': session.expires || null,
-        ':ts': DateTime.now().toMillis(),
+        ':ts': Number(DateTime.now().toMillis()),
       },
     }
 
@@ -315,7 +315,7 @@ export abstract class SessionDbManager {
   static end: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config) => {
     const table = session.pk == Analytics.Session.Config.pk ? vlmAnalyticsTable : vlmSessionsTable
 
-    const endTime = DateTime.now().toUnixInteger()
+    const endTime = DateTime.now().toMillis()
     try {
       const params: DocumentClient.UpdateItemInput = {
         TableName: table,

@@ -149,7 +149,7 @@ export abstract class HistoryDbManager {
             // Add a history update
             Item: {
               ...update,
-              ts: DateTime.now().toUnixInteger(),
+              ts: DateTime.now().toMillis(),
             },
             TableName: vlmUpdatesTable,
           },
@@ -192,7 +192,7 @@ export abstract class HistoryDbManager {
       TableName: vlmUpdatesTable,
       Item: {
         ...history,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     };
 

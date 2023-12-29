@@ -16,7 +16,7 @@ export namespace Scene {
     scenePreset?: string | Preset
     presets?: Array<string | Preset> = []
     settings?: Array<string | Setting> = []
-    createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+    createdAt?: EpochTimeStamp = DateTime.now().toMillis()
     packageVersion?: string = ''
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
@@ -47,7 +47,7 @@ export namespace Scene {
     claimPoints?: string[] | ClaimPoint.Config[] = []
     models?: string[] | Model.Config[] = []
     locale?: string = 'en-US'
-    createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+    createdAt?: EpochTimeStamp = DateTime.now().toMillis()
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config?: Preset, clone: boolean = false) {
@@ -164,7 +164,7 @@ export namespace Scene {
     sk?: string = uuidv4()
     userId?: string
     sceneId?: string
-    startTime?: EpochTimeStamp = DateTime.now().toUnixInteger()
+    startTime?: EpochTimeStamp = DateTime.now().toMillis()
     endTime?: EpochTimeStamp
     permissions?: Permissions
     ts?: EpochTimeStamp = DateTime.now().toMillis()
@@ -226,7 +226,7 @@ export namespace Scene {
       volume?: number = 1
       withCollisions?: boolean = true
       castShadows?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Config = {}) {
@@ -267,7 +267,7 @@ export namespace Scene {
       withCollisions?: boolean
       parent?: string
       customRendering?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Instance = {}) {
@@ -320,7 +320,7 @@ export namespace Scene {
       isTransparent?: boolean
       withCollisions?: boolean
       castShadows?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Config = {}) {
@@ -361,7 +361,7 @@ export namespace Scene {
       withCollisions?: boolean
       parent?: string
       customRendering?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Instance = {}) {
@@ -399,7 +399,7 @@ export namespace Scene {
       enabled?: boolean
       isTransparent?: boolean
       withCollisions?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Config = {}) {
@@ -435,7 +435,7 @@ export namespace Scene {
       withCollisions?: boolean
       parent?: string
       customRendering?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Instance = {}) {
@@ -468,7 +468,7 @@ export namespace Scene {
       modelSrc?: string
       instances?: string[] | Instance[] = []
       enabled?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Config = {}) {
@@ -498,7 +498,7 @@ export namespace Scene {
       scale?: TransformConstructorArgs
       parent?: string
       customRendering?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Instance = {}) {
@@ -537,7 +537,7 @@ export namespace Scene {
       instances?: string[] | Instance[] = []
       sourceType?: SourceType = SourceType.CLIP
       enabled?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Config = {}) {
@@ -571,7 +571,7 @@ export namespace Scene {
       withCollisions?: boolean
       parent?: string
       customRendering?: boolean
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Instance = {}) {
@@ -603,7 +603,7 @@ export namespace Scene {
       selections?: WidgetSelection[]
       value?: number | string | Object | Array<unknown> | boolean
       range?: [number, number]
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Config = {}) {
@@ -650,7 +650,7 @@ export namespace Scene {
       instances: string[] | Instance[] = []
       withCollisions?: boolean
       properties?: ClaimPointProperties = defaultClaimPointProperties
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Partial<Config> = {}) {
@@ -683,7 +683,7 @@ export namespace Scene {
       rotation?: TransformConstructorArgs
       withCollisions?: boolean
       properties?: ClaimPointProperties = defaultClaimPointProperties
-      createdAt?: EpochTimeStamp = DateTime.now().toUnixInteger()
+      createdAt?: EpochTimeStamp = DateTime.now().toMillis()
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Partial<Instance> = {}) {
