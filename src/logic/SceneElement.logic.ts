@@ -180,7 +180,7 @@ export abstract class SceneElementManager {
         return { scenePreset, elementData }
       }
     } catch (error: any) {
-      AdminLogManager.logError(error, { from: 'SceneElementManager.updateSceneElement' })
+      AdminLogManager.logError(error, { from: 'SceneElementManager.updateSceneElement', message })
       throw error
     }
   }

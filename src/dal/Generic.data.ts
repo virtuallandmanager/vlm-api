@@ -165,7 +165,7 @@ export abstract class GenericDbManager {
       TableName: vlmMainTable,
       Item: {
         ...dataConfig,
-        ts: DateTime.now().toUnixInteger(),
+        ts: DateTime.now().toMillis(),
       },
     }
 
