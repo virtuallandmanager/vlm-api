@@ -7,7 +7,7 @@ import { User } from '../models/User.model'
 export abstract class AdminLogManager {
   static retries: { [retryId: string]: number } = {}
 
-  static logInfo = async (log: unknown, metadata: any, userInfo?: User.Account) => {
+  static logInfo = async (log: string | Object, metadata: any, userInfo?: User.Account) => {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.INFO)
     } catch (error: any) {
@@ -16,7 +16,7 @@ export abstract class AdminLogManager {
       return
     }
   }
-  static logWarning = async (log: unknown, metadata: any, userInfo?: User.Account) => {
+  static logWarning = async (log: string | Object, metadata: any, userInfo?: User.Account) => {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WARNING)
     } catch (error: any) {
@@ -50,7 +50,7 @@ export abstract class AdminLogManager {
       return
     }
   }
-  static logFatal = async (log: unknown, metadata: any, userInfo: User.Account) => {
+  static logFatal = async (log: string | Object, metadata: any, userInfo: User.Account) => {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.FATAL)
     } catch (error: any) {
@@ -59,7 +59,7 @@ export abstract class AdminLogManager {
       return
     }
   }
-  static logWAT = async (log: unknown, metadata: any, userInfo?: User.Account) => {
+  static logWAT = async (log: string | Object, metadata: any, userInfo?: User.Account) => {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WAT)
     } catch (error: any) {
@@ -68,9 +68,13 @@ export abstract class AdminLogManager {
       return
     }
   }
-  static logExternalError = async (log: unknown, metadata: any, userInfo?: User.Account) => {
+  static logExternalError = async (log: string | Object, metadata: any, userInfo?: User.Account) => {
     try {
-      log = convertBigIntToString(log as Record<string, any>)
+      if (typeof log === 'string') {
+        log = { text: log }
+      } else {
+        log = convertBigIntToString(log as Record<string, any>)
+      }
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.ERROR)
       this.logErrorToDiscord(`
       :rotating_light: -- ${userInfo ? 'USER-REPORTED ' : ''}ERROR LOGGED FROM ${config.environment.toUpperCase()} -- :rotating_light:\n

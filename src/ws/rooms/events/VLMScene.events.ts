@@ -123,7 +123,7 @@ export function bindEvents(room: VLMScene) {
     request_player_position: handleRequestPlayerPosition,
     send_player_position: handleSendPlayerPosition,
 
-    setAdminAccess: handleAdminAccessSetting,
+    set_admin_access: handleAdminAccessSetting,
   }
 
   Object.keys(eventHandlers).forEach((eventType) => {
@@ -253,7 +253,7 @@ async function handleSessionAction(
 ) {
   try {
     if (message.pathPoint && message.pathPoint[0]) {
-      message.pathPoint[0] = message.pathPoint[0].toString().length >= 13 ? message.pathPoint[0] / 1000 : message.pathPoint[0]
+      message.pathPoint[0] = message.pathPoint[0].toString().length >= 13 ? Number(message.pathPoint[0]) / 1000 : message.pathPoint[0]
     }
     const timestamp = DateTime.now().toMillis(),
       { action, metadata, pathPoint } = message,

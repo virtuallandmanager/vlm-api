@@ -389,7 +389,7 @@ export abstract class SessionDbManager {
       if (!session.paths.includes(path.sk)) {
         session.paths.push(path.sk)
       }
-      
+
       if (!path.segments.includes(pathSegment.sk)) {
         path.segments.push(pathSegment.sk)
       }
@@ -549,8 +549,9 @@ export abstract class SessionDbManager {
 
   static setRedisData: CallableFunction = async (key: RedisKey, data: RedisValue): Promise<Cache.Config> => {
     try {
-      const cacheRecord = (await redis.set(key, data)) as Cache.Config
-      return cacheRecord?.data
+      const cacheData = new Cache.Config({ data })
+      await redis.set(key, JSON.stringify(cacheData))
+      return cacheData
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Session.data/cacheRedisArray',
@@ -558,7 +559,7 @@ export abstract class SessionDbManager {
     }
   }
 
-  static getRedisData: CallableFunction = async (key: RedisKey): Promise<Cache.Config> => {
+  static getRedisData: CallableFunction = async (key: RedisKey): Promise<RedisValue> => {
     try {
       const cacheRecord = (await redis.get(key)) as Cache.Config
       return cacheRecord?.data

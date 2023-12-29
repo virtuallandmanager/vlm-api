@@ -17,16 +17,16 @@ setInterval(() => {
 
 type SessionRequestPattern = Record<string, number[]> // session guid, timestamps
 
-const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Session.Action): boolean => {
-  const sceneRequestPatterns: Record<string, SessionRequestPattern> = SessionDbManager.getRedisData('sceneRequestPatterns')
+const hasConsistentInterval: CallableFunction = async (sessionAction: Analytics.Session.Action): Promise<boolean> => {
+  const sceneRequestPatterns: Record<string, SessionRequestPattern> = (await SessionDbManager.getRedisData('sceneRequestPatterns')) || {}
 
   try {
     const sceneActionKey = `${sessionAction.sceneId}:${sessionAction.name}`,
       sceneSessionActionKey = `${sessionAction.sceneId}:${sessionAction.sessionId}:${sessionAction.name}`,
-      sceneSessionActionPattern = sceneRequestPatterns[sceneActionKey][sessionAction.sessionId]
+      sceneSessionActionPattern = sceneRequestPatterns[sceneActionKey] ? sceneRequestPatterns[sceneActionKey][sessionAction.sessionId] : []
 
     // if there are less than 5 timestamps, we need more data to determine if the interval is consistent
-    if (sceneSessionActionPattern.length < 5) return false
+    if (sceneSessionActionPattern?.length < 5) return false
 
     // Calculate intervals between timestamps
     let intervals = []
@@ -56,23 +56,23 @@ const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Sessio
       from: 'Session Action Rate Limiter - Interval Checker',
       sessionAction: JSON.stringify(sessionAction),
       patterns: JSON.stringify(sceneRequestPatterns),
-      error
+      error,
     })
     return false
   }
 }
 
 const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
-  const sceneRequestPatterns = await SessionDbManager.getRedisData('sceneRequestPatterns'),
-    sceneIdUsageRecords = await SessionDbManager.getRedisData('sceneIdUsageRecords'),
-    analyticsRestrictedScenes = await SessionDbManager.getRedisData('analyticsRestrictedScenes')
+  const sceneRequestPatterns = (await SessionDbManager.getRedisData('sceneRequestPatterns')) || {},
+    sceneIdUsageRecords = (await SessionDbManager.getRedisData('sceneIdUsageRecords')) || {},
+    analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || []
 
   try {
     const sceneActionKey = `${config.sceneId}:${config.name}`,
       currentTimestamp = DateTime.now().toMillis()
 
     // Deny request if scene has been restricted from submitting this action
-    if (analyticsRestrictedScenes.includes(sceneActionKey)) {
+    if (analyticsRestrictedScenes?.includes(sceneActionKey)) {
       return true
     }
 
@@ -93,7 +93,7 @@ const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Sess
     }
 
     // Check for consistent interval pattern
-    if (hasConsistentInterval(config)) {
+    if (await hasConsistentInterval(config)) {
       // If this scene is submitting actions at a consistent interval, restrict it from submitting this action
       analyticsRestrictedScenes.push(sceneActionKey)
       await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
@@ -148,9 +148,9 @@ const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Sess
 export abstract class SessionManager {
   static getServerRestrictions: CallableFunction = async () => {
     try {
-      const analyticsRestrictedScenes = await SessionDbManager.getRedisData('analyticsRestrictedScenes'),
-        sceneIdUsageRecords = await SessionDbManager.getRedisData('sceneIdUsageRecords'),
-        sceneRequestPatterns = await SessionDbManager.getRedisData('sceneRequestPatterns')
+      const analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || [],
+        sceneIdUsageRecords = (await SessionDbManager.getRedisData('sceneIdUsageRecords')) || {},
+        sceneRequestPatterns = (await SessionDbManager.getRedisData('sceneRequestPatterns')) || {}
 
       return { analyticsRestrictedScenes, sceneIdUsageRecords, sceneRequestPatterns }
     } catch (error) {
@@ -250,7 +250,7 @@ export abstract class SessionManager {
   static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
     try {
       const action = new Analytics.Session.Action(config)
-      const rateLimited = rateLimitAnalyticsAction(action)
+      const rateLimited = await rateLimitAnalyticsAction(action)
       if (rateLimited) {
         return false
       }
@@ -258,7 +258,7 @@ export abstract class SessionManager {
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
-        config: JSON.stringify(config),
+        // config: JSON.stringify(config),
       })
       return
     }
@@ -269,7 +269,7 @@ export abstract class SessionManager {
 
     // if an error exists and the sceneActionKey is returned, an error occurred that should rate limit the scene
     try {
-      const analyticsRestrictedScenes = await SessionDbManager.getRedisData('analyticsRestrictedScenes')
+      const analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || []
       analyticsRestrictedScenes.push(logResponse.sceneActionKey)
       await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
     } catch (error) {
