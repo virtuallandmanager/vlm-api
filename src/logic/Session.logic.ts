@@ -56,6 +56,7 @@ const hasConsistentInterval: CallableFunction = (sessionAction: Analytics.Sessio
       from: 'Session Action Rate Limiter - Interval Checker',
       sessionAction: JSON.stringify(sessionAction),
       patterns: JSON.stringify(sceneRequestPatterns),
+      error
     })
     return false
   }

@@ -359,6 +359,7 @@ export namespace Scene {
       rotation?: TransformConstructorArgs
       scale?: TransformConstructorArgs
       withCollisions?: boolean
+      clickEvent?: ClickEvent
       parent?: string
       customRendering?: boolean
       createdAt?: EpochTimeStamp = DateTime.now().toMillis()
@@ -373,6 +374,7 @@ export namespace Scene {
         this.rotation = config.rotation
         this.scale = config.scale
         this.withCollisions = config.withCollisions
+        this.clickEvent = config.clickEvent
         this.parent = config.parent
         this.customRendering = config.customRendering
         this.createdAt = config.createdAt
@@ -463,6 +465,7 @@ export namespace Scene {
       sk?: string = uuidv4()
       customId?: string
       customRendering?: boolean
+      clickEvent?: ClickEvent
       parent?: string
       name?: string
       modelSrc?: string
@@ -477,6 +480,7 @@ export namespace Scene {
         this.enabled = config.enabled
         this.customId = config.customId || this.customId
         this.customRendering = config.customRendering
+        this.clickEvent = config.clickEvent
         this.name = config.name
         this.instances = config.instances
         this.parent = config.parent
@@ -493,6 +497,7 @@ export namespace Scene {
       customId?: string
       name?: string
       enabled?: boolean
+      clickEvent?: ClickEvent
       position?: TransformConstructorArgs
       rotation?: TransformConstructorArgs
       scale?: TransformConstructorArgs
@@ -508,6 +513,7 @@ export namespace Scene {
         this.enabled = config.enabled
         this.position = config.position
         this.rotation = config.rotation
+        this.clickEvent = config.clickEvent
         this.scale = config.scale
         this.parent = config.parent
         this.customRendering = config.customRendering
