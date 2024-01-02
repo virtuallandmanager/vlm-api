@@ -234,13 +234,13 @@ export abstract class GiveawayManager {
     })
 
     const transaction = new Accounting.Transaction({
-      userId: session.connectedWallet,
+      userId: session.connectedWallet.toLowerCase(),
       txType: Accounting.TransactionType.ITEM_GIVEAWAY,
       status: Accounting.TransactionStatus.PENDING,
     })
 
     const claim = new Giveaway.Claim({
-      to: session.connectedWallet,
+      to: session.connectedWallet.toLowerCase(),
       clientIp: session.clientIp,
       sceneId,
       status: Giveaway.ClaimStatus.PENDING,

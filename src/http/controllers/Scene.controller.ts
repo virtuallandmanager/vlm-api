@@ -68,7 +68,7 @@ router.post('/invite/user', authMiddleware, async (req: Request, res: Response) 
     let user: User.Account, invite: Scene.Invite
 
     if (connectedWallet) {
-      const response = await SceneManager.inviteUserByWallet(connectedWallet)
+      const response = await SceneManager.inviteUserByWallet(connectedWallet.toLowerCase())
       user = response.user
       invite = response.invite
     } else {
@@ -76,7 +76,7 @@ router.post('/invite/user', authMiddleware, async (req: Request, res: Response) 
     }
 
     return res.status(200).json({
-      text: `Invite sent to ${connectedWallet}.`,
+      text: `Invite sent to ${connectedWallet.toLowerCase()}.`,
       user,
       invite,
     })

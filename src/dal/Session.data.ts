@@ -516,7 +516,7 @@ export abstract class SessionDbManager {
         deserializedRedisArray.push(data)
       } else {
         AdminLogManager.logError('Record was not an array', {
-          from: 'Session.data/cacheRedisArray',
+          from: 'Session.data/pushToRedisArray',
         })
         return { success: false }
       }
@@ -528,7 +528,7 @@ export abstract class SessionDbManager {
       return { success: true }
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Session.data/cacheRedisArray',
+        from: 'Session.data/pushToRedisArray',
       })
     }
   }
@@ -542,7 +542,7 @@ export abstract class SessionDbManager {
       return cacheRecords || []
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Session.data/cacheRedisArray',
+        from: 'Session.data/restoreRedisArray',
       })
     }
   }
@@ -554,7 +554,7 @@ export abstract class SessionDbManager {
       return cacheData
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Session.data/cacheRedisArray',
+        from: 'Session.data/setRedisData',
       })
     }
   }
@@ -565,7 +565,7 @@ export abstract class SessionDbManager {
       return cacheRecord?.data
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Session.data/cacheRedisArray',
+        from: 'Session.data/getRedisData',
       })
     }
   }
@@ -584,7 +584,7 @@ export abstract class SessionDbManager {
       return { success: true }
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Session.data/cacheRedisArray',
+        from: 'Session.data/persistRedisData',
       })
     }
   }

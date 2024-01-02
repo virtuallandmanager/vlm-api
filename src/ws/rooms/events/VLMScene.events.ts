@@ -290,7 +290,7 @@ export async function handleSessionEnd(client: Client, message?: any, room?: VLM
   try {
     const session = client.auth.session
 
-    if (session.pk == Analytics.Session.Config) {
+    if (session.pk == Analytics.Session.Config.pk) {
       await SessionManager.endAnalyticsSession(session)
     } else if (session.pk == User.Session.Config.pk) {
       await SessionManager.endVLMSession(session)

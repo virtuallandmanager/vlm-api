@@ -30,7 +30,7 @@ router.get('/web3', async (req: Request, res: Response) => {
 
     const sessionConfig = {
       userId: user.sk,
-      connectedWallet: user.connectedWallet,
+      connectedWallet: user.connectedWallet.toLowerCase(),
       clientIp,
     }
 
@@ -51,8 +51,8 @@ router.get('/web3', async (req: Request, res: Response) => {
     const session = existingSession || newSession
 
     return res.status(200).json({
-      text: `Signature token issued for ${user.connectedWallet}`,
-      signatureMessage: getSignatureMessage(user.connectedWallet, clientIp),
+      text: `Signature token issued for ${user.connectedWallet.toLowerCase()}`,
+      signatureMessage: getSignatureMessage(user.connectedWallet.toLowerCase(), clientIp),
       signatureToken: session.signatureToken,
     })
   } catch (error: unknown) {
@@ -80,7 +80,7 @@ router.post('/login', web3AuthMiddleware, async (req: Request, res: Response) =>
     const user = await UserManager.obtain(
       new User.Account({
         sk: session.userId,
-        connectedWallet: session.connectedWallet,
+        connectedWallet: session.connectedWallet.toLowerCase(),
         hasConnectedWeb3: !!session.connectedWallet,
         clientIp,
       })
@@ -121,7 +121,7 @@ router.get('/refresh', async (req: Request, res: Response) => {
     const user = await UserManager.obtain(
       new User.Account({
         sk: session.userId,
-        connectedWallet: session.connectedWallet,
+        connectedWallet: session.connectedWallet.toLowerCase(),
         clientIp,
       })
     )
@@ -215,7 +215,7 @@ router.post(
         existingSession ||
         new Analytics.Session.Config({
           userId: dbUser.sk,
-          connectedWallet: dbUser.connectedWallet,
+          connectedWallet: dbUser.connectedWallet.toLowerCase(),
           location,
           sceneId,
           clientIp,
