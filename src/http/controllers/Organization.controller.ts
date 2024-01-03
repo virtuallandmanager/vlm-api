@@ -32,13 +32,13 @@ router.post("/invite/user", authMiddleware, async (req: Request, res: Response) 
     const { connectedWallet } = req.body;
 
     if (connectedWallet) {
-      await OrganizationManager.inviteUserByWallet(connectedWallet);
+      await OrganizationManager.inviteUserByWallet(connectedWallet.toLowerCase());
     } else {
       // TODO: invite user by email/web2 id
     }
 
     return res.status(200).json({
-      text: `Invite sent to ${connectedWallet}.`,
+      text: `Invite sent to ${connectedWallet.toLowerCase()}.`,
     });
   } catch (error: unknown) {
     AdminLogManager.logError(error, {

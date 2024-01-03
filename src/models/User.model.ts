@@ -26,7 +26,7 @@ export namespace User {
     createdAt?: number = DateTime.now().toMillis()
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
-    constructor(config: Account & ExternalUserConfigs = {}) {
+    constructor(config: Config = {}) {
       this.sk = config?.sk || this.sk
       this.displayName = config.displayName || `Anon#${config.connectedWallet.slice(config.connectedWallet.length - 4)}`
       this.connectedWallet = config.connectedWallet
@@ -45,6 +45,8 @@ export namespace User {
     clientIp?: string
     publicKey?: string
   }
+
+  export type Config = Account & ExternalUserConfigs
 
   export enum Roles {
     BASIC_USER,

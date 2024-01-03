@@ -50,7 +50,7 @@ export abstract class GiveawayDbManager {
 
     try {
       const giveaway = await docClient.get(params).promise()
-      return giveaway.Item as Giveaway.Config
+      return new Giveaway.Config(giveaway.Item)
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Event.data/getById',
