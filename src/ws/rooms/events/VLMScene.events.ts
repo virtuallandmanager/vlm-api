@@ -857,14 +857,22 @@ export async function handleRequestPlayerPosition(
 ) {
   // Logic for request_player_position message
   try {
-    const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk && c.auth.user.sk == message.userId)
+    const inWorldUser = room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk && c.auth.user.sk == message.userId),
+      analyticsUsers = room.clients.filter((c) => c.auth.session.pk == Analytics.Session.Config.pk),
+      userThatSentRequest = room.clients.find(
+        (c) =>
+          (c.auth.session.pk === Session.Config.pk && c.auth.user.sk === message.userId) || c.auth.user.connectedWallet === message.connectedWallet
+      ),
+      defaultPositionData: Analytics.PathPoint = [null, 8, 1, 8, null, null, null, null, null, null, null]
+
     if (inWorldUser) {
       inWorldUser.send('request_player_position', message)
     } else if (!room.clients.length) {
-      const positionData: Analytics.PathPoint = [null, 8, 1, 8, null, null, null, null, null, null, null]
-      client.send('send_player_position', { positionData })
-    } else {
+      client.send('send_player_position', { positionData: defaultPositionData })
+    } else if (analyticsUsers.length) {
       room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk).send('request_player_position', message)
+    } else {
+      userThatSentRequest.send('send_player_position', { positionData: defaultPositionData })
     }
     return false
   } catch (error) {
