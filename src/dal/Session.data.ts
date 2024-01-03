@@ -573,13 +573,15 @@ export abstract class SessionDbManager {
   static persistRedisData: CallableFunction = async (key: RedisKey) => {
     try {
       const redisData = await redis.get(key)
-      let deserializedRedisData
+      let data
 
       if (redisData) {
-        deserializedRedisData = JSON.parse(redisData)
+        data = JSON.parse(redisData)
+      } else {
+        return { success: false }
       }
 
-      await GenericDbManager.put({ pk: Cache.Config.pk, sk: key, deserializedRedisData })
+      await GenericDbManager.put({ pk: Cache.Config.pk, sk: key, data })
 
       return { success: true }
     } catch (error) {
