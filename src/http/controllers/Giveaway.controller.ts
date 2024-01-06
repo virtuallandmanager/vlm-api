@@ -198,16 +198,16 @@ router.post('/check-minting-rights', async (req: Request, res: Response) => {
   const giveaways = await GiveawayManager.getByIds(giveawayIds)
   const giveawayItems = await GiveawayManager.getItemsForGiveaways(giveaways)
 
-  const contracts = giveawayItems.map((item: Giveaway.Item) => item.contractAddress).filter((x: string) => x)
-  const ids = giveawayItems.map((item: Giveaway.Item) => item.itemId)
+  const contracts = giveawayItems.map((item: Giveaway.Item) => item?.contractAddress).filter((x: string) => x)
+  const ids = giveawayItems.map((item: Giveaway.Item) => item?.itemId)
 
   try {
     const { allGranted, grantedRights, missingRights } = await TransactionManager.checkMintingRights({ contracts, ids, minter })
 
     return res.json({ allGranted, grantedRights, missingRights })
   } catch (error) {
-    console.error(error)
-    return res.status(500).send('Error checking minting rights')
+    AdminLogManager.logError(error, { from: 'Giveaway.controller/check-minting-rights' })
+    return res.status(500).send({ text: 'Error checking minting rights' })
   }
 })
 

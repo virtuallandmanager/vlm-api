@@ -6,6 +6,8 @@ import { AdminManager } from '../../logic/Admin.logic'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import { MigrationDbManager } from '../../dal/Migration.data'
 import { SessionManager } from '../../logic/Session.logic'
+import { UserManager } from '../../logic/User.logic'
+import { User } from '../../models/User.model'
 
 const router = express.Router()
 
@@ -16,6 +18,35 @@ router.get('/panel', authMiddleware, vlmAdminMiddleware, async (req: Request, re
     return res.status(200).json({
       text: `Got admin panel keys. Use wisely!`,
       ...adminPanelKeys,
+    })
+  } catch (error: any) {
+    AdminLogManager.logError(error, {
+      from: 'Admin.controller/users',
+    })
+    return res.status(error?.status || 500).json({
+      text: error.text || 'Something went wrong on the server. Please try again.',
+      error,
+    })
+  }
+})
+
+router.post('/loginAs', authMiddleware, vlmAdminMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { user } = req.body
+
+    const userAccount = await UserManager.get(user)
+    const sessionConfig = new User.Session.Config({
+      userId: userAccount.sk,
+      connectedWallet: userAccount.connectedWallet.toLowerCase(),
+      clientIp: req.clientIp,
+    })
+    const session = await SessionManager.startVLMSession(sessionConfig)
+    SessionManager.issueUserSessionToken(session)
+
+    return res.status(200).json({
+      text: `Got admin panel keys. Use wisely!`,
+      user: userAccount,
+      session,
     })
   } catch (error: any) {
     AdminLogManager.logError(error, {

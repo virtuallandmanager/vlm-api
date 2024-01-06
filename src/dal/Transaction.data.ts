@@ -57,7 +57,7 @@ export abstract class TransactionDbManager {
       const walletRecord = await docClient.query(params).promise()
       const minters = walletRecord.Items as Accounting.Minter[]
       const activeMinter = minters.find((minter) => minter.active)
-      return activeMinter.address
+      return activeMinter?.address
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Transaction.data/getMinter',

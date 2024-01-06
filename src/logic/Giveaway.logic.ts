@@ -90,7 +90,7 @@ export abstract class GiveawayManager {
         return fullGiveawayItems || []
       })
     )
-    return giveawaysWithItems.flat()
+    return giveawaysWithItems.flat() || []
   }
 
   static getGiveawaysForSceneEvents: CallableFunction = async (sceneId: string) => {
