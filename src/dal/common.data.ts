@@ -65,49 +65,56 @@ export const vlmUpdatesTable = process.env.NODE_ENV == 'production' ? 'vlm_updat
 export const vlmUsersTable = process.env.NODE_ENV == 'production' ? 'vlm_users' : `vlm_users${process.env.DEV_TABLE_EXT}`
 export const vlmSessionsTable = process.env.NODE_ENV == 'production' ? 'vlm_sessions' : `vlm_sessions${process.env.DEV_TABLE_EXT}`
 
-
-export const largeQuery: CallableFunction = async (params: DocumentClient.QueryInput, options: { cache: boolean } = { cache: false }, allData?: DocumentClient.AttributeMap[]) => {
+export const largeQuery: CallableFunction = async (
+  params: DocumentClient.QueryInput,
+  options: { cache: boolean } = { cache: false },
+  allData?: DocumentClient.AttributeMap[]
+) => {
   if (!allData) {
-    allData = [];
+    allData = []
   }
 
   if (options.cache) {
-    var data = await daxClient.query(params).promise();
+    var data = await daxClient.query(params).promise()
   } else {
-    var data = await docClient.query(params).promise();
+    var data = await docClient.query(params).promise()
   }
 
-  if (data["Items"].length > 0) {
-    allData = [...allData, ...data["Items"]];
+  if (data['Items'].length > 0) {
+    allData = [...allData, ...data['Items']]
   }
 
   if (!params.Limit && data.LastEvaluatedKey) {
-    params.ExclusiveStartKey = data.LastEvaluatedKey;
-    return await largeQuery(params, options, allData);
+    params.ExclusiveStartKey = data.LastEvaluatedKey
+    return await largeQuery(params, options, allData)
   } else {
-    let finalData = allData;
-    return finalData;
+    let finalData = allData
+    return finalData
   }
-};
+}
 
-export const largeScan: CallableFunction = async (params: DocumentClient.QueryInput, chunkCb?: CallableFunction, allData?: DocumentClient.AttributeMap[]) => {
+export const largeScan: CallableFunction = async (
+  params: DocumentClient.QueryInput,
+  chunkCb?: CallableFunction,
+  allData?: DocumentClient.AttributeMap[]
+) => {
   if (!allData) {
-    allData = [];
+    allData = []
   }
 
-  let data = await docClient.scan(params).promise();
-  if (data["Items"].length > 0) {
-    allData = [...allData, ...data["Items"]];
-    await chunkCb(data["Items"]);
+  let data = await docClient.scan(params).promise()
+  if (data['Items'].length > 0) {
+    allData = [...allData, ...data['Items']]
+    await chunkCb(data['Items'])
   }
   if (!params.Limit && data.LastEvaluatedKey) {
-    params.ExclusiveStartKey = data.LastEvaluatedKey;
-    return await largeScan(params, chunkCb, allData);
+    params.ExclusiveStartKey = data.LastEvaluatedKey
+    return await largeScan(params, chunkCb, allData)
   } else {
-    let finalData = allData;
-    return finalData;
+    let finalData = allData
+    return finalData
   }
-};
+}
 export const batchQuery: CallableFunction = async (params: AWS.DynamoDB.QueryInput, allData: any[]) => {
   if (!allData) {
     allData = []
