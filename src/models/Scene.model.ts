@@ -716,6 +716,7 @@ export namespace Scene {
       imgSrc?: string
       modelSrc?: string
       mannequinType?: MannequinType
+      showHoverText?: boolean
       hoverText?: string
       color1?: { r: number; g: number; b: number; a: number }
       color2?: { r: number; g: number; b: number; a: number }
@@ -746,6 +747,7 @@ export namespace Scene {
       imgSrc: '',
       modelSrc: '',
       mannequinType: MannequinType.MATCH_PLAYER,
+      showHoverText: true,
       hoverText: 'Claim Item',
       color1: { r: 255, g: 255, b: 255, a: 1 },
       color2: { r: 0, g: 0, b: 0, a: 1 },

@@ -90,6 +90,7 @@ router.post('/login', web3AuthMiddleware, async (req: Request, res: Response) =>
 
     const status = (user?.registeredAt && user?.roles?.length) || userOrgs?.length ? 200 : 201
     return res.status(status).json({
+      status: 200,
       text: 'Successfully authenticated.',
       session,
       user,
@@ -134,6 +135,7 @@ router.get('/refresh', async (req: Request, res: Response) => {
 
     const status = (user?.registeredAt && user?.roles?.length) || userOrgs?.length ? 200 : 201
     return res.status(status).json({
+      status: 200,
       text: 'Successfully authenticated.',
       session,
       user,

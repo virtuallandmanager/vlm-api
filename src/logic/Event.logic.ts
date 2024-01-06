@@ -121,10 +121,6 @@ export abstract class EventManager {
     return await EventDbManager.getLinkedGiveawaysByIds(eventIds);
   };
 
-  static getLegacyEvent: CallableFunction = async (baseParcel: string) => {
-    return await EventDbManager.getLegacy(baseParcel);
-  };
-
   static getEventsForUser: CallableFunction = async (vlmUser: User.Account) => {
     return await EventDbManager.getAllForUser(vlmUser);
   };

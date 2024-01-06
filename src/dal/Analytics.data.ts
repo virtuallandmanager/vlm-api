@@ -5,7 +5,7 @@ import { DateTime } from 'luxon'
 
 export abstract class AnalyticsDbManager {
   static getRecentSceneMetrics: CallableFunction = async (sceneId: string) => {
-    const twentyFourHoursAgo = DateTime.now().minus({ minutes: 24 }).toMillis()
+    const twentyFourHoursAgo = DateTime.now().minus({ hours: 1 }).toMillis()
 
     const params = {
       TableName: vlmAnalyticsTable,
@@ -30,6 +30,39 @@ export abstract class AnalyticsDbManager {
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'AnalyticsUser.data/getRecentSceneMetrics',
+        sceneId,
+      })
+      console.log(error)
+      return
+    }
+  }
+
+  static getRecentSessions: CallableFunction = async (sceneId: string) => {
+    const twentyFourHoursAgo = DateTime.now().minus({ hours: 24 }).toMillis()
+
+    const params = {
+      TableName: vlmAnalyticsTable,
+      IndexName: 'sceneId-index',
+      KeyConditionExpression: '#pk = :pk and #sceneId = :sceneId',
+      FilterExpression: '#ts >= :twentyFourHoursAgo',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#sceneId': 'sceneId',
+        '#ts': 'ts',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Analytics.Session.Config.pk,
+        ':sceneId': sceneId,
+        ':twentyFourHoursAgo': twentyFourHoursAgo,
+      },
+    }
+
+    try {
+      const analyticsRecords = await largeQuery(params, { cache: true })
+      return analyticsRecords as Analytics.Session.Config[]
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'AnalyticsUser.data/getRecentSessions',
         sceneId,
       })
       console.log(error)

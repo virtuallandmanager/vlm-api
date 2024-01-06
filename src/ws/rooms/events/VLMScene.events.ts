@@ -165,6 +165,22 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         sceneExists = !!scene,
         hasNoLocations = scene?.locations?.length < 1
 
+      const newMetadata = { ...room.metadata }
+
+      if (newMetadata.locations && !newMetadata.locations.includes(userLocation.coordinates.join(','))) {
+        newMetadata.locations.push(userLocation.coordinates.join(','))
+        newMetadata.locationCount = newMetadata.locations.length
+      } else if (newMetadata.locations && !newMetadata.locations.includes(userLocation.location)) {
+        newMetadata.locations.push(userLocation.location)
+        newMetadata.locationCount = newMetadata.locations.length
+      }
+      if (newMetadata.worlds && !newMetadata.worlds.includes(userLocation.world)) {
+        newMetadata.worlds.push(userLocation.world)
+        newMetadata.worldCount = newMetadata.worlds.length
+      }
+      room.setMetadata(newMetadata)
+      console.log(room.metadata, newMetadata)
+
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal =
           deepEqual(location, userLocation) ||

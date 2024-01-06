@@ -12,11 +12,13 @@ import { ArraySchema } from '@colyseus/schema'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import https from 'https'
 import { SceneManager } from '../../logic/Scene.logic'
+import { Scene } from '../../models/Scene.model'
 
 export class VLMScene extends Room<VLMSceneState> {
   async onCreate(options: any) {
     bindEvents(this)
-    const scene = await SceneManager.getSceneById(options.sceneId)
+    const scene: Scene.Config = await SceneManager.getSceneById(options.sceneId)
+    this.setMetadata({ sceneId: scene.sk, name: scene.name, locations: [], worlds: [] })
     this.setState(new VLMSceneState(scene))
     this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000)
   }

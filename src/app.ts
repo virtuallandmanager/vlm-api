@@ -77,7 +77,16 @@ app.use(
     challenge: true, // This will cause browsers to show a login dialog
     unauthorizedResponse: (req: Request) => 'Access Denied',
   }),
-  monitor()
+  monitor({
+    columns: [
+      { metadata: 'name'},
+      { metadata: 'sceneId'},
+      { metadata: 'worlds'},
+      { metadata: 'locations'},
+      'clients',
+      'elapsedTime',
+    ],
+  })
 )
 app.use('/log', jsonParser, urlencodedParser, logController)
 

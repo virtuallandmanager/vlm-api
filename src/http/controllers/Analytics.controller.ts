@@ -12,11 +12,11 @@ router.get('/recent/:sceneId', authMiddleware, async (req: Request, res: Respons
     let recentMetrics
 
     if (sceneId) {
-      recentMetrics = await AnalyticsManager.getRecentSceneMetrics(sceneId)
+      recentMetrics = await AnalyticsManager.getRecentSessionMetrics(sceneId)
     }
 
     return res.status(200).json({
-      recentMetrics,
+      ...recentMetrics,
     })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {

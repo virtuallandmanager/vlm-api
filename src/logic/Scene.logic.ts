@@ -7,7 +7,6 @@ import { SceneSettingsManager } from './SceneSettings.logic'
 import { ScenePresetManager } from './ScenePreset.logic'
 import { GiveawayManager } from './Giveaway.logic'
 import { DateTime } from 'luxon'
-import { UserWalletDbManager } from '../dal/UserWallet.data'
 import { SupportedCurrencies, WalletType } from '../models/Wallet.model'
 import { UserManager } from './User.logic'
 
@@ -80,7 +79,7 @@ export abstract class SceneManager {
     }
   }
 
-  static getSceneById: CallableFunction = async (sceneId: string) => {
+  static getSceneById: CallableFunction = async (sceneId: string): Promise<Scene.Config> => {
     try {
       return await SceneDbManager.getById(sceneId)
     } catch (error) {
