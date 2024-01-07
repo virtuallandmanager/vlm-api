@@ -16,6 +16,18 @@ export abstract class AdminLogManager {
       return
     }
   }
+  static logGiveawayInfo = async (log: string | Object, metadata: any) => {
+    try {
+      const content = `GIVEAWAY CLAIM - ${log}\n\nMETADATA:\n${JSON.stringify(metadata)}}`
+      const webhook = process.env.DISCORD_GIVEAWAY_WEBHOOK
+      await axios.post(webhook, {
+        content,
+      })
+    } catch (error: any) {
+      this.logError(error, { from: 'AdminLogManager.logGiveawayInfo', log: `GIVEAWAY CLAIM - ${log}` })
+      return
+    }
+  }
   static logWarning = async (log: string | Object, metadata: any, userInfo?: User.Account) => {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WARNING)

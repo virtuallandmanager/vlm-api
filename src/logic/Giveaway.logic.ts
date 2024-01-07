@@ -7,6 +7,7 @@ import { User } from '../models/User.model'
 import { Event } from '../models/Event.model'
 import { EventDbManager } from '../dal/Event.data'
 import { EventManager } from './Event.logic'
+import { AdminLogManager } from './ErrorLogging.logic'
 
 export abstract class GiveawayManager {
   static create: CallableFunction = async (giveawayConfig: Giveaway.Config) => {
@@ -177,14 +178,17 @@ export abstract class GiveawayManager {
     const existingClaim = await GiveawayManager.checkForExistingClaim({ session, user, sceneId, giveawayId })
 
     if (existingClaim && existingClaim === Giveaway.ClaimStatus.COMPLETE) {
+      AdminLogManager.logGiveawayInfo('DENIED - CLAIM COMPLETE', { sceneId, giveawayId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.CLAIM_COMPLETE }
     } else if (existingClaim && existingClaim === Giveaway.ClaimStatus.PENDING) {
+      AdminLogManager.logGiveawayInfo('DENIED - EXISTING CLAIM', { sceneId, giveawayId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM }
     }
 
     // find events for sceneId
     const events = await EventDbManager.getLinkedEventsBySceneId(sceneId)
     if (events.length === 0) {
+      AdminLogManager.logGiveawayInfo('DENIED - NO LINKED EVENTS', { sceneId, giveawayId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS }
     }
 
@@ -205,12 +209,14 @@ export abstract class GiveawayManager {
     const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((giveaway: Event.GiveawayLink) => giveaway.giveawayId === giveawayId)
 
     if (linkedGiveawaysFiltered.length === 0) {
+      AdminLogManager.logGiveawayInfo('DENIED - NO LINKED GIVEAWAYS', { sceneId, giveawayId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS }
     }
 
     // check if giveaway is paused
     const giveaway = linkedGiveawaysFiltered[0]
     if (giveaway.paused) {
+      AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY PAUSED', { giveaway, sceneId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.PAUSED }
     }
 
@@ -218,10 +224,22 @@ export abstract class GiveawayManager {
     const event = events.find((event: Event.Config) => event.sk === giveaway.eventId)
     // check if event has not yet started
     if (event.eventStart > now) {
+      AdminLogManager.logGiveawayInfo('DENIED - BEFORE EVENT START', {
+        event,
+        giveaway,
+        eventStart: DateTime.fromMillis(event.eventEnd).toISO(),
+        time: DateTime.now().toISO(),
+      })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START }
     }
     // check if event is over
-    if (event.eventEnd < now) {
+    if (event.eventEnd && event.eventEnd < now) {
+      AdminLogManager.logGiveawayInfo('DENIED - AFTER EVENT END', {
+        event,
+        giveaway,
+        eventEnd: DateTime.fromMillis(event.eventEnd).toISO(),
+        time: DateTime.now().toISO(),
+      })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.AFTER_EVENT_END }
     }
 
@@ -234,7 +252,7 @@ export abstract class GiveawayManager {
     })
 
     const transaction = new Accounting.Transaction({
-      userId: session.connectedWallet.toLowerCase(),
+      userId: user.sk,
       txType: Accounting.TransactionType.ITEM_GIVEAWAY,
       status: Accounting.TransactionStatus.PENDING,
     })
@@ -254,6 +272,16 @@ export abstract class GiveawayManager {
     transaction.claimId = claim.sk
 
     await this.addClaim(analyticsAction, claim, transaction)
+
+    AdminLogManager.logGiveawayInfo('ACCEPTED!', {
+      event,
+      userId: user.sk,
+      to: session.connectedWallet.toLowerCase(),
+      giveaway,
+      transaction,
+      analyticsAction,
+      time: DateTime.now().toISO(),
+    })
 
     return { responseType: Giveaway.ClaimResponseType.CLAIM_ACCEPTED }
   }
