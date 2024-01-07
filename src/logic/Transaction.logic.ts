@@ -8,7 +8,7 @@ import dclAbi from '../abi/dclCollectable.json'
 
 const dclAbiInterface: Interface = new Interface(dclAbi)
 const network = process.env.NODE_ENV === 'production' ? 137 : 80001
-const apiKey = process.env.NODE_ENV === 'production' ? process.env.ALCHEMY_API_KEY_MAINNET_MATIC : process.env.ALCHEMY_API_KEY_MAINNET_MATIC
+const apiKey = process.env.NODE_ENV === 'production' ? process.env.ALCHEMY_API_KEY_MATIC : process.env.ALCHEMY_API_KEY_MATIC
 const prodProvider = new AlchemyProvider(137, apiKey)
 const provider = new AlchemyProvider(network, apiKey)
 
