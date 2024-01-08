@@ -126,17 +126,26 @@ export abstract class GiveawayManager {
   }
 
   static checkForExistingClaim: CallableFunction = async ({
+    session,
     user,
     sceneId,
-    giveawayId,
+    giveaway,
+    itemId,
   }: {
     session: Analytics.Session.Config
     user: User.Account
     sceneId: string
-    giveawayId: string
+    giveaway: Giveaway.Config
     itemId: string
   }) => {
-    const claims = await GiveawayDbManager.getUserClaimsForGiveaway({ user, sceneId, giveawayId })
+    const giveawayId = giveaway.sk
+    const userClaims = await GiveawayDbManager.getUserClaimsForGiveaway({ user, sceneId, giveawayId })
+    const walletClaims = await GiveawayDbManager.getWalletClaimsForGiveaway({ user, sceneId, giveawayId })
+    const ipClaims = await GiveawayDbManager.getIpClaimsForGiveaway({ user, sceneId, giveawayId })
+    if (ipClaims.length >= giveaway.claimLimits?.perIp) {
+      return Giveaway.ClaimRejection.OVER_IP_LIMIT
+    }
+    const claims = [...userClaims, ...walletClaims]
     if (!claims || claims.length === 0) {
       return false
     }
@@ -147,7 +156,7 @@ export abstract class GiveawayManager {
     }
     const complete = currentGiveawayClaims.every((claim: Giveaway.Claim) => claim.status === Giveaway.ClaimStatus.COMPLETE)
 
-    return complete ? Giveaway.ClaimStatus.COMPLETE : Giveaway.ClaimStatus.PENDING
+    return complete ? Giveaway.ClaimRejection.CLAIM_COMPLETE : Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM
   }
 
   // UNDERSTANDING THE GIVEAWAY CLAIM PROCESS
@@ -175,14 +184,21 @@ export abstract class GiveawayManager {
     giveawayId: string
   }) => {
     //check for existing claim
-    const existingClaim = await GiveawayManager.checkForExistingClaim({ session, user, sceneId, giveawayId })
+    const giveaway = await GiveawayManager.getById(giveawayId)
+    if (!giveaway) {
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.SUSPICIOUS }
+    }
+    const existingClaim = await GiveawayManager.checkForExistingClaim({ session, user, sceneId, giveaway })
 
-    if (existingClaim && existingClaim === Giveaway.ClaimStatus.COMPLETE) {
+    if (existingClaim && existingClaim === Giveaway.ClaimResponseType.CLAIM_DENIED) {
       AdminLogManager.logGiveawayInfo('DENIED - CLAIM COMPLETE', { sceneId, giveawayId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.CLAIM_COMPLETE }
     } else if (existingClaim && existingClaim === Giveaway.ClaimStatus.PENDING) {
       AdminLogManager.logGiveawayInfo('DENIED - EXISTING CLAIM', { sceneId, giveawayId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM }
+    } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.OVER_IP_LIMIT) {
+      AdminLogManager.logGiveawayInfo('DENIED - OVER IP LIMIT', { sceneId, giveawayId })
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_IP_LIMIT }
     }
 
     // find events for sceneId
@@ -214,7 +230,6 @@ export abstract class GiveawayManager {
     }
 
     // check if giveaway is paused
-    const giveaway = linkedGiveawaysFiltered[0]
     if (giveaway.paused) {
       AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY PAUSED', { giveaway, sceneId })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.PAUSED }

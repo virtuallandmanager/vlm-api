@@ -433,6 +433,68 @@ export abstract class GiveawayDbManager {
     }
   }
 
+  static getWalletClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account; giveawayId: string }) => {
+    const params = {
+      TableName: vlmClaimsTable,
+      IndexName: 'giveawayId-index',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#giveawayId': 'giveawayId',
+        '#connectedWallet': 'to',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Giveaway.Claim.pk,
+        ':giveawayId': giveawayId,
+        ':connectedWallet': user.connectedWallet,
+      },
+      KeyConditionExpression: '#pk = :pk and #giveawayId = :giveawayId',
+      FilterExpression: '#connectedWallet = :connectedWallet',
+    }
+
+    try {
+      const claimRecords = await largeQuery(params)
+      return claimRecords.filter((claim: Giveaway.Claim) => claim.to === user.connectedWallet)
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getUserClaimsForEvent',
+        user,
+        error,
+      })
+      return
+    }
+  }
+
+  static getIpClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account; giveawayId: string }) => {
+    const params = {
+      TableName: vlmClaimsTable,
+      IndexName: 'clientIp-index',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#clientIp': 'clientIp',
+        '#giveawayId': 'giveawayId',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Giveaway.Claim.pk,
+        ':clientIp': user.lastIp,
+        ':giveawayId': giveawayId,
+      },
+      KeyConditionExpression: '#pk = :pk and #clientIp = :clientIp',
+      FilterExpression: '#giveawayId = :giveawayId',
+    }
+
+    try {
+      const claimRecords = await largeQuery(params)
+      return claimRecords
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getIpClaimsForEvent',
+        user,
+        error,
+      })
+      return
+    }
+  }
+
   static addGiveawayClaim: CallableFunction = async (claim: Giveaway.Claim) => {
     const params = {
       TableName: vlmMainTable,
