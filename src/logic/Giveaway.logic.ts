@@ -274,12 +274,15 @@ export abstract class GiveawayManager {
     await this.addClaim(analyticsAction, claim, transaction)
 
     AdminLogManager.logGiveawayInfo('ACCEPTED!', {
-      event,
+      eventName: event.displayName,
+      eventId: event.sk,
+      userName: user.displayName,
       userId: user.sk,
+      sceneId,
       to: session.connectedWallet.toLowerCase(),
-      giveaway,
-      transaction,
-      analyticsAction,
+      giveawayName: giveaway.name,
+      transactionId: transaction.sk,
+      analyticsRecordId: analyticsAction.sk,
       time: DateTime.now().toISO(),
     })
 
