@@ -467,7 +467,7 @@ export abstract class GiveawayDbManager {
   static getIpClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account; giveawayId: string }) => {
     const params = {
       TableName: vlmClaimsTable,
-      IndexName: 'clientIp-index',
+      IndexName: 'giveawayId-index',
       ExpressionAttributeNames: {
         '#pk': 'pk',
         '#clientIp': 'clientIp',
@@ -479,7 +479,7 @@ export abstract class GiveawayDbManager {
         ':giveawayId': giveawayId,
       },
       KeyConditionExpression: '#pk = :pk and #clientIp = :clientIp',
-      FilterExpression: '#giveawayId = :giveawayId',
+      FilterExpression: '#clientIp = :clientIp',
     }
 
     try {
