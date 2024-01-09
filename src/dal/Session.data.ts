@@ -550,7 +550,7 @@ export abstract class SessionDbManager {
   static setRedisData: CallableFunction = async (key: RedisKey, data: RedisValue): Promise<Cache.Config> => {
     try {
       const cacheData = new Cache.Config({ data })
-      await redis.set(key, JSON.stringify(cacheData))
+      await redis.set(key, JSON.stringify(cacheData.data))
       return cacheData
     } catch (error) {
       AdminLogManager.logError(error, {

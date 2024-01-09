@@ -250,15 +250,18 @@ export abstract class SessionManager {
   static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
     try {
       const action = new Analytics.Session.Action(config)
-      const rateLimited = await rateLimitAnalyticsAction(action)
-      if (rateLimited) {
-        return false
+      // const rateLimited = await rateLimitAnalyticsAction(action)
+      // if (rateLimited) {
+      //   return false
+      // }
+      if (action.name == 'Used Emote') {
+        return
       }
       var logResponse = await SessionDbManager.logAnalyticsAction(action)
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
-        // config: JSON.stringify(config),
+        config: JSON.stringify(config),
       })
       return
     }
