@@ -265,23 +265,23 @@ export abstract class SessionManager {
       return
     }
 
-    if (logResponse && !logResponse?.error && !logResponse.sceneActionKey) {
-      return logResponse
-    }
+    // if (logResponse && !logResponse?.error && !logResponse.sceneActionKey) {
+    //   return logResponse
+    // }
 
     // if an error exists and the sceneActionKey is returned, an error occurred that should rate limit the scene
-    try {
-      const analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || []
-      analyticsRestrictedScenes.push(logResponse.sceneActionKey)
-      await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
-    } catch (error) {
-      AdminLogManager.logError(
-        `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
-        {
-          from: 'Session.logic/logAnalyticsAction',
-        }
-      )
-    }
+    // try {
+    //   const analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || []
+    //   analyticsRestrictedScenes.push(logResponse.sceneActionKey)
+    //   await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
+    // } catch (error) {
+    //   AdminLogManager.logError(
+    //     `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
+    //     {
+    //       from: 'Session.logic/logAnalyticsAction',
+    //     }
+    //   )
+    // }
   }
 
   static storePreSession: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config) => {

@@ -436,19 +436,19 @@ export abstract class GiveawayDbManager {
   static getWalletClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account; giveawayId: string }) => {
     const params = {
       TableName: vlmClaimsTable,
-      IndexName: 'giveawayId-index',
+      IndexName: 'giveawayId-to-index',
       ExpressionAttributeNames: {
         '#pk': 'pk',
         '#giveawayId': 'giveawayId',
-        '#connectedWallet': 'to',
+        '#to': 'to',
       },
       ExpressionAttributeValues: {
         ':pk': Giveaway.Claim.pk,
         ':giveawayId': giveawayId,
-        ':connectedWallet': user.connectedWallet,
+        ':to': user.connectedWallet,
       },
-      KeyConditionExpression: '#pk = :pk and #giveawayId = :giveawayId',
-      FilterExpression: '#connectedWallet = :connectedWallet',
+      KeyConditionExpression: '#giveawayId = :giveawayId and #to = :to',
+      FilterExpression: '#pk = :pk',
     }
 
     try {
@@ -467,7 +467,7 @@ export abstract class GiveawayDbManager {
   static getIpClaimsForGiveaway: CallableFunction = async ({ user, giveawayId }: { user: User.Account; giveawayId: string }) => {
     const params = {
       TableName: vlmClaimsTable,
-      IndexName: 'giveawayId-index',
+      IndexName: 'giveawayId-clientIp-index',
       ExpressionAttributeNames: {
         '#pk': 'pk',
         '#clientIp': 'clientIp',
@@ -478,8 +478,8 @@ export abstract class GiveawayDbManager {
         ':clientIp': user.lastIp,
         ':giveawayId': giveawayId,
       },
-      KeyConditionExpression: '#pk = :pk and #clientIp = :clientIp',
-      FilterExpression: '#clientIp = :clientIp',
+      KeyConditionExpression: '#giveawayId = :giveawayId and #clientIp = :clientIp',
+      FilterConditionExpression: '#pk = :pk',
     }
 
     try {
