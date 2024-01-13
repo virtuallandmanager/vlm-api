@@ -71,9 +71,10 @@ export abstract class AdminLogManager {
       return
     }
   }
-  static logWAT = async (log: string | Object, metadata: any, userInfo?: User.Account) => {
+  static logWAT = async (log: string, metadata: any, userInfo?: User.Account) => {
     try {
       await AdminLogDbManager.addLogToDb(log, metadata, userInfo, Log.Type.WAT)
+      await this.logErrorToDiscord(log, true)
     } catch (error: any) {
       this.logError(error, { from: 'AdminLogManager.logWAT', metadata })
       console.log(error)
