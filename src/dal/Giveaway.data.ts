@@ -487,7 +487,7 @@ export abstract class GiveawayDbManager {
       return claimRecords
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Giveaway.data/getIpClaimsForEvent',
+        from: 'Giveaway.data/getIpClaimsForGiveaway',
         user,
         error,
       })
