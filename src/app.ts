@@ -43,7 +43,7 @@ const adminAuth = (username: string, password: string) => {
 
 const corsOptions: CorsOptions = {
   origin: [
-    /^https:\/\/([a-z0-9]+\.)?decentraland\.org\/?$/,
+    /^https:\/\/([a-z0-9]+\.)?decentraland\.org(\/play)?\/?$/,
     /^https:\/\/([a-z0-9]+\.)?vlm\.gg\/?$/,
     /^http:\/\/localhost:\d+\/?$/,
     /^https:\/\/localhost:\d+\/?$/,
@@ -78,14 +78,7 @@ app.use(
     unauthorizedResponse: (req: Request) => 'Access Denied',
   }),
   monitor({
-    columns: [
-      { metadata: 'name'},
-      { metadata: 'sceneId'},
-      { metadata: 'worlds'},
-      { metadata: 'locations'},
-      'clients',
-      'elapsedTime',
-    ],
+    columns: [{ metadata: 'name' }, { metadata: 'sceneId' }, { metadata: 'worlds' }, { metadata: 'locations' }, 'clients', 'elapsedTime'],
   })
 )
 app.use('/log', jsonParser, urlencodedParser, logController)
