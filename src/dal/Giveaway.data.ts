@@ -479,7 +479,7 @@ export abstract class GiveawayDbManager {
         ':giveawayId': giveawayId,
       },
       KeyConditionExpression: '#giveawayId = :giveawayId and #clientIp = :clientIp',
-      FilterConditionExpression: '#pk = :pk',
+      FilterExpression: '#pk = :pk'
     }
 
     try {
@@ -491,7 +491,7 @@ export abstract class GiveawayDbManager {
         user,
         error,
       })
-      return
+      return []
     }
   }
 
