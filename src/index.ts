@@ -3,6 +3,7 @@ import { Server } from '@colyseus/core'
 import { WebSocketTransport } from '@colyseus/ws-transport'
 import { VLMScene } from './ws/rooms/VLMScene'
 import * as dotenv from 'dotenv'
+import * as net from 'net'
 dotenv.config({ path: __dirname + '/.env' })
 import app from './app'
 
@@ -36,12 +37,18 @@ let gameServer: Server
 
 if (process.env.NODE_ENV !== 'production') {
   gameServer = new Server({
-    transport: new WebSocketTransport({ server }),
+    transport: new WebSocketTransport({
+      server,
+      maxPayload: 10 * 1024 * 1024, // 10 MB
+    }),
   })
 } else {
   const presenceServer = { host: process.env.PRESENCE_SERVER_HOST, port: Number(process.env.PRESENCE_SERVER_PORT) }
   gameServer = new Server({
-    transport: new WebSocketTransport({ server }),
+    transport: new WebSocketTransport({
+      server,
+      maxPayload: 10 * 1024 * 1024, // 10 MB
+    }),
     presence: new RedisPresence(presenceServer),
     driver: new RedisDriver(presenceServer),
     publicAddress: process.env.PUBLIC_IP,
