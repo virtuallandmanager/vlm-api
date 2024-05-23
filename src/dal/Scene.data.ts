@@ -1193,6 +1193,12 @@ export abstract class SceneDbManager {
 
   static updateAllSceneElements: CallableFunction = async (elements: Scene.Element[]) => {
     try {
+      if (!elements.length) {
+        AdminLogManager.logError("No Elements Found To Update", {
+          from: 'Scene.data/updateAllSceneElements',
+        })
+        return
+      }
       const updatedElements = elements.map((item) => {
         return {
           PutRequest: {
@@ -1202,13 +1208,18 @@ export abstract class SceneDbManager {
       })
 
       while (updatedElements.length) {
-        let batch = updatedElements.splice(0, 25)
-        let batchWriteParams = {
-          RequestItems: {
-            [vlmMainTable]: batch,
-          },
+        try {
+
+          let batch = updatedElements.splice(0, 25)
+          let batchWriteParams = {
+            RequestItems: {
+              [vlmMainTable]: batch,
+            },
+          }
+          await daxClient.batchWrite(batchWriteParams).promise()
+        } catch (error) {
+          throw new Error(error as string)
         }
-        await daxClient.batchWrite(batchWriteParams).promise()
       }
     } catch (error) {
       AdminLogManager.logError(error, {
