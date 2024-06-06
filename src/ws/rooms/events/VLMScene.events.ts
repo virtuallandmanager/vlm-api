@@ -124,6 +124,10 @@ export function bindEvents(room: VLMScene) {
     send_player_position: handleSendPlayerPosition,
 
     set_admin_access: handleAdminAccessSetting,
+    send_access_invite: handleSendAccessInvite,
+    accept_access_invite: handleAcceptAccessInvite,
+    reject_access_invite: handleRejectAccessInvite,
+    revoke_access: handleRevokeAccess,
   }
 
   Object.keys(eventHandlers).forEach((eventType) => {
@@ -146,8 +150,11 @@ export function bindEvents(room: VLMScene) {
   })
 }
 
+// README: EVENT HANDLERS
 // THE TRUE OR FALSE IN THESE EVENT HANDLERS DETERMINES WHETHER THE MESSAGE GETS BROADCAST TO THE REST OF THE ROOM
 // IF FALSE THEN IT IS ONLY ACTED UPON BY THE SERVER
+
+
 export async function handleSessionStart(client: Client, sessionConfig: Analytics.Session.Config, room: VLMScene) {
   try {
     const { sessionToken, sceneId } = sessionConfig
@@ -252,7 +259,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       }
 
       sceneSettings = await SceneSettingsManager.getSceneSettingsByIds(scene.settings)
-      sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting.type === Scene.SettingType.MODERATION) }
+      sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting?.type === Scene.SettingType.MODERATION) }
 
       client.send('scene_preset_update', { action: 'init', scenePreset, sceneSettings })
     })
@@ -948,6 +955,54 @@ export async function handleAdminAccessSetting(
       inWorldUser.send('set_admin_access', { sceneId, adminAccess })
     }
 
+    return false
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleSendAccessInvite(
+  client: Client,
+  message: { userId?: string; connectedWallet?: string; sceneId: string; adminAccess: boolean },
+  room: VLMScene
+) {
+  try {
+    return false
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleAcceptAccessInvite(
+  client: Client,
+  message: { userId?: string; connectedWallet?: string; sceneId: string; adminAccess: boolean },
+  room: VLMScene
+) {
+  try {
+    return false
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleRejectAccessInvite(
+  client: Client,
+  message: { userId?: string; connectedWallet?: string; sceneId: string; adminAccess: boolean },
+  room: VLMScene
+) {
+  try {
+    return false
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleRevokeAccess(
+  client: Client,
+  message: { userId?: string; connectedWallet?: string; sceneId: string; adminAccess: boolean },
+  room: VLMScene
+) {
+  try {
     return false
   } catch (error) {
     return false
