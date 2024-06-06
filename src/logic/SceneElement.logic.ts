@@ -187,12 +187,12 @@ export abstract class SceneElementManager {
 
   static updateAllSceneElements: CallableFunction = async (message: VLMSceneMessage) => {
     try {
-      let allElementsData = await SceneDbManager.updateAllSceneElements(message)
+      let allElementsData = await SceneDbManager.updateAllSceneElements(message.allElementsData)
       allElementsData = await SceneDbManager.getAllSceneElements(message.allElementsData)
       const scenePreset = await SceneDbManager.getPreset(message.scenePreset.sk)
       return { scenePreset, allElementsData }
     } catch (error: any) {
-      AdminLogManager.logError(error, { from: 'SceneElementManager.updateWidgets' })
+      AdminLogManager.logError(error, { from: 'SceneElementManager.updateAllSceneElements' })
       throw error
     }
   }
