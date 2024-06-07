@@ -238,7 +238,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       }
       console.log('239')
       client.send('session_started', { session: dbSession, user })
-
+      console.log('241')
       if (!scene?.scenePreset) {
         return
       }
@@ -264,6 +264,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting?.type === Scene.SettingType.MODERATION) }
 
       client.send('scene_preset_update', { action: 'init', scenePreset, sceneSettings })
+      console.log('267')
     })
     return false
   } catch (error) {
