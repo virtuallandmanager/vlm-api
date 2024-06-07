@@ -145,7 +145,7 @@ export function bindEvents(room: VLMScene) {
         }
       } else {
         // Handle unrecognized message types
-      }
+      }console.log('148')
     })
   })
 }
