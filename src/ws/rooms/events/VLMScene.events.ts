@@ -187,6 +187,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       }
       room.setMetadata(newMetadata)
       console.log(room.metadata, newMetadata)
+      console.log(sessionConfig)
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal =
