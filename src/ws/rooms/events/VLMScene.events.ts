@@ -187,7 +187,8 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       }
       room.setMetadata(newMetadata)
       console.log(room.metadata, newMetadata)
-      console.log(sessionConfig)
+      console.log(scene)
+      console.log('191')
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal =
@@ -199,13 +200,13 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
             location?.parcels?.length == userLocation?.parcels?.length)
         return equal
       })
-
+      console.log('203')
       const isExistingLocation = existingSceneLocations?.length
-
+      console.log('205')
       const locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) =>
         deepEqual(location.integrationData, userLocation.integrationData)
       )
-
+      console.log('209')
       const locationWithUpdatedParcels = existingSceneLocations.findIndex((location: Metaverse.Location) => {
         const sameBaseParcel = location.coordinates.join(',') === userLocation.coordinates.join(','),
           sameNumberOfParcels = location?.parcels?.length !== userLocation?.parcels?.length,
@@ -213,9 +214,9 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
 
         return sameBaseParcel && !sameNumberOfParcels && overlapsExistingLocation
       })
-
+      console.log('217')
       const hasOutdatedLocation = locationWithUpdatedVersion > -1 || locationWithUpdatedParcels > -1
-
+      console.log('219')
       if (sceneExists && !isExistingLocation) {
         // add new location
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...scene.locations, userLocation] })
@@ -235,7 +236,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       } else if (!sceneExists || !isExistingLocation) {
         AdminLogManager.logError('Unexpected location/version condition', { scene, userLocation })
       }
-
+      console.log('239')
       client.send('session_started', { session: dbSession, user })
 
       if (!scene?.scenePreset) {
