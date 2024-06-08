@@ -116,6 +116,7 @@ export class VLMScene extends Room<VLMSceneState> {
           auth.session = session
           auth.user = user
           if (!auth.session || !auth.user) {
+            AdminLogManager.logErrorToDiscord('Analytics user not found - client kicked' + JSON.stringify(client))
             client.leave()
             return
           }
@@ -127,6 +128,7 @@ export class VLMScene extends Room<VLMSceneState> {
           auth.session = session
           auth.user = user
           if (!auth.session || !auth.user) {
+            AdminLogManager.logErrorToDiscord('Host user not found - client kicked' + JSON.stringify(client))
             client.leave()
             return
           }
@@ -143,7 +145,7 @@ export class VLMScene extends Room<VLMSceneState> {
 
       return auth
     } catch (error) {
-      AdminLogManager.logError(error, { from: 'VLMScene.onAuth' })
+      AdminLogManager.logError({ error, client }, { from: 'VLMScene.onAuth' })
     }
   }
 
@@ -166,6 +168,7 @@ export class VLMScene extends Room<VLMSceneState> {
       await handleHostJoined(client, { session, user }, this)
       return user
     } else {
+      AdminLogManager.logErrorToDiscord('Host user not found - client kicked' + JSON.stringify(client))
       client.leave()
     }
   }

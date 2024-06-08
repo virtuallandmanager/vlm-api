@@ -145,7 +145,8 @@ export function bindEvents(room: VLMScene) {
         }
       } else {
         // Handle unrecognized message types
-      }console.log('148')
+      }
+      console.log('148')
     })
   })
 }
@@ -153,7 +154,6 @@ export function bindEvents(room: VLMScene) {
 // README: EVENT HANDLERS
 // THE TRUE OR FALSE IN THESE EVENT HANDLERS DETERMINES WHETHER THE MESSAGE GETS BROADCAST TO THE REST OF THE ROOM
 // IF FALSE THEN IT IS ONLY ACTED UPON BY THE SERVER
-
 
 export async function handleSessionStart(client: Client, sessionConfig: Analytics.Session.Config, room: VLMScene) {
   try {
@@ -381,10 +381,11 @@ export async function handleAnalyticsUserJoined(client: Client, message: any, ro
 export function handleSendActiveUsers(client: Client, message: any, room: VLMScene) {
   // Logic for send_active_users message
   try {
+    console.log('Sending active users')
     const { user, session } = message
 
     let activeUsers = room.clients.map((c) => {
-      if (c.auth) {
+      if (c.auth && c.auth.user && c.auth.session) {
         const { displayName } = c.auth.user,
           { connectedWallet } = c.auth.session,
           host = c.auth.session.host || c.auth.session.pk === User.Session.Config.pk
