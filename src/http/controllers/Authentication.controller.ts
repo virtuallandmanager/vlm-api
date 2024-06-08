@@ -214,7 +214,7 @@ router.post(
       const existingSession = await SessionManager.getAnalyticsSessionForUserId(dbUser.sk)
 
       const session =
-        existingSession ||
+        existingSession && existingSession.sceneId == sceneId ? existingSession : // if the user is already in the scene, keep the session
         new Analytics.Session.Config({
           userId: dbUser.sk,
           connectedWallet: dbUser.connectedWallet.toLowerCase(),
