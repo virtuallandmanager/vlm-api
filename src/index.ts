@@ -3,7 +3,6 @@ import { Server } from '@colyseus/core'
 import { WebSocketTransport } from '@colyseus/ws-transport'
 import { VLMScene } from './ws/rooms/VLMScene'
 import * as dotenv from 'dotenv'
-import * as net from 'net'
 dotenv.config({ path: __dirname + '/.env' })
 import app from './app'
 
@@ -23,6 +22,7 @@ const server = app.listen(app.get('port'), () => {
   console.log(`/////////////////////////////////////////////////////////////////////////`)
   console.log('///////////////////////////// - HTTPS API - ////////////////////////////')
   console.log(`////////////////////////// Running on port ${port} ///////////////////////`)
+  console.log(`////////////////////////// Public IP: ${process.env.PUBLIC_IP} ///////////////////////`)
   console.log(`//////////////////////////////////////////////////////////////////////`)
 
   if (process.env.NODE_ENV !== 'development') {
