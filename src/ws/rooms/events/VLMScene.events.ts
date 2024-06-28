@@ -80,6 +80,10 @@ export class VLMSceneMessage {
 }
 
 export function bindEvents(room: VLMScene) {
+  room.onMessage('*', async (client: Client, message: any) => {
+    console.log(`Message: ${message} - Client: ${client}`)
+  })
+
   type EventHandler = (client: Client, message: any, room: VLMScene) => Promise<boolean> | boolean
 
   const eventHandlers: Record<string, EventHandler> = {
@@ -131,23 +135,34 @@ export function bindEvents(room: VLMScene) {
   }
 
   Object.keys(eventHandlers).forEach((eventType) => {
-    room.onMessage(eventType, async (client: Client, message: any) => {
-      if (eventHandlers.hasOwnProperty(eventType)) {
-        const handler = eventHandlers[eventType]
-        const broadcast = await handler(client, message, room)
-        const { sceneId } = client.auth.session
-        if (broadcast && sceneId) {
-          room.clients.forEach((roomClient) => {
-            if (roomClient.auth.session.sceneId === sceneId) {
-              roomClient.send(eventType, message)
+    try {
+      room.onMessage(eventType, async (client: Client, message: any) => {
+        try {
+          console.log('MESSAGE!', eventType, message)
+          if (eventType == 'path_start') {
+            return
+          }
+          if (eventHandlers.hasOwnProperty(eventType)) {
+            const handler = eventHandlers[eventType]
+            const broadcast = await handler(client, message, room)
+            const { sceneId } = client.auth.session
+            if (broadcast && sceneId) {
+              room.clients.forEach((roomClient) => {
+                if (roomClient.auth.session.sceneId === sceneId) {
+                  roomClient.send(eventType, message)
+                }
+              })
             }
-          })
+          } else {
+            // Handle unrecognized message types
+          }
+        } catch (error) {
+          console.log('Error handling message', error)
         }
-      } else {
-        // Handle unrecognized message types
-      }
-      console.log('148')
-    })
+      })
+    } catch (error) {
+      console.log('Error binding events', error)
+    }
   })
 }
 
@@ -264,7 +279,6 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       sceneSettings = { moderation: sceneSettings.find((setting: Scene.Setting) => setting?.type === Scene.SettingType.MODERATION) }
 
       client.send('scene_preset_update', { action: 'init', scenePreset, sceneSettings })
-      console.log('267')
     })
     return false
   } catch (error) {
@@ -451,7 +465,7 @@ export async function handleGetUserState(client: Client, message: any, room: VLM
     }
     console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-      const userState = await SceneManager.getUserStateByScene(sceneId, message.key)
+      const userState = await SceneManager.getUserStateByScene(sceneId, message.id)
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('get_user_state_response', userState)
       })
@@ -472,7 +486,7 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
     }
     console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-      const userState = await SceneManager.setUserStateByScene(sceneId, message.key, message.value)
+      const userState = await SceneManager.setUserStateByScene(sceneId, message.id, message.value)
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('set_user_state_response', userState)
       })

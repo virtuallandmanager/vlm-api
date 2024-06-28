@@ -90,22 +90,23 @@ export abstract class SessionDbManager {
   }
 
   static get: CallableFunction = async (
-    session: Analytics.Session.Config | User.Session.Config
+    session: Analytics.Session.Config | User.Session.Config = new Analytics.Session.Config()
   ): Promise<Analytics.Session.Config | User.Session.Config | void> => {
-    const { pk, sk } = session
-    if (!pk || !sk) {
-      console.log('PROBLEM:')
-      console.log(session)
-    }
-    const table = session.pk === Analytics.Session.Config.pk ? vlmAnalyticsTable : vlmSessionsTable
-    const params = {
-      TableName: table,
-      Key: {
-        pk,
-        sk,
-      },
-    }
     try {
+      const { pk, sk } = session
+      if (!pk || !sk) {
+        console.log('PROBLEM:')
+        console.log(session)
+      }
+      const table = session.pk === Analytics.Session.Config.pk ? vlmAnalyticsTable : vlmSessionsTable
+      const params = {
+        TableName: table,
+        Key: {
+          pk,
+          sk,
+        },
+      }
+
       const sessionRecord = await daxClient.get(params).promise()
       return sessionRecord.Item as Analytics.Session.Config | User.Session.Config
     } catch (error) {

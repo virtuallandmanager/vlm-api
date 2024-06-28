@@ -4,11 +4,11 @@ import { SessionManager } from "../../logic/Session.logic";
 
 const router = express.Router();
 
-router.get("/end", async (req: Request, res: Response) => {
+router.post("/end", async (req: Request, res: Response) => {
   try {
     const { sessionData, pathId, pathSegments } = req.body;
     const session = await SessionManager.getAnalyticsSession(sessionData);
-    if (!session) {
+    if (!session || !pathId || !pathSegments) {
       return res.status(400).json({
         text: "Invalid request.",
       });

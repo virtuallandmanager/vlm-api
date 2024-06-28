@@ -34,20 +34,22 @@ const server = app.listen(app.get('port'), () => {
 })
 
 let gameServer: Server
+const presenceServer = { host: process.env.PRESENCE_SERVER_HOST, port: Number(process.env.PRESENCE_SERVER_PORT) }
 
 if (process.env.NODE_ENV !== 'production') {
   gameServer = new Server({
     transport: new WebSocketTransport({
       server,
-      maxPayload: 10 * 1024 * 1024, // 10 MB
+      maxPayload: 100 * 1024 * 1024, // 10 MB
     }),
+    presence: new RedisPresence(presenceServer),
+    driver: new RedisDriver(presenceServer),
   })
 } else {
-  const presenceServer = { host: process.env.PRESENCE_SERVER_HOST, port: Number(process.env.PRESENCE_SERVER_PORT) }
   gameServer = new Server({
     transport: new WebSocketTransport({
       server,
-      maxPayload: 10 * 1024 * 1024, // 10 MB
+      maxPayload: 100 * 1024 * 1024, // 100 MB
     }),
     presence: new RedisPresence(presenceServer),
     driver: new RedisDriver(presenceServer),

@@ -16,11 +16,15 @@ import { Scene } from '../../models/Scene.model'
 
 export class VLMScene extends Room<VLMSceneState> {
   async onCreate(options: any) {
-    bindEvents(this)
-    const scene: Scene.Config = await SceneManager.getSceneById(options.sceneId)
-    this.setMetadata({ sceneId: scene.sk, name: scene.name, locations: [], worlds: [] })
-    this.setState(new VLMSceneState(scene))
-    this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000)
+    try {
+      bindEvents(this)
+      const scene: Scene.Config = await SceneManager.getSceneById(options.sceneId)
+      this.setMetadata({ sceneId: scene.sk, name: scene.name, locations: [], worlds: [] })
+      this.setState(new VLMSceneState(scene))
+      this.setSimulationInterval((deltaTime) => this.checkStateOfStreams(), 1000)
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'VLMScene.onCreate' })
+    }
   }
 
   removeDuplicates(arr: ArraySchema<SceneStream>) {
@@ -151,6 +155,7 @@ export class VLMScene extends Room<VLMSceneState> {
 
   async onJoin(client: Client, sessionConfig: Session.Config, auth: { session: Session.Config; user: User.Account | User.Account; sceneId: string }) {
     handleSendActiveUsers(client, { user: auth?.user, session: auth?.session }, this)
+    console.log(auth?.user?.displayName || 'Unknown User', 'joined!')
   }
 
   async connectAnalyticsUser(client: Client, sessionConfig: Partial<Analytics.Session.Config>, userConfig: Partial<User.Account>) {

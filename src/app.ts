@@ -31,8 +31,8 @@ app.use((req, res, next) => {
   next()
 })
 
-const jsonParser = bodyParser.json({ limit: '5mb' })
-const urlencodedParser = bodyParser.urlencoded({ limit: '5mb', extended: true })
+const jsonParser = bodyParser.json({ limit: '50mb' })
+const urlencodedParser = bodyParser.urlencoded({ limit: '50mb', extended: true })
 
 const adminAuth = (username: string, password: string) => {
   const userMatches = basicAuth.safeCompare(username, process.env.ADMIN_USERNAME)

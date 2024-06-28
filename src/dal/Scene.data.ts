@@ -111,9 +111,35 @@ export abstract class SceneDbManager {
     }
 
     try {
-      await daxClient.update(params).promise()
+      await daxClient.put({ TableName: params.TableName, Item: state }).promise()
+
       const fullState = await SceneDbManager.getSceneUserState(state.sk)
       return fullState && fullState[key]
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/put',
+        state,
+      })
+      return
+    }
+  }
+
+  static createSceneUserState: CallableFunction = async (state: Scene.UserState) => {
+    const newState = { ...state }
+    const params = {
+      TableName: vlmMainTable,
+      Item: {
+        ...newState,
+        pk: Scene.UserState.pk,
+        sk: state.sk,
+      },
+    }
+
+    try {
+      await daxClient.put(params).promise()
+
+      const fullState = await SceneDbManager.getSceneUserState(state.sk)
+      return fullState
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Scene.data/put',
@@ -1194,7 +1220,7 @@ export abstract class SceneDbManager {
   static updateAllSceneElements: CallableFunction = async (elements: Scene.Element[]) => {
     try {
       if (!elements.length) {
-        AdminLogManager.logError("No Elements Found To Update", {
+        AdminLogManager.logError('No Elements Found To Update', {
           from: 'Scene.data/updateAllSceneElements',
         })
         return
@@ -1209,7 +1235,6 @@ export abstract class SceneDbManager {
 
       while (updatedElements.length) {
         try {
-
           let batch = updatedElements.splice(0, 25)
           let batchWriteParams = {
             RequestItems: {

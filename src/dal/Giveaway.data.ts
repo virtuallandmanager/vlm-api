@@ -453,14 +453,18 @@ export abstract class GiveawayDbManager {
 
     try {
       const claimRecords = await largeQuery(params)
-      return claimRecords.filter((claim: Giveaway.Claim) => claim.to === user.connectedWallet)
+      if (claimRecords?.length > 0) {
+        return claimRecords.filter((claim: Giveaway.Claim) => claim.to === user.connectedWallet)
+      } else {
+        return []
+      }
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Giveaway.data/getUserClaimsForEvent',
         user,
         error,
       })
-      return
+      return []
     }
   }
 
@@ -479,7 +483,7 @@ export abstract class GiveawayDbManager {
         ':giveawayId': giveawayId,
       },
       KeyConditionExpression: '#giveawayId = :giveawayId and #clientIp = :clientIp',
-      FilterExpression: '#pk = :pk'
+      FilterExpression: '#pk = :pk',
     }
 
     try {

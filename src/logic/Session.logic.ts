@@ -651,12 +651,18 @@ export abstract class SessionManager {
   }
 
   static createSessionPath: CallableFunction = async (sessionConfig: Analytics.Session.Config, sessionPathConfig?: Analytics.Path) => {
-    const session = new Analytics.Session.Config(sessionConfig),
-      sessionPath = new Analytics.Path(sessionPathConfig),
-      pathSegment = new Analytics.PathSegment({ pathId: sessionPath.sk, type: Analytics.SegmentType.LOADING })
+    try {
+      const session = new Analytics.Session.Config(sessionConfig),
+        sessionPath = new Analytics.Path(sessionPathConfig),
+        pathSegment = new Analytics.PathSegment({ pathId: sessionPath.sk, type: Analytics.SegmentType.LOADING })
 
-    await SessionDbManager.createPath(session, sessionPath, pathSegment)
-    return sessionPath
+      await SessionDbManager.createPath(session, sessionPath, pathSegment)
+      return sessionPath
+    } catch (error) {
+      AdminLogManager.logError('Failed to create session path', sessionConfig)
+      console.log(error)
+      return
+    }
   }
 
   static extendPath: CallableFunction = async (pathId: string, pathSegments: Analytics.PathSegment[]) => {
