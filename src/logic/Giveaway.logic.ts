@@ -195,12 +195,15 @@ export abstract class GiveawayManager {
       if (existingClaim && existingClaim === Giveaway.ClaimResponseType.CLAIM_DENIED) {
         AdminLogManager.logGiveawayInfo('DENIED - CLAIM COMPLETE', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.CLAIM_COMPLETE }
-      } else if (existingClaim && existingClaim === Giveaway.ClaimStatus.PENDING) {
+      } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM) {
         AdminLogManager.logGiveawayInfo('DENIED - EXISTING CLAIM', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM }
       } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.OVER_IP_LIMIT) {
         AdminLogManager.logGiveawayInfo('DENIED - OVER IP LIMIT', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_IP_LIMIT }
+      } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM) {
+        AdminLogManager.logGiveawayInfo('DENIED - EXISTING WALLET CLAIM', { sceneId, giveawayId })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM }
       }
 
       // find events for sceneId
