@@ -42,7 +42,7 @@ export abstract class GiveawayManager {
     return await GiveawayDbManager.get(giveaway)
   }
 
-  static getById: CallableFunction = async (sk: string) => {
+  static getById: CallableFunction = async (sk: string): Promise<Giveaway.Config> => {
     return await GiveawayDbManager.getById(sk)
   }
 
@@ -185,32 +185,106 @@ export abstract class GiveawayManager {
     giveawayId: string
   }) => {
     try {
-      //check for existing claim
+      ///// GIVEAWAY VERIFICATION /////
+      //get giveaway data
       const giveaway = await GiveawayManager.getById(giveawayId)
+
       if (!giveaway) {
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.SUSPICIOUS }
       }
-      const existingClaim = await GiveawayManager.checkForExistingClaim({ session, user, sceneId, giveaway })
+      ///// END GIVEAWAY VERIFICATION /////
 
-      if (existingClaim && existingClaim === Giveaway.ClaimResponseType.CLAIM_DENIED) {
-        AdminLogManager.logGiveawayInfo('DENIED - CLAIM COMPLETE', { sceneId, giveawayId })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.CLAIM_COMPLETE }
-      } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM) {
-        AdminLogManager.logGiveawayInfo('DENIED - EXISTING CLAIM', { sceneId, giveawayId })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM }
-      } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.OVER_IP_LIMIT) {
-        AdminLogManager.logGiveawayInfo('DENIED - OVER IP LIMIT', { sceneId, giveawayId })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_IP_LIMIT }
-      } else if (existingClaim && existingClaim === Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM) {
-        AdminLogManager.logGiveawayInfo('DENIED - EXISTING WALLET CLAIM', { sceneId, giveawayId })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.EXISTING_WALLET_CLAIM }
+      ///// GENERAL DENIALS /////
+      // check if giveaway is paused or over the total limit
+      if (giveaway.paused) {
+        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY PAUSED', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+          giveaway,
+        })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.PAUSED }
       }
 
+      if (giveaway?.claimLimits?.total && giveaway.claimCount > giveaway.claimLimits.total) {
+        AdminLogManager.logGiveawayInfo('DENIED - OVER CLAIM LIMITS', { sceneId, giveawayId })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_LIMIT }
+      }
+      ///// END GENERAL DENIALS /////
+
+      ////// USER & IP LIMITATIONS ///////
+      // get existing claims
+      const userClaims = await GiveawayDbManager.getUserClaimsForGiveaway({ user, sceneId, giveawayId })
+      const ipClaims = await GiveawayDbManager.getIpClaimsForGiveaway({ user, sceneId, giveawayId })
+
+      if (giveaway?.claimLimits?.perUser && userClaims.length >= giveaway.claimLimits.perUser) {
+        AdminLogManager.logGiveawayInfo(`DENIED - OVER USER'S CLAIM LIMIT`, { sceneId, giveawayId, giveaway, userClaims })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.CLAIM_COMPLETE }
+      } else if (ipClaims.length >= giveaway.claimLimits?.perIp) {
+        AdminLogManager.logGiveawayInfo('DENIED - OVER IP LIMIT', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+        })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_IP_LIMIT }
+      }
+      /////// END USER & IP VERIFICATION ///////
+
+      ////// PERDIODIC CLAIM LIMITATIONS ///////
+      // check if claim is allowed per the claim limits
+      let limitType, claimsForPastDay, claimsForPastWeek, claimsForPastMonth, claimsForPastYear
+
+      if (giveaway?.claimLimits?.daily) {
+        claimsForPastDay = await GiveawayManager.getClaimsForPastDay(sceneId, giveawayId)
+        limitType = claimsForPastDay >= giveaway.claimLimits.daily ? 'DAILY' : null
+      }
+
+      if (!limitType && giveaway?.claimLimits?.weekly) {
+        claimsForPastWeek = await GiveawayManager.getClaimsForPastWeek(sceneId, giveawayId)
+        limitType = claimsForPastWeek >= giveaway.claimLimits.weekly ? 'WEEKLY' : null
+      }
+
+      if (!limitType && giveaway?.claimLimits?.monthly) {
+        claimsForPastMonth = await GiveawayManager.getClaimsForPastMonth(sceneId, giveawayId)
+        limitType = claimsForPastMonth >= giveaway.claimLimits.monthly ? 'MONTHLY' : null
+      }
+
+      if (!limitType && giveaway?.claimLimits?.yearly) {
+        claimsForPastYear = await GiveawayManager.getClaimsForPastYear(sceneId, giveawayId)
+        limitType = claimsForPastYear >= giveaway.claimLimits.yearly ? 'YEARLY' : null
+      }
+
+      if (limitType === 'DAILY') {
+        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER DAILY CLAIM LIMITS', { sceneId, giveawayId })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_DAILY_LIMIT }
+      } else if (limitType === 'WEEKLY') {
+        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER WEEKLY CLAIM LIMITS', { sceneId, giveawayId })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_WEEKLY_LIMIT }
+      } else if (limitType === 'MONTHLY') {
+        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER MONTHLY CLAIM LIMITS', { sceneId, giveawayId })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_MONTHLY_LIMIT }
+      } else if (limitType === 'YEARLY') {
+        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER YEARLY CLAIM LIMITS', { sceneId, giveawayId })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_YEARLY_LIMIT }
+      }
+      /////// END CLAIM LIMITING ///////
+
+      /////// EVENT VERFICIATION ///////
       // find events for sceneId
       const events = await EventDbManager.getLinkedEventsBySceneId(sceneId)
 
       if (events.length === 0) {
-        AdminLogManager.logGiveawayInfo('DENIED - NO LINKED EVENTS', { sceneId, giveawayId })
+        AdminLogManager.logGiveawayInfo('DENIED - NO LINKED EVENTS', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+        })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS }
       }
 
@@ -228,43 +302,29 @@ export abstract class GiveawayManager {
 
       // check if giveaway is in linked giveaways
       const linkedGiveawaysFlat = linkedGiveaways.flat()
-      const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((giveaway: Event.GiveawayLink) => giveaway.giveawayId === giveawayId)
+      const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((link: Event.GiveawayLink) => link.giveawayId === giveawayId)
 
       if (linkedGiveawaysFiltered.length === 0) {
-        AdminLogManager.logGiveawayInfo('DENIED - NO LINKED GIVEAWAYS', { sceneId, giveawayId })
+        AdminLogManager.logGiveawayInfo('DENIED - NO LINKED GIVEAWAYS', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+        })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.NO_LINKED_EVENTS }
       }
 
-      // check if giveaway is paused
-      if (giveaway.paused) {
-        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY PAUSED', { giveaway, sceneId })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.PAUSED }
-      }
-
       const now = DateTime.now().toMillis()
-      const event = events.find((e: Event.Config) => e.sk === giveaway?.eventId )
+      const ongoingEvents = events.filter((e: Event.Config) => e?.eventStart < now && e?.eventEnd > now)
+      const event = ongoingEvents.length === 1 ? ongoingEvents[0] : null // see if there's only one ongoing event
 
-      // check if event has not yet started
-      if (event?.eventStart && event.eventStart > now) {
-        AdminLogManager.logGiveawayInfo('DENIED - BEFORE EVENT START', {
-          event,
-          giveaway,
-          eventStart: DateTime.fromMillis(event.eventEnd).toISO(),
-          time: DateTime.now().toISO(),
-        })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START }
+      if (!event) {
+        return this.noOngoingEventDenialError({ events, user, giveaway, sceneId, session, giveawayId })
       }
-      // check if event is over
-      if (event?.eventEnd && event.eventEnd < now) {
-        AdminLogManager.logGiveawayInfo('DENIED - AFTER EVENT END', {
-          event,
-          giveaway,
-          eventEnd: DateTime.fromMillis(event.eventEnd).toISO(),
-          time: DateTime.now().toISO(),
-        })
-        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.AFTER_EVENT_END }
-      }
+      /////// END EVENT VERFICIATION ///////
 
+      /////// CLAIM ACCEPTANCE ///////
       const analyticsAction = new Analytics.Session.Action({
         name: 'Giveaway Claimed',
         sessionId: session.sk,
@@ -295,7 +355,7 @@ export abstract class GiveawayManager {
 
       await this.addClaim(analyticsAction, claim, transaction)
 
-      AdminLogManager.logGiveawayInfo('ACCEPTED!', {
+      AdminLogManager.logGiveawayInfo(`CLAIM ACCEPTED! - ${user.displayName}`, {
         eventName: event.displayName,
         eventId: event.sk,
         userName: user.displayName,
@@ -309,9 +369,109 @@ export abstract class GiveawayManager {
       })
 
       return { responseType: Giveaway.ClaimResponseType.CLAIM_ACCEPTED }
+      /////// END CLAIM ACCEPTANCE //////
     } catch (error) {
       AdminLogManager.logError('CLAIM ERROR', { error })
       return { responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR, reason: error }
+    }
+  }
+
+  static getClaimsForPastDay: CallableFunction = async (sceneId: string, giveawayId: string) => {
+    return await GiveawayDbManager.getClaimCountForScene(sceneId, giveawayId, DateTime.now().minus({ days: 1 }).toMillis(), DateTime.now().toMillis())
+  }
+
+  static getClaimsForPastWeek: CallableFunction = async (sceneId: string, giveawayId: string) => {
+    return await GiveawayDbManager.getClaimCountForScene(
+      sceneId,
+      giveawayId,
+      DateTime.now().minus({ weeks: 1 }).toMillis(),
+      DateTime.now().toMillis()
+    )
+  }
+
+  static getClaimsForPastMonth: CallableFunction = async (sceneId: string, giveawayId: string) => {
+    return await GiveawayDbManager.getClaimCountForScene(
+      sceneId,
+      giveawayId,
+      DateTime.now().minus({ months: 1 }).toMillis(),
+      DateTime.now().toMillis()
+    )
+  }
+
+  static getClaimsForPastYear: CallableFunction = async (sceneId: string, giveawayId: string) => {
+    return await GiveawayDbManager.getClaimCountForScene(
+      sceneId,
+      giveawayId,
+      DateTime.now().minus({ years: 1 }).toMillis(),
+      DateTime.now().toMillis()
+    )
+  }
+
+  static noOngoingEventDenialError: CallableFunction = ({
+    events,
+    sceneId,
+    user,
+    session,
+    giveaway,
+    giveawayId,
+  }: {
+    events: Event.Config[]
+    sceneId: string
+    user: User.Account
+    session: Analytics.Session.Config
+    giveaway: Giveaway.Config
+    giveawayId: string
+  }) => {
+    const now = DateTime.now().toMillis()
+    const pastEvents = events.filter((e: Event.Config) => e?.eventEnd > now)
+    const futureEvents = events.filter((e: Event.Config) => e?.eventStart > now)
+    const onlyPastEvents = pastEvents.length > 0 && futureEvents.length == 0
+    const onlyFutureEvents = futureEvents.length > 0 && pastEvents.length == 0
+    const noValidEvents = futureEvents.length > 0 && pastEvents.length > 0
+
+    // check if event has not yet started
+    if (onlyFutureEvents) {
+      AdminLogManager.logGiveawayInfo('DENIED - BEFORE EVENT START', {
+        userName: user.displayName,
+        userId: user.sk,
+        sceneId,
+        to: session.connectedWallet.toLowerCase(),
+        giveawayId,
+        event,
+        giveaway,
+        eventStart: DateTime.fromMillis(futureEvents[0].eventStart).toISO(),
+        time: DateTime.now().toISO(),
+      })
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START }
+    }
+    // check if event is over
+    if (onlyPastEvents) {
+      AdminLogManager.logGiveawayInfo('DENIED - AFTER EVENT END', {
+        userName: user.displayName,
+        userId: user.sk,
+        sceneId,
+        to: session.connectedWallet.toLowerCase(),
+        giveawayId,
+        giveaway,
+        eventEnd: DateTime.fromMillis(pastEvents[0].eventEnd).toISO(),
+        time: DateTime.now().toISO(),
+      })
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.AFTER_EVENT_END }
+    }
+
+    if (noValidEvents) {
+      AdminLogManager.logGiveawayInfo('DENIED - BETWEEN VALID EVENTS', {
+        userName: user.displayName,
+        userId: user.sk,
+        sceneId,
+        to: session.connectedWallet.toLowerCase(),
+        giveawayId,
+        giveaway,
+        futureEventStart: DateTime.fromMillis(futureEvents[0].eventEnd).toISO(),
+        pastEventEnd: DateTime.fromMillis(pastEvents[0].eventEnd).toISO(),
+        time: DateTime.now().toISO(),
+      })
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BETWEEN_VALID_EVENTS }
     }
   }
 }

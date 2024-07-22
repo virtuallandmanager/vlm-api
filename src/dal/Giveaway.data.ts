@@ -36,7 +36,7 @@ export abstract class GiveawayDbManager {
     }
   }
 
-  static getById: CallableFunction = async (sk: string) => {
+  static getById: CallableFunction = async (sk: string): Promise<Giveaway.Config> => {
     if (!sk) {
       return
     }
@@ -517,6 +517,50 @@ export abstract class GiveawayDbManager {
         claim,
       })
       return
+    }
+  }
+
+  static getClaimCountForScene: CallableFunction = async ({
+    sceneId,
+    giveawayId,
+    start,
+    end,
+  }: {
+    sceneId: string
+    giveawayId: string
+    start: number
+    end: number
+  }) => {
+    const params = {
+      TableName: vlmClaimsTable,
+      IndexName: 'giveawayId-sceneId-index',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#sceneId': 'clientIp',
+        '#giveawayId': 'giveawayId',
+        '#ts': 'ts',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Giveaway.Claim.pk,
+        ':sceneId': sceneId,
+        ':giveawayId': giveawayId,
+        ':start': start || 0,
+        ':end': end || DateTime.now().toMillis(),
+      },
+      KeyConditionExpression: '#giveawayId = :giveawayId and #sceneId = :sceneId',
+      FilterExpression: '#pk = :pk AND #ts BETWEEN :start AND :end',
+      Select: 'COUNT',
+    }
+
+    try {
+      const claimRecords = await largeQuery(params)
+      return claimRecords
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getClaimsForScene',
+        error,
+      })
+      return []
     }
   }
 }

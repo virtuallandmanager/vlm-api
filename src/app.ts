@@ -17,6 +17,7 @@ import giveawayController from './http/controllers/Giveaway.controller'
 import balanceController from './http/controllers/Balance.controller'
 import promotionController from './http/controllers/Promotion.controller'
 import analyticsController from './http/controllers/Analytics.controller'
+import collectionController from './http/controllers/Collection.controller'
 
 // Create Express server
 const app = express()
@@ -61,15 +62,16 @@ app.use(cors(corsOptions))
 app.use('/_health', healthCheck)
 app.use('/auth', jsonParser, urlencodedParser, authController)
 app.use('/admin', jsonParser, urlencodedParser, adminController)
+app.use('/analytics', jsonParser, urlencodedParser, analyticsController)
+app.use('/balance', jsonParser, urlencodedParser, balanceController)
+app.use('/collection', jsonParser, urlencodedParser, collectionController)
+app.use('/event', jsonParser, urlencodedParser, eventController)
+app.use('/giveaway', jsonParser, urlencodedParser, giveawayController)
+app.use('/media', mediaController) // No body-parser middleware applied to this route
+app.use('/promotion', jsonParser, urlencodedParser, promotionController)
 app.use('/scene', jsonParser, urlencodedParser, sceneController)
 app.use('/session', jsonParser, urlencodedParser, sessionController)
 app.use('/user', jsonParser, urlencodedParser, userController)
-app.use('/event', jsonParser, urlencodedParser, eventController)
-app.use('/giveaway', jsonParser, urlencodedParser, giveawayController)
-app.use('/promotion', jsonParser, urlencodedParser, promotionController)
-app.use('/balance', jsonParser, urlencodedParser, balanceController)
-app.use('/analytics', jsonParser, urlencodedParser, analyticsController)
-app.use('/media', mediaController) // No body-parser middleware applied to this route
 app.use(
   '/_status',
   basicAuth({

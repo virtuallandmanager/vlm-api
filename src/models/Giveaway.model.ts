@@ -143,6 +143,7 @@ export namespace Giveaway {
     PAUSED = 'paused',
     BEFORE_EVENT_START = 'before_event_start',
     AFTER_EVENT_END = 'after_event_end',
+    BETWEEN_VALID_EVENTS = 'between_valid_events',
     EXISTING_WALLET_CLAIM = 'existing_wallet_claim',
     CLAIM_COMPLETE = 'claim_complete',
     SUPPLY_DEPLETED = 'supply_depleted',
