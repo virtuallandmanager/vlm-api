@@ -201,9 +201,6 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         newMetadata.worldCount = newMetadata.worlds.length
       }
       room.setMetadata(newMetadata)
-      console.log(room.metadata, newMetadata)
-      console.log(scene)
-      console.log('191')
 
       const existingSceneLocations = scene.locations.filter((location: Metaverse.Location) => {
         const equal =
@@ -215,13 +212,15 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
             location?.parcels?.length == userLocation?.parcels?.length)
         return equal
       })
-      console.log('203')
+
       const isExistingLocation = existingSceneLocations?.length
-      console.log('205')
+      const hasDevelopmentLocations = scene.locations.some((location: Metaverse.Location) => location.realm.serverName === 'LocalPreview')
+      const isDevelopmentLocation = userLocation.realm.serverName === 'LocalPreview' || userLocation.realm.displayName === 'LocalPreview'
+
       const locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) =>
         deepEqual(location.integrationData, userLocation.integrationData)
       )
-      console.log('209')
+
       const locationWithUpdatedParcels = existingSceneLocations.findIndex((location: Metaverse.Location) => {
         const sameBaseParcel = location.coordinates.join(',') === userLocation.coordinates.join(','),
           sameNumberOfParcels = location?.parcels?.length !== userLocation?.parcels?.length,
@@ -229,31 +228,38 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
 
         return sameBaseParcel && !sameNumberOfParcels && overlapsExistingLocation
       })
-      console.log('217')
+
       const hasOutdatedLocation = locationWithUpdatedVersion > -1 || locationWithUpdatedParcels > -1
-      console.log('219')
-      if (sceneExists && !isExistingLocation) {
+      const locations = scene.locations.filter((location: Metaverse.Location) => location.realm.serverName !== 'LocalPreview')
+
+      if (sceneExists && hasDevelopmentLocations) {
+        // remove development locations
+        await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: locations })
+      }
+
+      if (sceneExists && !isExistingLocation && !isDevelopmentLocation) {
         // add new location
-        await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...scene.locations, userLocation] })
+        await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...locations, userLocation] })
       } else if (sceneExists && hasOutdatedLocation) {
         // replace existing location
-        const locations = scene.locations.filter((location: Metaverse.Location, i: number) => {
+        const otherLocations = scene.locations.filter((location: Metaverse.Location, i: number) => {
           const isLocationWithUpdatedVersion = i == locationWithUpdatedVersion,
             isLocationWithUpdatedParcels = i !== locationWithUpdatedParcels,
-            needsReplacement = isLocationWithUpdatedVersion || isLocationWithUpdatedParcels
+            isDevelopmentLocation = location.realm.serverName === 'LocalPreview' || location.realm.displayName === 'LocalPreview',
+            needsReplacement = isLocationWithUpdatedVersion || isLocationWithUpdatedParcels || isDevelopmentLocation
 
           return !needsReplacement
         })
-        await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...locations, userLocation] })
+        await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [...otherLocations, userLocation] })
       } else if (sceneExists && hasNoLocations) {
         // add first location
         await SceneManager.updateSceneProperty({ scene, prop: 'locations', val: [userLocation] })
       } else if (!sceneExists || !isExistingLocation) {
         AdminLogManager.logError('Unexpected location/version condition', { scene, userLocation })
       }
-      console.log('239')
+
       client.send('session_started', { session: dbSession, user })
-      console.log('241')
+
       if (!scene?.scenePreset) {
         return
       }
@@ -921,7 +927,11 @@ export async function handleRequestPlayerPosition(
   }
 }
 
-export async function handleSendPlayerPosition(client: Client, message: { userId?: string; connectedWallet?: string }, room: VLMScene) {
+export async function handleSendPlayerPosition(
+  client: Client,
+  message: { userId?: string; connectedWallet?: string; positionData: Analytics.PathPoint },
+  room: VLMScene
+) {
   // Logic for send_player_position message
   try {
     const userThatSentRequest = room.clients.find(
