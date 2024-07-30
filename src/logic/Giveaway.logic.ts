@@ -354,7 +354,8 @@ export abstract class GiveawayManager {
       const event = ongoingEvents.length === 1 ? ongoingEvents[0] : null // see if there's only one ongoing event
 
       if (!event) {
-        return this.noOngoingEventDenialError({ events, user, giveaway, sceneId, session, giveawayId })
+        const response = this.noOngoingEventDenialError({ events, user, giveaway, sceneId, session, giveawayId })
+        return response
       }
       /////// END EVENT VERFICIATION ///////
 
