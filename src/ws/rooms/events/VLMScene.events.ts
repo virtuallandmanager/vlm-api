@@ -214,8 +214,8 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       })
 
       const isExistingLocation = existingSceneLocations?.length
-      const hasDevelopmentLocations = scene.locations.some((location: Metaverse.Location) => location.realm.serverName === 'LocalPreview')
-      const isDevelopmentLocation = userLocation.realm.serverName === 'LocalPreview' || userLocation.realm.displayName === 'LocalPreview'
+      const hasDevelopmentLocations = scene.locations.some((location: Metaverse.Location) => location?.realm?.serverName === 'LocalPreview')
+      const isDevelopmentLocation = userLocation?.realm?.serverName === 'LocalPreview' || userLocation?.realm?.displayName === 'LocalPreview'
 
       const locationWithUpdatedVersion = existingSceneLocations.findIndex((location: Metaverse.Location) =>
         deepEqual(location.integrationData, userLocation.integrationData)
@@ -230,7 +230,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
       })
 
       const hasOutdatedLocation = locationWithUpdatedVersion > -1 || locationWithUpdatedParcels > -1
-      const locations = scene.locations.filter((location: Metaverse.Location) => location.realm.serverName !== 'LocalPreview')
+      const locations = scene.locations.filter((location: Metaverse.Location) => location?.realm?.serverName !== 'LocalPreview')
 
       if (sceneExists && hasDevelopmentLocations) {
         // remove development locations
@@ -245,7 +245,7 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
         const otherLocations = scene.locations.filter((location: Metaverse.Location, i: number) => {
           const isLocationWithUpdatedVersion = i == locationWithUpdatedVersion,
             isLocationWithUpdatedParcels = i !== locationWithUpdatedParcels,
-            isDevelopmentLocation = location.realm.serverName === 'LocalPreview' || location.realm.displayName === 'LocalPreview',
+            isDevelopmentLocation = location?.realm?.serverName === 'LocalPreview' || location?.realm?.displayName === 'LocalPreview',
             needsReplacement = isLocationWithUpdatedVersion || isLocationWithUpdatedParcels || isDevelopmentLocation
 
           return !needsReplacement
