@@ -17,6 +17,7 @@ export namespace Giveaway {
     paused?: boolean
     items?: Array<string | Item> = []
     allocatedCredits?: number = 0
+    minter?: string
     createdAt?: number = DateTime.now().toMillis()
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
@@ -32,8 +33,27 @@ export namespace Giveaway {
       this.eventId = config?.eventId
       this.paused = config?.paused
       this.allocatedCredits = config?.allocatedCredits || this.allocatedCredits
+      this.minter = config?.minter
       this.items = config?.items || this.items
       this.createdAt = config?.createdAt
+      this.ts = config?.ts
+    }
+  }
+
+  export class MintingWallet {
+    static pk: string = 'vlm:giveaway:wallet'
+    pk?: string = MintingWallet.pk
+    sk?: string = uuidv4()
+    publicKey: string
+    active: boolean = false
+    chain: number | string = 137
+    ts?: EpochTimeStamp = DateTime.now().toMillis()
+
+    constructor(config: MintingWallet) {
+      this.sk = config?.sk || this.sk
+      this.publicKey = config?.publicKey
+      this.chain = config?.chain
+      this.active = config?.active || this.active
       this.ts = config?.ts
     }
   }
@@ -174,5 +194,6 @@ export namespace Giveaway {
     contracts: string[]
     ids: number[]
     minter: string
+    byItem: boolean
   }
 }

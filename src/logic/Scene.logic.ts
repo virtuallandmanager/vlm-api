@@ -87,10 +87,26 @@ export abstract class SceneManager {
     }
   }
 
+  static getSceneAdmins: CallableFunction = async (sceneId: string): Promise<string[]> => {
+    try {
+      return await SceneDbManager.getUsersForId(sceneId)
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'SceneManager.getSceneAdmins' })
+    }
+  }
+
   static getScenesForUser: CallableFunction = async (vlmUser: User.Account) => {
     try {
       const sceneIds = await SceneDbManager.getIdsForUser(vlmUser)
       return await SceneDbManager.getByIds(sceneIds)
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'SceneManager.getScenesForUser' })
+    }
+  }
+  static getSharedScenesForUser: CallableFunction = async (vlmUser: User.Account) => {
+    try {
+      const sceneIds = await SceneDbManager.getSharedScenesForUser(vlmUser)
+      return sceneIds.length ? await SceneDbManager.getByIds(sceneIds) : []
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.getScenesForUser' })
     }
@@ -129,15 +145,17 @@ export abstract class SceneManager {
     return giveaways
   }
 
-  static inviteUserByWallet: CallableFunction = async (inviteConfig: Scene.Invite & { connectedWallet: string; currency: SupportedCurrencies }) => {
+  static inviteUserByWallet: CallableFunction = async (inviteConfig: Scene.Invite & { userWallet: string; currency: SupportedCurrencies }) => {
     try {
       const user = await UserManager.obtainUserByWallet(
-        new User.Wallet({ address: inviteConfig.connectedWallet, currency: inviteConfig.currency || 'ETH', type: WalletType.USER })
+        new User.Wallet({ address: inviteConfig.userWallet.toLowerCase(), currency: inviteConfig.currency || 'ETH', type: WalletType.USER })
       )
-      const invite = new Scene.Invite({ ...inviteConfig, userId: user.userId })
+      const invite = new Scene.Invite({ ...inviteConfig, userId: user.sk })
       await GenericDbManager.put(invite)
+      const { displayName, connectedWallet } = user
+      const userInfo = { displayName, connectedWallet }
 
-      return { user, invite }
+      return { userInfo, invite }
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.inviteUser' })
     }

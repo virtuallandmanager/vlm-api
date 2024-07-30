@@ -206,6 +206,65 @@ export abstract class SceneDbManager {
     }
   }
 
+  static getUsersForId: CallableFunction = async (sceneId: string) => {
+    try {
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: 'sceneId-index',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+          '#sceneId': 'sceneId',
+        },
+        ExpressionAttributeValues: {
+          ':pk': User.SceneLink.pk,
+          ':sceneId': sceneId,
+        },
+        KeyConditionExpression: '#pk = :pk and #sceneId = :sceneId',
+      }
+
+      const sceneLinks = await largeQuery(params),
+        fullSceneLinks = await Promise.all(sceneLinks.map(async (sceneLink: User.SceneLink) => await GenericDbManager.get(sceneLink))),
+        userIds = fullSceneLinks.map((sceneLink: User.SceneLink) => sceneLink.userId)
+
+      return userIds
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/getUsersForId',
+        sceneId,
+      })
+      return
+    }
+  }
+
+  static getSharedScenesForUser: CallableFunction = async (user: User.Account) => {
+    try {
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: 'userId-index',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+          '#userId': 'userId',
+        },
+        ExpressionAttributeValues: {
+          ':pk': Scene.Invite.pk,
+          ':userId': user.sk,
+        },
+        KeyConditionExpression: '#pk = :pk and #userId = :userId',
+      }
+
+      const invites = await largeQuery(params),
+        fullInvites = await Promise.all(invites.map(async (invite: Scene.Invite) => await GenericDbManager.get(invite))),
+        sceneIds = fullInvites.map((invite: Scene.Invite) => invite.sceneId)
+      return sceneIds
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/getSharedScenesForUser',
+        user,
+      })
+      return
+    }
+  }
+
   static getSceneIdsFromLinkIds: CallableFunction = async (sks: string[]) => {
     try {
       if (!sks?.length) {
@@ -271,7 +330,7 @@ export abstract class SceneDbManager {
       return scenes?.length ? scenes : []
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Scene.data/getSceneLinksFromIds',
+        from: 'Scene.data/getByIds',
         sks,
       })
       return

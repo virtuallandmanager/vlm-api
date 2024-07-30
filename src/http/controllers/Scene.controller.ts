@@ -10,6 +10,7 @@ import { User } from '../../models/User.model'
 import { AdminLogManager } from '../../logic/ErrorLogging.logic'
 import { HistoryManager } from '../../logic/History.logic'
 import { AnalyticsManager } from '../../logic/Analytics.logic'
+import { DateTime } from 'luxon'
 const router = express.Router()
 
 router.get('/cards', authMiddleware, async (req: Request, res: Response) => {
@@ -21,11 +22,13 @@ router.get('/cards', authMiddleware, async (req: Request, res: Response) => {
     }
 
     const user = await UserManager.getById(req.session.userId),
-      scenes = await SceneManager.getScenesForUser(user)
+      scenes = await SceneManager.getScenesForUser(user),
+      sharedScenes = await SceneManager.getSharedScenesForUser(user)
 
     return res.status(200).json({
       text: 'Successfully authenticated.',
       scenes: scenes || [],
+      sharedScenes: sharedScenes || [],
     })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {
@@ -64,21 +67,36 @@ router.post('/create', authMiddleware, async (req: Request, res: Response) => {
 
 router.post('/invite/user', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { connectedWallet } = req.body
-    let user: User.Account, invite: Scene.Invite
+    const { userWallet, sceneId, startTime, endTime } = req.body
+    let userInfo: User.Account, invite: Scene.Invite, admins: string[]
 
-    if (connectedWallet) {
-      const response = await SceneManager.inviteUserByWallet(connectedWallet.toLowerCase())
-      user = response.user
+    if (sceneId) {
+      // check if requesting user is the scene's owner
+      admins = await SceneManager.getSceneAdmins(sceneId)
+    } else {
+      return res.status(400).json({
+        text: 'Bad Request.',
+      })
+    }
+
+    if (!admins.includes(req.session.userId)) {
+      return res.status(401).json({
+        text: 'Unauthorized action.',
+      })
+    }
+
+    if (userWallet) {
+      invite = new Scene.Invite({ sceneId, startTime: startTime || DateTime.now().toMillis(), endTime })
+      const response = await SceneManager.inviteUserByWallet({ ...invite, userWallet })
+      userInfo = response.userInfo
       invite = response.invite
     } else {
       // TODO: invite user by email/web2 id
     }
 
     return res.status(200).json({
-      text: `Invite sent to ${connectedWallet.toLowerCase()}.`,
-      user,
-      invite,
+      text: `Invite sent to ${userInfo.displayName || userWallet}.`,
+      userInfo,
     })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {

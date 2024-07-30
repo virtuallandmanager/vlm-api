@@ -145,29 +145,50 @@ router.get('/:giveawayId', authMiddleware, async (req: Request, res: Response) =
 })
 
 router.post('/set-minter/request', authMiddleware, async (req: Request, res: Response) => {
-  const { contracts, ids, minter } = req.body
+  const { giveawayId, byItem } = req.body
   const session = req.session
 
+  if (!session || !session.userId) {
+    return res.status(401).json({
+      text: 'Invalid or missing session.',
+    })
+  }
+  if (!giveawayId) {
+    return res.status(400).json({
+      text: 'Missing required parameters.',
+    })
+  }
+
   const user = await UserManager.getById(session.userId)
+  const giveaway = await GiveawayManager.getById(giveawayId)
+  const giveawayItems = await GiveawayManager.getItemsForGiveaway(giveaway.items)
+  const contracts = giveawayItems.map((item: Giveaway.Item) => item?.contractAddress).filter((x: string) => x)
+  const ids = giveawayItems.map((item: Giveaway.Item) => item?.itemId)
+
+  let minter
 
   if (!session || !user) {
     return res.status(401).send('Unauthorized: Invalid user/session.')
   }
 
-  if (!contracts || !ids || !minter) {
+  if (giveaway.minter) {
+    const minterObj = await GiveawayManager.getMintingWalletById(giveaway.minter)
+    minter = minterObj.publicKey
+  } else {
+    const minterObj = await GiveawayManager.getRandomMintingWallet()
+    minter = minterObj.publicKey
+    await GiveawayManager.setGiveawayMinter(giveaway, minterObj)
+  }
+
+  if (!contracts) {
     return res.status(400).send('Missing required parameters.')
   }
-
-  if (contracts.length !== ids.length) {
-    return res.status(400).send('Contracts and IDs arrays must have the same length.')
-  }
-
-  const transactions = TransactionManager.createMinterRightsTranactions(user, { contracts, ids, minter })
+  const transactions = await TransactionManager.createMinterRightsTranactions(user, { contracts, ids, minter, byItem })
 
   res.json({ transactions })
 })
 
-router.post('/set-minter/broadcast', async (req: Request, res: Response | any) => {
+router.post('/set-minter/broadcast', authMiddleware, async (req: Request, res: Response | any) => {
   try {
     if (!req.session.userId) {
       return res.status(400).json({
@@ -175,10 +196,20 @@ router.post('/set-minter/broadcast', async (req: Request, res: Response | any) =
       })
     }
 
-    return res.status(200)
+    const signedTransactions = req.body.signedTransactions
+
+    if (!signedTransactions) {
+      return res.status(400).json({
+        text: 'Bad Request.',
+      })
+    }
+
+    const result = await TransactionManager.broadcastMinerRightsTransactions(signedTransactions)
+
+    return res.json({ txReceipts: result })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {
-      from: 'Transaction.controller/create',
+      from: 'Giveaway.controller/set-minter/broadcast',
     })
     return res.status(500).json({
       text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',

@@ -35,7 +35,9 @@ export abstract class EventManager {
     // check if the scene is already linked to this event
     const existingLinks = await EventDbManager.getLinkedScenesById(eventId)
     const existingLink = existingLinks.find((link: Event.SceneLink) => link.sceneId === sceneId)
+
     if (existingLink) {
+      return existingLink
       return existingLink
     }
     const link = new Event.SceneLink({ eventId, sceneId })
@@ -67,8 +69,7 @@ export abstract class EventManager {
 
   static linkGiveaway: CallableFunction = async (eventId: string, giveawayId: string) => {
     // check if the giveaway is already linked to this event
-    const existingLinks = await EventDbManager.getLinkedGiveawaysById(eventId)
-    const existingLink = existingLinks.find((link: Event.GiveawayLink) => link.giveawayId === giveawayId)
+    const existingLink = await EventDbManager.getLinkedGiveawaysById(eventId).find((link: Event.GiveawayLink) => link.giveawayId === giveawayId)
     if (existingLink) {
       return existingLink
     }
@@ -109,6 +110,7 @@ export abstract class EventManager {
   static getOngoingEventsBySceneId: CallableFunction = async (sceneId: string) => {
     const events = await EventDbManager.getLinkedEventsBySceneId(sceneId)
     if (events.length === 0) {
+      return events
       return events
     }
     const ongoingEvents = events.filter((event: Event.Config) => {

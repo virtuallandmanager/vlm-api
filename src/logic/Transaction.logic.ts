@@ -42,22 +42,32 @@ export abstract class TransactionManager {
 
     const consolidatedContracts: { [address: string]: number[] } = {}
 
-    request.contracts.forEach((address: string, index: number) => {
-      if (consolidatedContracts[address]) {
-        consolidatedContracts[address].push(request.ids[index])
+    for (let i = 0; i < request.contracts.length; i++) {
+      const contractAddress = request.contracts[i]
+      if (consolidatedContracts[contractAddress]) {
+        consolidatedContracts[contractAddress].push(Number(request.ids[i]))
       } else {
-        consolidatedContracts[address] = [request.ids[index]]
+        consolidatedContracts[contractAddress] = [Number(request.ids[i])]
       }
-    })
-
-    for (const address in consolidatedContracts) {
-      const contract = new ethers.Contract(address, dclAbiInterface, provider)
-
+    }
+    for (let i = 0; i < request.contracts.length; i++) {
       try {
-        const tx = (await (contract.populateTransaction as any).setItemsMinters(consolidatedContracts[address], request.minter)) as TransactionRequest
-        transactions.push(tx)
+        const contractAddress = request.contracts[i]
+        const contract = new ethers.Contract(contractAddress, dclAbiInterface, prodProvider)
+        const minterArray = new Array(consolidatedContracts[contractAddress].length).fill(request.minter)
+        const binaryStateArray = new Array(consolidatedContracts[contractAddress].length).fill(1)
+        const boolStateArray = new Array(consolidatedContracts[contractAddress].length).fill(true)
+        console.log(consolidatedContracts[contractAddress])
+        if (request.byItem) {
+          const tx = await contract.setItemsMinters.populateTransaction(consolidatedContracts[contractAddress], minterArray, binaryStateArray)
+          transactions.push(tx)
+        } else {
+          const tx = await contract.setMinters.populateTransaction(minterArray, boolStateArray)
+          transactions.push(tx)
+        }
       } catch (error) {
-        AdminLogManager.logError(error, { from: 'TransactionManager.createMinterRightsTransactions' })
+        console.log(error)
+        // AdminLogManager.logError(error, { from: 'TransactionManager.createMinterRightsTransactions' })
       }
     }
 

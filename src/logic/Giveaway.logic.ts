@@ -67,6 +67,40 @@ export abstract class GiveawayManager {
     return await GiveawayDbManager.getItemsByIds(giveawayItems)
   }
 
+  static linkEvents: CallableFunction = async (giveawayId: string, eventIds: string[]) => {
+    const existingLinks = await GiveawayDbManager.getLinkedEventsById(giveawayId)
+    const linkedEventIds = existingLinks.map((link: Event.GiveawayLink) => link.eventId)
+
+    const linksToAdd = eventIds
+      .map((eventId: string) => {
+        if (linkedEventIds.includes(eventId)) {
+          return
+        }
+        return new Event.GiveawayLink({ giveawayId, eventId })
+      })
+      .filter((x) => x)
+    const linksToRemove = existingLinks.filter((link: Event.GiveawayLink) => !eventIds.includes(link.eventId))
+    return await GiveawayDbManager.updateEventLinks(giveawayId, linksToAdd, linksToRemove)
+  }
+
+  static linkEvent: CallableFunction = async (eventId: string, giveawayId: string) => {
+    // check if the giveaway is already linked to this event
+    const existingLinks = await EventDbManager.getLinkedGiveawaysById(eventId)
+    const existingLink = existingLinks.find((link: Event.GiveawayLink) => link.giveawayId === giveawayId)
+    if (existingLink) {
+      return existingLink
+    }
+    const link = new Event.GiveawayLink({ eventId, giveawayId })
+    return await EventDbManager.linkGiveaway(link)
+  }
+
+  static unlinkGiveaway: CallableFunction = async (eventId: string, giveawayId: string) => {
+    const existingLinks = await EventDbManager.getLinkedGiveawaysById(eventId)
+    const filteredLink = existingLinks.find((link: Event.GiveawayLink) => link.giveawayId === giveawayId)
+    await EventDbManager.unlinkGiveaway(filteredLink.sk)
+    return filteredLink.sk
+  }
+
   static getGiveawaysForUser: CallableFunction = async (user: User.Account[]) => {
     const giveaways = await GiveawayDbManager.getAllForUser(user)
     if (giveaways.length === 0) {
@@ -405,6 +439,26 @@ export abstract class GiveawayManager {
       DateTime.now().minus({ years: 1 }).toMillis(),
       DateTime.now().toMillis()
     )
+  }
+
+  static getActiveMintingWallets: CallableFunction = async () => {
+    return await GiveawayDbManager.getActiveMintingWallets()
+  }
+
+  static getRandomMintingWallet: CallableFunction = async () => {
+    const activeWallets = await this.getActiveMintingWallets()
+
+    return activeWallets[Math.floor(Math.random() * activeWallets.length)]
+  }
+
+  static getMintingWalletById: CallableFunction = async (walletId: string) => {
+    const activeWallets = await this.getActiveMintingWallets(walletId)
+
+    return activeWallets[Math.floor(Math.random() * activeWallets.length)]
+  }
+
+  static setGiveawayMinter: CallableFunction = async (giveaway: Giveaway.Config, minterObj: Giveaway.MintingWallet) => {
+    return await GiveawayDbManager.setGiveawayMinter(giveaway, minterObj)
   }
 
   static noOngoingEventDenialError: CallableFunction = ({

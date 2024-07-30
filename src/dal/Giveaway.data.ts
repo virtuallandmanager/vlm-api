@@ -1,5 +1,5 @@
 import { Event } from '../models/Event.model'
-import { docClient, largeQuery, largeScan, vlmAnalyticsTable, vlmClaimsTable, vlmMainTable, vlmTransactionsTable } from './common.data'
+import { daxClient, docClient, largeQuery, largeScan, vlmAnalyticsTable, vlmClaimsTable, vlmMainTable, vlmTransactionsTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
 import { Accounting } from '../models/Accounting.model'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
@@ -10,6 +10,7 @@ import { BalanceDbManager } from './Balance.data'
 import { Organization } from '../models/Organization.model'
 import { GenericDbManager } from './Generic.data'
 import { DateTime } from 'luxon'
+import { EventDbManager } from './Event.data'
 
 export abstract class GiveawayDbManager {
   static get: CallableFunction = async (giveawayConfig: Giveaway.Config) => {
@@ -299,6 +300,54 @@ export abstract class GiveawayDbManager {
     }
   }
 
+  static updateEventLinks: CallableFunction = async (giveawayId: string, linksToAdd: Event.GiveawayLink[], linksToRemove: Event.GiveawayLink[]) => {
+    try {
+      if (linksToAdd?.length) {
+        await Promise.all(linksToAdd.map((link) => EventDbManager.linkGiveaway(link)))
+      }
+      if (linksToRemove?.length) {
+        await Promise.all(linksToRemove.map((link) => EventDbManager.unlinkGiveaway(link.sk)))
+      }
+      return await this.getLinkedEventsById(giveawayId)
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/updateEventLinks',
+        linksToAdd,
+        linksToRemove,
+      })
+      return false
+    }
+  }
+  static getLinkedEventsById: CallableFunction = async (giveawayId: string) => {
+    const params = {
+      TableName: vlmMainTable,
+      IndexName: 'giveawayId-index',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#giveawayId': 'giveawayId',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Event.GiveawayLink.pk,
+        ':giveawayId': giveawayId,
+      },
+      KeyConditionExpression: '#pk = :pk and #giveawayId = :giveawayId',
+    }
+
+    try {
+      const linkRecords = await largeQuery(params)
+      const linkedGiveaways = await Promise.all(
+        linkRecords.map((link: Event.GiveawayLink) => GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk }))
+      )
+      return linkedGiveaways
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getLinkedEventsById',
+        giveawayId,
+      })
+      return
+    }
+  }
+
   static getAllForUser: CallableFunction = async (user: User.Account) => {
     const params = {
       TableName: vlmMainTable,
@@ -561,6 +610,83 @@ export abstract class GiveawayDbManager {
         error,
       })
       return []
+    }
+  }
+
+  static getMintingWalletById: CallableFunction = async (sk: string) => {
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk: Giveaway.MintingWallet.pk,
+        sk,
+      },
+    }
+
+    try {
+      const wallet = await docClient.get(params).promise()
+      return wallet.Item?.walletAddress
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getMintingWalletById',
+        sk,
+      })
+      return
+    }
+  }
+
+  static getActiveMintingWallets: CallableFunction = async () => {
+    const params = {
+      TableName: vlmMainTable,
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#active': 'active',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Giveaway.MintingWallet.pk,
+        ':active': true,
+      },
+      KeyConditionExpression: '#pk = :pk',
+      FilterExpression: '#active = :active',
+    }
+
+    try {
+      const wallets = await largeQuery(params)
+      return wallets
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/getActiveMintingWallets',
+        error,
+      })
+      return []
+    }
+  }
+
+  static setGiveawayMinter: CallableFunction = async (giveawayConfig: Giveaway.Config, minterObj: Giveaway.MintingWallet) => {
+    giveawayConfig.minter = minterObj.sk
+    const params: DocumentClient.UpdateItemInput = {
+      TableName: vlmMainTable,
+      Key: { pk: giveawayConfig.pk, sk: giveawayConfig.sk },
+      ExpressionAttributeNames: {
+        '#minter': 'minter',
+        '#ts': 'ts',
+      },
+      ExpressionAttributeValues: {
+        ':minter': minterObj.sk,
+        ':ts': DateTime.now().toMillis(),
+      },
+      UpdateExpression: 'SET #ts = :ts, #minter = :minter',
+    }
+
+    try {
+      await daxClient.update(params).promise()
+      return giveawayConfig
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/setGiveawayMinter',
+        giveawayConfig,
+        minterObj,
+      })
+      return
     }
   }
 }
