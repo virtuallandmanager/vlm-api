@@ -50,9 +50,88 @@ router.post('/create', authMiddleware, async (req: Request, res: Response) => {
     HistoryManager.initHistory(user, fullScene)
 
     return res.status(200).json({
-      text: 'Successfully authenticated.',
+      text: 'Successfully created scene.',
       scene: fullScene,
       sceneLink,
+    })
+  } catch (error: unknown) {
+    AdminLogManager.logError(error, {
+      from: 'Scene.controller/create',
+    })
+    return res.status(500).json({
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
+      error,
+    })
+  }
+})
+
+router.get('/delete/:sceneId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const sceneId = req.params.sceneId,
+      user = await UserManager.getById(req.session.userId),
+      sceneIds = await SceneManager.getIdsForUser(user)
+
+    if (!sceneIds.includes(sceneId)) {
+      return res.status(401).json({
+        text: 'Unauthorized - not your scene.',
+      })
+    }
+
+    const scene = await SceneManager.getSceneById(sceneId),
+      history = await HistoryManager.getHistory(sceneId)
+
+    if (history) {
+      HistoryManager.addUpdate(user, history.sk, { action: 'deleted scene' }, scene)
+    }
+
+    const deletedSceneId = await SceneManager.deleteScene(sceneId)
+
+    return res.status(200).json({
+      text: 'Successfully deleted scene.',
+      sceneId: deletedSceneId,
+    })
+  } catch (error: unknown) {
+    AdminLogManager.logError(error, {
+      from: 'Scene.controller/create',
+    })
+    return res.status(500).json({
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
+      error,
+    })
+  }
+})
+
+router.get('/leave/:sceneId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const sceneId = req.params.sceneId,
+      user = await UserManager.getById(req.session.userId),
+      scenes = await SceneManager.getSharedScenesForUser(user),
+      sceneIds = scenes.map((scene: Scene.Config) => scene.sk)
+
+    if (!sceneIds.includes(sceneId)) {
+      return res.status(401).json({
+        text: 'Unauthorized - you have not yet joined this scene.',
+      })
+    }
+
+    const scene = await SceneManager.getSceneById(sceneId),
+      history = await HistoryManager.getHistory(sceneId)
+
+    if (history) {
+      HistoryManager.addUpdate(user, history.sk, { action: 'left scene' }, scene)
+    }
+
+    const leftSceneId = await SceneManager.revokeInvite(sceneId, user)
+
+    if (!leftSceneId) {
+      return res.status(400).json({
+        text: 'Bad Request.',
+      })
+    }
+
+    return res.status(200).json({
+      text: 'Successfully left scene.',
+      sceneId: leftSceneId,
     })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {

@@ -111,6 +111,7 @@ export function bindEvents(room: VLMScene) {
     scene_clone_preset_request: handleSceneClonePresetRequest,
     scene_delete_preset_request: handleSceneDeletePresetRequest,
     scene_delete: handleSceneDelete,
+    scene_update_property: handleSceneUpdateProperty,
 
     scene_moderator_message: handleModeratorMessage,
     scene_moderator_crash: handleModeratorCrash,
@@ -804,6 +805,24 @@ export function handleSceneDelete(client: Client, message: any, room: Room) {
   HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: 'deleted', element: 'scene', id: message.id })
   try {
     return false
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleSceneUpdateProperty(client: Client, message: any, room: Room) {
+  // Logic for scene_update_property message
+  try {
+    let sceneId = client.auth.session.sceneId,
+      scene = await SceneManager.getSceneById(sceneId)
+    scene.name = message.name
+    message.scene = scene
+
+    await SceneManager.updateSceneProperty({ scene, prop: message.property, val: message.value })
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: 'deleted', element: 'scene', id: message.id })
+    scene = await SceneManager.getSceneById(sceneId)
+    message.scene
+    return true
   } catch (error) {
     return false
   }

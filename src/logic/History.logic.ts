@@ -47,7 +47,7 @@ export abstract class HistoryManager {
         update;
 
       if (!history) {
-        await HistoryManager.initHistory(user, { sk })
+        history = await HistoryManager.initHistory(user, { sk })
       }
 
       if (history?.updates?.length === 0) {

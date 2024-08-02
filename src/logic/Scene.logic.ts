@@ -49,6 +49,16 @@ export abstract class SceneManager {
     }
   }
 
+  static deleteScene: CallableFunction = async (scene: Scene.Config) => {
+    try {
+      const sceneUserLinks = await SceneDbManager.getUserLinksForScene(scene.sk)
+
+      return await SceneDbManager.delete(scene, sceneUserLinks)
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'SceneManager.deleteScene' })
+    }
+  }
+
   static createSceneForUser: CallableFunction = async (user: User.Account, sceneConfig?: Scene.Config) => {
     try {
       const newScene = new Scene.Config(sceneConfig),
@@ -98,7 +108,9 @@ export abstract class SceneManager {
   static getScenesForUser: CallableFunction = async (vlmUser: User.Account) => {
     try {
       const sceneIds = await SceneDbManager.getIdsForUser(vlmUser)
-      return await SceneDbManager.getByIds(sceneIds)
+      const scenes = await SceneDbManager.getByIds(sceneIds)
+      const filteredScenes = scenes.filter((scene: Scene.Config) => scene && !scene.deleted)
+      return filteredScenes
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.getScenesForUser' })
     }
@@ -106,9 +118,14 @@ export abstract class SceneManager {
   static getSharedScenesForUser: CallableFunction = async (vlmUser: User.Account) => {
     try {
       const sceneIds = await SceneDbManager.getSharedScenesForUser(vlmUser)
-      return sceneIds.length ? await SceneDbManager.getByIds(sceneIds) : []
+      if (sceneIds.length) {
+        const sharedScenes = await SceneDbManager.getByIds(sceneIds)
+        return sharedScenes
+      } else {
+        return []
+      }
     } catch (error) {
-      AdminLogManager.logError(error, { from: 'SceneManager.getScenesForUser' })
+      AdminLogManager.logError(error, { from: 'SceneManager.getSharedScenesForUser' })
     }
   }
 
@@ -158,6 +175,27 @@ export abstract class SceneManager {
       return { userInfo, invite }
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.inviteUser' })
+    }
+  }
+
+  static revokeInvite: CallableFunction = async (sceneId: string, user: User.Account) => {
+    try {
+      const userInvites = await SceneDbManager.getAcceptedInvitesForUser(user)
+      if (!userInvites) {
+        return
+      }
+      const invite = userInvites.find((invite: Scene.Invite) => invite.sceneId == sceneId)
+      if (!invite) {
+        return
+      }
+      if (invite.state.revoked) {
+        return sceneId
+      }
+      invite.state = Scene.InviteState.REVOKED
+      await SceneDbManager.updateInviteState(invite, invite.state)
+      return sceneId
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'SceneManager.leaveScene' })
     }
   }
   ////

@@ -6,6 +6,7 @@ import { Scene } from '../models/Scene.model'
 import { DateTime } from 'luxon'
 import { GenericDbManager } from './Generic.data'
 import { VLMSceneMessage } from '../ws/rooms/events/VLMScene.events'
+import { TransactWriteCommandInput } from '@aws-sdk/lib-dynamodb'
 
 export abstract class SceneDbManager {
   static get: CallableFunction = async (scene: Scene.Config) => {
@@ -24,6 +25,54 @@ export abstract class SceneDbManager {
       AdminLogManager.logError(error, {
         from: 'Scene.data/get',
         scene,
+      })
+      return
+    }
+  }
+
+  static delete: CallableFunction = async (sceneId: string, userLinkIds: string[]) => {
+    try {
+      const transactItems: TransactWriteCommandInput = {
+        TransactItems: [
+          {
+            Update: {
+              TableName: vlmMainTable,
+              Key: {
+                pk: Scene.Config.pk,
+                sk: sceneId,
+              },
+              UpdateExpression: 'set #deleted = :deleted',
+              ExpressionAttributeNames: {
+                '#deleted': 'deleted',
+              },
+              ExpressionAttributeValues: {
+                ':deleted': true,
+              },
+            },
+          },
+        ],
+      }
+      const userLinkIdSet = new Set(userLinkIds)
+      userLinkIdSet.forEach((linkId: string) => {
+        const params = {
+          Delete: {
+            TableName: vlmMainTable,
+            Key: {
+              pk: User.SceneLink.pk,
+              sk: linkId,
+            },
+          },
+        }
+        transactItems.TransactItems.push(params)
+      })
+
+      const response = await docClient.transactWrite(transactItems).promise()
+
+      return sceneId
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/delete',
+        sceneId,
       })
       return
     }
@@ -206,6 +255,35 @@ export abstract class SceneDbManager {
     }
   }
 
+  static getUserLinksForScene: CallableFunction = async (sceneId: string) => {
+    try {
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: 'sceneId-index',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+          '#sceneId': 'sceneId',
+        },
+        ExpressionAttributeValues: {
+          ':pk': User.SceneLink.pk,
+          ':sceneId': sceneId,
+        },
+        KeyConditionExpression: '#pk = :pk and #sceneId = :sceneId',
+      }
+
+      const sceneLinks = await largeQuery(params),
+        sceneLinkIds = sceneLinks.map((sceneLink: User.SceneLink) => sceneLink.sk)
+
+      return sceneLinkIds || []
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/getUserLinksForScene',
+        sceneId,
+      })
+      return
+    }
+  }
+
   static getUsersForId: CallableFunction = async (sceneId: string) => {
     try {
       const params = {
@@ -236,7 +314,38 @@ export abstract class SceneDbManager {
     }
   }
 
-  static getSharedScenesForUser: CallableFunction = async (user: User.Account) => {
+  static getPendingInvitesForUser: CallableFunction = async (user: User.Account) => {
+    try {
+      const params = {
+        TableName: vlmMainTable,
+        IndexName: 'userId-index',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+          '#userId': 'userId',
+          '#state': 'state',
+        },
+        ExpressionAttributeValues: {
+          ':pk': Scene.Invite.pk,
+          ':userId': user.sk,
+          ':pending': Scene.InviteState.PENDING,
+        },
+        KeyConditionExpression: '#pk = :pk and #userId = :userId',
+        FilterExpression: '#state = :pending',
+      }
+
+      const invites = await largeQuery(params),
+        fullInvites = await Promise.all(invites.map(async (invite: Scene.Invite) => await GenericDbManager.get(invite)))
+      return fullInvites
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/getPendingInvitesForUser',
+        user,
+      })
+      return
+    }
+  }
+
+  static getAcceptedInvitesForUser: CallableFunction = async (user: User.Account) => {
     try {
       const params = {
         TableName: vlmMainTable,
@@ -253,13 +362,54 @@ export abstract class SceneDbManager {
       }
 
       const invites = await largeQuery(params),
-        fullInvites = await Promise.all(invites.map(async (invite: Scene.Invite) => await GenericDbManager.get(invite))),
+        fullInvites = await Promise.all(invites.map(async (invite: Scene.Invite) => await GenericDbManager.get(invite)))
+      return fullInvites.filter((invite: Scene.Invite) => invite.state === Scene.InviteState.ACCEPTED)
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/getAcceptedInvitesForUser',
+        user,
+      })
+      return
+    }
+  }
+
+  static getSharedScenesForUser: CallableFunction = async (user: User.Account) => {
+    try {
+      const fullInvites = await this.getAcceptedInvitesForUser(user),
         sceneIds = fullInvites.map((invite: Scene.Invite) => invite.sceneId)
+
       return sceneIds
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Scene.data/getSharedScenesForUser',
         user,
+      })
+      return
+    }
+  }
+
+  static updateInviteState: CallableFunction = async (invite: Scene.Invite, state: Scene.InviteState) => {
+    const params = {
+      TableName: vlmMainTable,
+      Key: {
+        pk: Scene.Invite.pk,
+        sk: invite.sk,
+      },
+      UpdateExpression: 'set #state = :state',
+      ExpressionAttributeNames: { '#state': 'state' },
+      ExpressionAttributeValues: {
+        ':state': state,
+      },
+    }
+
+    try {
+      await daxClient.update(params).promise()
+      return { ...invite, state }
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/updateInviteState',
+        invite,
+        state,
       })
       return
     }
@@ -304,17 +454,17 @@ export abstract class SceneDbManager {
     if (!sks?.length) {
       return
     }
+    let sceneIds = new Set(sks)
     const params: DocumentClient.TransactGetItemsInput = {
       TransactItems: [],
     }
 
-    sks.forEach((sk: string) => {
+    sceneIds.forEach((sk: string) => {
       if (!sk) {
         return
       }
       params.TransactItems.push({
         Get: {
-          // Add a connection from organization to user
           Key: {
             pk: Scene.Config.pk,
             sk,

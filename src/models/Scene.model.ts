@@ -18,6 +18,7 @@ export namespace Scene {
     settings?: Array<string | Setting> = []
     createdAt?: EpochTimeStamp = DateTime.now().toMillis()
     packageVersion?: string = ''
+    deleted?: boolean = false
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config?: Config) {
@@ -30,6 +31,7 @@ export namespace Scene {
       this.settings = config?.settings || this.settings
       this.createdAt = config?.createdAt || this.createdAt
       this.packageVersion = config?.packageVersion || this.packageVersion
+      this.deleted = config?.deleted || this.deleted
       this.ts = config?.ts || this.ts
     }
   }
@@ -158,6 +160,15 @@ export namespace Scene {
     }
   }
 
+  export enum InviteState {
+    PENDING = 'pending',
+    EXPIRED = 'expired',
+    DECLINED = 'declined',
+    ACCEPTED = 'accepted',
+    REVOKED = 'revoked',
+    LEFT = 'left',
+  }
+
   export class Invite {
     static pk: string = 'vlm:scene:invite'
     pk?: string = Invite.pk
@@ -167,6 +178,7 @@ export namespace Scene {
     startTime?: EpochTimeStamp = DateTime.now().toMillis()
     endTime?: EpochTimeStamp
     permissions?: Permissions
+    state?: InviteState = InviteState.ACCEPTED // CHANGE TO DEFAULT TO PENDING WHEN INVITES ARE IMPLEMENTED
     ts?: EpochTimeStamp = DateTime.now().toMillis()
 
     constructor(config?: Invite) {
@@ -179,6 +191,7 @@ export namespace Scene {
       this.startTime = config.startTime
       this.endTime = config.endTime
       this.permissions = config.permissions
+      this.state = config.state || this.state
       this.ts = config.ts || this.ts
     }
   }
