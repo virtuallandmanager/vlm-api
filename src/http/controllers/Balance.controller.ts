@@ -7,6 +7,7 @@ import { OrganizationManager } from '../../logic/Organization.logic'
 import { Organization } from '../../models/Organization.model'
 import { PromotionManager } from '../../logic/Promotion.logic'
 import { GiveawayManager } from '../../logic/Giveaway.logic'
+import { error } from 'console'
 
 const router = express.Router()
 
@@ -132,19 +133,71 @@ router.post('/allocate', authMiddleware, async (req: Request, res: Response) => 
       amount = req.body.amount
 
     let balance = await BalanceManager.obtainBalanceTypeForUser(userId, balanceType)
-    const giveaway = await GiveawayManager.getById(giveawayId)
-    const adjustedBalance = await GiveawayManager.allocateCreditsToGiveaway({ balance, giveaway, amount })
-    const adjustedGiveaway = await GiveawayManager.getById(giveaway, amount)
+
+    if (!balance) {
+      return res.status(400).json({
+        error: `No ${balanceType} balance found for user.`,
+      })
+    } else if (balance.value - amount < 0) {
+      return res.status(400).json({
+        error: `Could not complete request - amount exceeds available credits.`,
+      })
+    }
+
+    const adjustedBalance = await GiveawayManager.allocateCreditsToGiveaway({ balance, giveawayId, amount })
+    const adjustedGiveaway = await GiveawayManager.getById(giveawayId)
+    adjustedGiveaway.items = await GiveawayManager.getItemsForGiveaway(adjustedGiveaway.items)
     balance = adjustedBalance && { [adjustedBalance.type]: adjustedBalance.value }
 
     return res.status(200).json({
-      text: `Allocated ${amount} credit${amount !== 1 && 's'} to ${giveaway.name}.`,
+      text: `Allocated ${amount} credit${amount !== 1 && 's'} to ${adjustedGiveaway.name}.`,
       balances: [balance],
       giveaways: [adjustedGiveaway],
     })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {
-      from: 'Balance.controller/deduct',
+      from: 'Balance.controller/allocate',
+    })
+    return res.status(500).json({
+      text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',
+      error,
+    })
+  }
+})
+
+router.post('/deallocate', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId,
+      giveawayId = req.body.giveawayId,
+      balanceType = req.body.balanceType,
+      amount = req.body.amount,
+      giveaway = await GiveawayManager.getById(giveawayId)
+
+    let balance = await BalanceManager.obtainBalanceTypeForUser(userId, balanceType)
+
+    if (!balance) {
+      return res.status(400).json({
+        error: `No ${balanceType} balance found for user.`,
+      })
+    } else if (giveaway.allocatedCredits - amount < 0) {
+      return res.status(400).json({
+        error: `Could not complete request - amount exceeds allocated credits.`,
+      })
+    }
+
+    const adjustedBalance = await GiveawayManager.deallocateCreditsFromGiveaway({ balance, giveawayId, amount })
+    const adjustedGiveaway = await GiveawayManager.getById(giveawayId)
+    adjustedGiveaway.items = await GiveawayManager.getItemsForGiveaway(adjustedGiveaway.items)
+    balance = adjustedBalance && { [adjustedBalance.type]: adjustedBalance.value }
+
+    return res.status(200).json({
+      text: `Reclaimed ${amount} credit${amount !== 1 && 's'} from ${adjustedGiveaway.name}.`,
+      balances: [balance],
+      giveaways: [adjustedGiveaway],
+    })
+  } catch (error: unknown) {
+    AdminLogManager.logError(error, {
+      from: 'Balance.controller/deallocate',
     })
     return res.status(500).json({
       text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',

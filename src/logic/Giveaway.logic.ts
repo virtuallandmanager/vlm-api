@@ -80,6 +80,9 @@ export abstract class GiveawayManager {
       })
       .filter((x) => x)
     const linksToRemove = existingLinks.filter((link: Event.GiveawayLink) => !eventIds.includes(link.eventId))
+    if (linksToAdd.length === 0 && linksToRemove.length === 0 && existingLinks.length > 0) {
+      return existingLinks
+    }
     return await GiveawayDbManager.updateEventLinks(giveawayId, linksToAdd, linksToRemove)
   }
 
@@ -144,19 +147,42 @@ export abstract class GiveawayManager {
   static allocateCreditsToGiveaway: CallableFunction = async ({
     balance,
     giveaway,
+    giveawayId,
     amount,
   }: {
     balance: User.Balance
-    giveaway: Giveaway.Config
+    giveaway?: Giveaway.Config
+    giveawayId?: string
     amount: number
   }) => {
     const allocation = new Accounting.CreditAllocation({
       userId: balance.userId,
       allocatedCredits: amount,
-      giveawayId: giveaway.sk,
+      giveawayId: giveaway?.sk || giveawayId,
       balanceType: balance.type,
     })
-    return await GiveawayDbManager.allocateCreditsToGiveaway({ balance, allocation, giveaway })
+    return await GiveawayDbManager.allocateCreditsToGiveaway({ balance, allocation })
+  }
+
+  static deallocateCreditsFromGiveaway: CallableFunction = async ({
+    balance,
+    giveaway,
+    giveawayId,
+    amount,
+  }: {
+    balance: User.Balance
+    giveaway?: Giveaway.Config
+    giveawayId?: string
+    amount: number
+  }) => {
+    const allocation = new Accounting.CreditAllocation({
+      userId: balance.userId,
+      giveawayId: giveaway?.sk || giveawayId,
+      allocatedCredits: -amount,
+      balanceType: balance.type,
+    })
+    // deallocating credits from the giveaway is basically just allocating negative credits.
+    return await GiveawayDbManager.allocateCreditsToGiveaway({ balance, allocation })
   }
 
   static checkForExistingClaim: CallableFunction = async ({

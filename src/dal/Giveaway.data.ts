@@ -303,10 +303,10 @@ export abstract class GiveawayDbManager {
   static updateEventLinks: CallableFunction = async (giveawayId: string, linksToAdd: Event.GiveawayLink[], linksToRemove: Event.GiveawayLink[]) => {
     try {
       if (linksToAdd?.length) {
-        await Promise.all(linksToAdd.map((link) => EventDbManager.linkGiveaway(link)))
+        await Promise.all(linksToAdd.map(async (link) => await EventDbManager.linkGiveaway(link)))
       }
       if (linksToRemove?.length) {
-        await Promise.all(linksToRemove.map((link) => EventDbManager.unlinkGiveaway(link.sk)))
+        await Promise.all(linksToRemove.map(async (link) => await EventDbManager.unlinkGiveaway(link.sk)))
       }
       return await this.getLinkedEventsById(giveawayId)
     } catch (error) {
@@ -318,6 +318,11 @@ export abstract class GiveawayDbManager {
       return false
     }
   }
+  static getLinkedEventsByIds: CallableFunction = async (giveawayIds: string[]) => {
+    const eventLinks = await Promise.all(giveawayIds.map(async (giveawayId) => await this.getLinkedEventsById(giveawayId)))
+    return eventLinks.flat()
+  }
+
   static getLinkedEventsById: CallableFunction = async (giveawayId: string) => {
     const params = {
       TableName: vlmMainTable,
@@ -378,11 +383,9 @@ export abstract class GiveawayDbManager {
   }
 
   static allocateCreditsToGiveaway: CallableFunction = async ({
-    giveaway,
     allocation,
     balance,
   }: {
-    giveaway: Giveaway.Config
     allocation: Accounting.CreditAllocation
     balance: User.Balance | Organization.Balance
   }) => {
@@ -399,7 +402,7 @@ export abstract class GiveawayDbManager {
       const giveawayUpdate: DocumentClient.TransactWriteItem = {
         Update: {
           TableName: vlmMainTable,
-          Key: { pk: Giveaway.Config.pk, sk: giveaway.sk },
+          Key: { pk: Giveaway.Config.pk, sk: allocation.giveawayId },
           UpdateExpression: 'ADD #allocatedCredits :credits',
           ExpressionAttributeValues: {
             ':credits': allocation.allocatedCredits,
@@ -439,7 +442,6 @@ export abstract class GiveawayDbManager {
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Giveaway.data/allocateCreditsToGiveaway',
-        giveaway,
         allocation,
         balance,
       })

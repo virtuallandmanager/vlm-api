@@ -30,11 +30,12 @@ export abstract class TransactionManager {
     return minter
   }
 
-  private static async broadcastTransaction(signedTx: TransactionRequest): Promise<TransactionReceipt> {
+  private static async broadcastTransaction(signedTx: string): Promise<TransactionReceipt> {
     // Sending raw signed transaction
 
-    const txResponse: TransactionReceipt = await provider.send('eth_sendRawTransaction', [signedTx])
-    return txResponse
+    const txResponse = await prodProvider.broadcastTransaction(signedTx)
+    const receipt = txResponse.wait()
+    return receipt
   }
 
   static createMinterRightsTranactions: CallableFunction = async (vlmUser: User.Account, request: Giveaway.SetMinterRequest) => {
@@ -57,12 +58,11 @@ export abstract class TransactionManager {
         const minterArray = new Array(consolidatedContracts[contractAddress].length).fill(request.minter)
         const binaryStateArray = new Array(consolidatedContracts[contractAddress].length).fill(1)
         const boolStateArray = new Array(consolidatedContracts[contractAddress].length).fill(true)
-        console.log(consolidatedContracts[contractAddress])
         if (request.byItem) {
           const tx = await contract.setItemsMinters.populateTransaction(consolidatedContracts[contractAddress], minterArray, binaryStateArray)
           transactions.push(tx)
         } else {
-          const tx = await contract.setMinters.populateTransaction(minterArray, boolStateArray)
+          const tx = await contract.setMinters.populateTransaction([request.minter], [true])
           transactions.push(tx)
         }
       } catch (error) {
@@ -74,7 +74,7 @@ export abstract class TransactionManager {
     return transactions
   }
 
-  static broadcastMinerRightsTransactions: CallableFunction = async (signedTransactions: TransactionRequest[]) => {
+  static broadcastMinerRightsTransactions: CallableFunction = async (signedTransactions: string[]) => {
     try {
       const txReceipts = []
 

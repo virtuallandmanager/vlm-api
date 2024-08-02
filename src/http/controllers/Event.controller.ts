@@ -91,7 +91,7 @@ router.post('/link/giveaways', authMiddleware, async (req: Request, res: Respons
 
     if (eventId) {
       giveawayLinks = await EventManager.linkGiveaways(eventId, giveawayLinkIds)
-    } else {
+    } else if (giveawayId) {
       giveawayLinks = await GiveawayManager.linkEvents(giveawayId, eventLinkIds)
     }
 
