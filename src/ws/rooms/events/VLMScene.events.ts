@@ -933,10 +933,10 @@ export async function handleRequestPlayerPosition(
 
     if (inWorldUser) {
       inWorldUser.send('request_player_position', message)
-    } else if (!room.clients.length) {
+    } else if (!analyticsUsers.length) {
       client.send('send_player_position', { positionData: defaultPositionData })
     } else if (analyticsUsers.length) {
-      room.clients.find((c) => c.auth.session.pk == Analytics.Session.Config.pk).send('request_player_position', message)
+      analyticsUsers[0].send('request_player_position', message)
     } else {
       userThatSentRequest.send('send_player_position', { positionData: defaultPositionData })
     }
