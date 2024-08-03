@@ -103,7 +103,14 @@ export abstract class GiveawayDbManager {
         TransactItems: [],
       }
 
+      if (!sks?.length) {
+        return []
+      }
+
       sks.forEach((sk: string) => {
+        if (!sk) {
+          return
+        }
         params.TransactItems.push({
           Get: {
             // Add a connection from organization to user
@@ -279,12 +286,12 @@ export abstract class GiveawayDbManager {
     }
   }
 
-  static addItems: CallableFunction = async ({ giveaway, items }: { giveaway: Giveaway.Config; items: Giveaway.Item[] }) => {
+  static addItems: CallableFunction = async ({ giveaway, giveawayItems }: { giveaway: Giveaway.Config; giveawayItems: Giveaway.Item[] }) => {
     // get item sk ids
-    const itemIds = items.map((item: Giveaway.Item) => item.sk)
+    const itemIds = giveawayItems.map((item: Giveaway.Item) => item.sk)
 
     // Add the items
-    const itemPuts: DocumentClient.TransactWriteItem[] = items.map((giveawayItem: Giveaway.Item) => ({
+    const itemPuts: DocumentClient.TransactWriteItem[] = giveawayItems.map((giveawayItem: Giveaway.Item) => ({
       Put: {
         TableName: vlmMainTable,
         Item: {
@@ -307,7 +314,7 @@ export abstract class GiveawayDbManager {
           '#items': 'items',
         },
         ExpressionAttributeValues: {
-          ':item': [itemIds],
+          ':item': itemIds,
         },
       },
     }
@@ -322,9 +329,8 @@ export abstract class GiveawayDbManager {
       return dbGiveaway
     } catch (error) {
       AdminLogManager.logError(error, {
-        from: 'Giveaway.data/addItem',
+        from: 'Giveaway.data/addItems',
         giveaway,
-        items,
       })
       return
     }

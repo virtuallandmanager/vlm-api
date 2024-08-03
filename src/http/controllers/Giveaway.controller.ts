@@ -86,7 +86,7 @@ router.post('/item/add', authMiddleware, async (req: Request, res: Response) => 
   try {
     const userId = req.session.userId,
       giveawayId = req.body.giveawayId,
-      items = req.body.items.map((item: Giveaway.Item) => item)
+      items = req.body.items.map((item: Giveaway.Item) => new Giveaway.Item(item))
 
     let user = await UserManager.getById(userId)
     if (!user) {
@@ -104,12 +104,12 @@ router.post('/item/add', authMiddleware, async (req: Request, res: Response) => 
     giveaway = await GiveawayManager.addItems(giveaway, items)
 
     return res.status(200).json({
-      text: 'Successfully created giveaway.',
+      text: 'Successfully added item.',
       giveaway,
     })
   } catch (error: unknown) {
     AdminLogManager.logError(error, {
-      from: 'Giveaway.controller/create',
+      from: 'Giveaway.controller/item/add',
     })
     return res.status(500).json({
       text: JSON.stringify(error) || 'Something went wrong on the server. Try again.',

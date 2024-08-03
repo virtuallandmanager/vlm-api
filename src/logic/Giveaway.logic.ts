@@ -26,11 +26,16 @@ export abstract class GiveawayManager {
   }
 
   static addItems: CallableFunction = async (giveaway: Giveaway.Config, giveawayItems: Giveaway.Item[]) => {
-    const updatedGiveaway = await GiveawayDbManager.addItems({ giveaway, giveawayItems })
-    const fullGiveawayItems = await GiveawayManager.getItemsForGiveaway(updatedGiveaway.items)
-    return {
-      ...updatedGiveaway,
-      items: fullGiveawayItems,
+    try {
+      const updatedGiveaway = await GiveawayDbManager.addItems({ giveaway, giveawayItems })
+      const fullGiveawayItems = await GiveawayManager.getItemsForGiveaway(updatedGiveaway.items)
+      return {
+        ...updatedGiveaway,
+        items: fullGiveawayItems,
+      }
+    } catch (error) {
+      AdminLogManager.logError('ADD ITEMS ERROR', { error })
+      return
     }
   }
 
