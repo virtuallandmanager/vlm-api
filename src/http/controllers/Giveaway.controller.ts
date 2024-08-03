@@ -86,10 +86,22 @@ router.post('/item/add', authMiddleware, async (req: Request, res: Response) => 
   try {
     const userId = req.session.userId,
       giveawayId = req.body.giveawayId,
-      item = new Giveaway.Item({ ...req.body.item })
+      items = req.body.items.map((item: Giveaway.Item) => item)
+
+    let user = await UserManager.getById(userId)
+    if (!user) {
+      return res.status(401).json({
+        text: 'Unauthorized.',
+      })
+    }
 
     let giveaway = await GiveawayManager.getById(giveawayId)
-    giveaway = await GiveawayManager.addItem(giveaway, item)
+    if (giveaway.userId !== userId && UserManager.getAdminLevel(user) <= User.Roles.VLM_ADMIN) {
+      return res.status(401).json({
+        text: `Cannot add items to someone else's giveaway.`,
+      })
+    }
+    giveaway = await GiveawayManager.addItems(giveaway, items)
 
     return res.status(200).json({
       text: 'Successfully created giveaway.',

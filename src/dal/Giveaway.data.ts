@@ -253,7 +253,7 @@ export abstract class GiveawayDbManager {
         },
         UpdateExpression: 'SET #items = list_append(#items, :item)', // use list_append function to add new value to the list
         ExpressionAttributeNames: {
-          '#items': 'items', // Replace with your attribute name
+          '#items': 'items',
         },
         ExpressionAttributeValues: {
           ':item': [giveawayItem.sk],
@@ -274,6 +274,57 @@ export abstract class GiveawayDbManager {
         from: 'Giveaway.data/addItem',
         giveaway,
         giveawayItem,
+      })
+      return
+    }
+  }
+
+  static addItems: CallableFunction = async ({ giveaway, items }: { giveaway: Giveaway.Config; items: Giveaway.Item[] }) => {
+    // get item sk ids
+    const itemIds = items.map((item: Giveaway.Item) => item.sk)
+
+    // Add the items
+    const itemPuts: DocumentClient.TransactWriteItem[] = items.map((giveawayItem: Giveaway.Item) => ({
+      Put: {
+        TableName: vlmMainTable,
+        Item: {
+          ...giveawayItem,
+          ts: DateTime.now().toMillis(),
+        },
+      },
+    }))
+
+    // Update the user balance
+    const giveawayUpdate: DocumentClient.TransactWriteItem = {
+      Update: {
+        TableName: vlmMainTable,
+        Key: {
+          pk: Giveaway.Config.pk,
+          sk: giveaway.sk,
+        },
+        UpdateExpression: 'SET #items = list_append(#items, :item)', // use list_append function to add new values to the list
+        ExpressionAttributeNames: {
+          '#items': 'items',
+        },
+        ExpressionAttributeValues: {
+          ':item': [itemIds],
+        },
+      },
+    }
+
+    const params = {
+      TransactItems: [...itemPuts, giveawayUpdate],
+    }
+
+    try {
+      await docClient.transactWrite(params).promise()
+      const dbGiveaway = await this.get(giveaway)
+      return dbGiveaway
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/addItem',
+        giveaway,
+        items,
       })
       return
     }

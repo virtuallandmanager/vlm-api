@@ -25,6 +25,15 @@ export abstract class GiveawayManager {
     }
   }
 
+  static addItems: CallableFunction = async (giveaway: Giveaway.Config, giveawayItems: Giveaway.Item[]) => {
+    const updatedGiveaway = await GiveawayDbManager.addItems({ giveaway, giveawayItems })
+    const fullGiveawayItems = await GiveawayManager.getItemsForGiveaway(updatedGiveaway.items)
+    return {
+      ...updatedGiveaway,
+      items: fullGiveawayItems,
+    }
+  }
+
   static addClaim: CallableFunction = async (
     analyticsAction: Analytics.Session.Action,
     claim: Giveaway.Claim,
