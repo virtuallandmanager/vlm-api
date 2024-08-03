@@ -205,4 +205,34 @@ router.get("/demo-video/:id", async (req: Request, res: Response) => {
   }
 });
 
+
+router.get("/guides/:id", async (req: Request, res: Response) => {
+  const { id } = req.params,
+    filePath = `prod/guides/${id}`;
+
+  const params = {
+    Bucket: config.s3_bucket,
+    Key: filePath,
+  };
+
+  try {
+    // Use the getObject method to retrieve the image from S3
+    const data = await s3.getObject(params).promise();
+
+    // The image content is returned in the 'Body' property
+    const image = data.Body;
+
+    // To display the image in the browser, set the appropriate response headers
+    res.set({
+      "Content-Type": data.ContentType,
+      "Content-Length": data.ContentLength,
+    });
+
+    // Send the image data in the response
+    res.send(image);
+  } catch (error) {
+    res.status(500).send({ error: "Error retrieving image" });
+  }
+});
+
 export default router;
