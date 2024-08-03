@@ -261,7 +261,18 @@ export abstract class GiveawayManager {
     try {
       ///// GIVEAWAY VERIFICATION /////
       //get giveaway data
-      const giveaway = await GiveawayManager.getById(giveawayId)
+      const giveaway = await GiveawayManager.getById(giveawayId),
+        giveawayItems = await GiveawayManager.getItemsForGiveaway(giveaway.items),
+        // TODO: FIX THIS ////////////////
+        // temporary workaroud to the fact that we have no way to set a claim limit for the whole giveaway
+        // just using the limits from the first item we find for now.
+        // this should be removed once we have a way to set the claim limits for the whole giveaway
+        // and claim items individually for a giveaway
+
+        claimLimits = giveawayItems.find((item: Giveaway.Item) => item.sk === giveawayId)?.claimLimits
+      giveaway.claimLimits = claimLimits || { total: 0, perUser: 1, perIp: 3 }
+
+      ///////////////////////////
 
       if (!giveaway) {
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.SUSPICIOUS }
