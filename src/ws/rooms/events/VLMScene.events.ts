@@ -112,6 +112,7 @@ export function bindEvents(room: VLMScene) {
     scene_delete_preset_request: handleSceneDeletePresetRequest,
     scene_delete: handleSceneDelete,
     scene_update_property: handleSceneUpdateProperty,
+    scene_update_preset_property: handleSceneUpdatePresetProperty,
 
     scene_moderator_message: handleModeratorMessage,
     scene_moderator_crash: handleModeratorCrash,
@@ -605,11 +606,11 @@ export async function handleSceneLoadRequest(client: Client, message: { sceneId:
   }
 }
 
-export async function handleSceneAddPresetRequest(client: Client, message: { scene?: Scene.Config }, room: Room) {
+export async function handleSceneAddPresetRequest(client: Client, message: { scene?: Scene.Config; name?: string }, room: Room) {
   // Logic for scene_add_preset_request message
   try {
     const { user } = client.auth
-    const { scene, preset } = await ScenePresetManager.addPresetToScene(message.scene)
+    const { scene, preset } = await ScenePresetManager.addPresetToScene(message.scene, message.name)
     HistoryManager.addUpdate(client.auth.user, client.auth.sceneId, { action: 'created', element: 'scene', property: 'preset' }, message.scene)
     client.send('scene_add_preset_response', { user, scene, preset })
     return false
@@ -618,18 +619,20 @@ export async function handleSceneAddPresetRequest(client: Client, message: { sce
   }
 }
 
-export async function handleSceneClonePresetRequest(client: Client, message: { presetId: string; scene?: Scene.Config }, room: Room) {
+export async function handleSceneClonePresetRequest(client: Client, message: { preset: Scene.Preset; scene?: Scene.Config }, room: Room) {
   // Logic for scene_clone_preset_request message
   try {
-    const { user } = client.auth
-    const { scene, preset } = await ScenePresetManager.clonePreset(message.scene, message.presetId)
+    const { user } = client.auth,
+      presetId = message.preset.sk,
+      original = await ScenePresetManager.getScenePresetById(presetId),
+      { scene, preset } = await ScenePresetManager.clonePreset(message.scene, { ...message.preset })
     HistoryManager.addUpdate(
       client.auth.user,
       client.auth.session.sceneId,
-      { action: 'cloned', element: 'scene', property: 'preset', id: message.presetId },
+      { action: 'cloned', element: 'scene', property: 'preset', id: message.preset.sk },
       message.scene
     )
-    client.send('scene_clone_preset_response', { user, scene, preset, presetId: message.presetId })
+    client.send('scene_clone_preset_response', { user, scene, original, preset })
     return false
   } catch (error) {
     return false
@@ -819,9 +822,22 @@ export async function handleSceneUpdateProperty(client: Client, message: any, ro
     message.scene = scene
 
     await SceneManager.updateSceneProperty({ scene, prop: message.property, val: message.value })
-    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: 'deleted', element: 'scene', id: message.id })
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: 'updated', element: 'scene', id: message.id })
     scene = await SceneManager.getSceneById(sceneId)
     message.scene
+    return true
+  } catch (error) {
+    return false
+  }
+}
+export async function handleSceneUpdatePresetProperty(client: Client, message: any, room: Room) {
+  // Logic for scene_update_property message
+  try {
+    const user = client.auth.user
+    const original = message.preset
+    const preset = await ScenePresetManager.updateScenePresetProperty(message.preset, message.property, message.value)
+    HistoryManager.addUpdate(client.auth.user, client.auth.session.sceneId, { action: 'updated', element: 'scene preset property', id: message.id })
+    client.send('scene_update_preset_property_response', { user, preset, original })
     return true
   } catch (error) {
     return false

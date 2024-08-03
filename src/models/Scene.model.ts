@@ -66,8 +66,11 @@ export namespace Scene {
       this.locale = config?.locale || this.locale
       this.claimPoints = config?.claimPoints || this.claimPoints
       this.models = config?.models || this.models
-      this.createdAt = config?.createdAt || this.createdAt
       this.ts = config?.ts || this.ts
+
+      if (config && !clone) {
+        this.createdAt = config.createdAt
+      }
     }
   }
 

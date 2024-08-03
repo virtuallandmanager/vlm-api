@@ -1405,6 +1405,36 @@ export abstract class SceneDbManager {
     }
   }
 
+  static updatePresetProperty: CallableFunction = async (preset: Scene.Preset, property: string, newValue: unknown) => {
+    const ts = DateTime.now().toMillis()
+
+    const params: DocumentClient.UpdateItemInput = {
+      TableName: vlmMainTable,
+      Key: { pk: Scene.Preset.pk, sk: preset.sk },
+      UpdateExpression: 'set #prop = :prop, #ts = :ts',
+      ConditionExpression: '#ts <= :presetTs',
+      ExpressionAttributeNames: { '#prop': property, '#ts': 'ts' },
+      ExpressionAttributeValues: {
+        ':prop': newValue,
+        ':presetTs': Number(preset.ts) || Number(ts),
+        ':ts': Number(ts),
+      },
+    }
+
+    try {
+      await daxClient.update(params).promise()
+      return await this.getPreset(preset.sk)
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Scene.data/updatePresetProperty',
+        preset,
+        property,
+        newValue,
+      })
+      return await this.getPreset(preset.sk)
+    }
+  }
+
   static put: CallableFunction = async (scene: Scene.Config) => {
     const params = {
       TableName: vlmMainTable,

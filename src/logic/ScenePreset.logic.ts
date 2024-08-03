@@ -4,6 +4,7 @@ import { SceneDbManager } from '../dal/Scene.data'
 import { AdminLogManager } from './ErrorLogging.logic'
 import { SceneElementManager } from './SceneElement.logic'
 import { SceneManager } from './Scene.logic'
+import { DateTime } from 'luxon'
 
 export abstract class ScenePresetManager {
   // Scene Preset Operations //
@@ -56,9 +57,9 @@ export abstract class ScenePresetManager {
     }
   }
 
-  static addPresetToScene: CallableFunction = async (scene: Scene.Config) => {
+  static addPresetToScene: CallableFunction = async (scene: Scene.Config, name?: string) => {
     try {
-      const preset = new Scene.Preset()
+      const preset = new Scene.Preset({ name })
       return await SceneDbManager.addPresetToScene(scene, preset)
     } catch (error) {
       AdminLogManager.logError(error, { from: 'ScenePresetManager.addPresetToScene' })
@@ -75,11 +76,12 @@ export abstract class ScenePresetManager {
     }
   }
 
-  static updateScenePreset: CallableFunction = async (scene: Scene.Config, preset: Scene.Preset) => {
+  static updateScenePresetProperty: CallableFunction = async (preset: Scene.Preset, property: string, value: unknown): Promise<Scene.Preset> => {
     try {
-      return await SceneDbManager.updatePreset(scene, preset)
+      await SceneDbManager.updatePresetProperty(preset, property, value)
+      return await SceneDbManager.getPreset(preset.sk)
     } catch (error) {
-      AdminLogManager.logError(error, { from: 'ScenePresetManager.updateScenePreset' })
+      AdminLogManager.logError(error, { from: 'ScenePresetManager.updateScenePresetProperty' })
     }
   }
 
