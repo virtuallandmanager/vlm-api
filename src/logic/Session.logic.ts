@@ -9,11 +9,26 @@ import { User } from '../models/User.model'
 import { Session as BaseSession } from '../models/Session.model'
 import { UserManager } from './User.logic'
 
+const hourlyActionLimit = 10000
+const rollingAnalyticsLimits: { [id: string]: number } = {}
+// stores the number of claims that have occurred in the last hour
+
 setInterval(() => {
-  SessionDbManager.persistRedisData('analyticsRestrictedScenes')
-  SessionDbManager.persistRedisData('sceneIdUsageRecords')
-  SessionDbManager.persistRedisData('sceneRequestPatterns')
-}, 1000 * 60)
+  const secondsPerHour = 3600,
+    limitPerSecond = hourlyActionLimit / secondsPerHour
+  ////
+  ////
+  // TODO: implement different rates of decay for different account payment tiers
+  ////
+  ////
+  Object.keys(rollingAnalyticsLimits).forEach((id) => {
+    if (rollingAnalyticsLimits[id] - limitPerSecond > 0) {
+      rollingAnalyticsLimits[id] = rollingAnalyticsLimits[id] - limitPerSecond
+    } else if (rollingAnalyticsLimits[id] - limitPerSecond <= 0) {
+      delete rollingAnalyticsLimits[id]
+    }
+  })
+}, 1000)
 
 type SessionRequestPattern = Record<string, number[]> // session guid, timestamps
 
@@ -63,83 +78,23 @@ const hasConsistentInterval: CallableFunction = async (sessionAction: Analytics.
 }
 
 const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
-  const sceneRequestPatterns = (await SessionDbManager.getRedisData('sceneRequestPatterns')) || {},
-    sceneIdUsageRecords = (await SessionDbManager.getRedisData('sceneIdUsageRecords')) || {},
-    analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || []
-
   try {
-    const sceneActionKey = `${config.sceneId}:${config.name}`,
-      currentTimestamp = DateTime.now().toMillis()
-
-    // Deny request if scene has been restricted from submitting this action
-    if (analyticsRestrictedScenes?.includes(sceneActionKey)) {
+    //// BEGIN RATE LIMITING LOGIC ////
+    if (rollingAnalyticsLimits[config.sceneId] > hourlyActionLimit) {
       return true
-    }
-
-    //// START RATE LIMITING LOGIC ////
-
-    // Check if action has an exsiting request pattern for this scene
-    if (!sceneRequestPatterns[sceneActionKey]) {
-      // If not, create a new request pattern for this scene
-      sceneRequestPatterns[sceneActionKey] = {
-        [config.sessionId]: [config.ts],
-      }
-    } else if (sceneRequestPatterns[sceneActionKey][config.sessionId]) {
-      // If there's an existing request pattern for this scene and session, add this timestamp
-      sceneRequestPatterns[sceneActionKey][config.sessionId].push(config.ts)
+    } else if (rollingAnalyticsLimits[config.sceneId]) {
+      rollingAnalyticsLimits[config.sceneId]++
+      return false
     } else {
-      // If not, create a new request pattern for this scene and session id
-      sceneRequestPatterns[sceneActionKey][config.sessionId] = [config.ts]
+      rollingAnalyticsLimits[config.sceneId] = 1
+      return false
     }
-
-    // Check for consistent interval pattern
-    if (await hasConsistentInterval(config)) {
-      // If this scene is submitting actions at a consistent interval, restrict it from submitting this action
-      analyticsRestrictedScenes.push(sceneActionKey)
-      await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
-
-      // Remove this scene action from the request patterns cache
-      delete sceneRequestPatterns[sceneActionKey]
-      await SessionDbManager.setRedisData('sceneRequestPatterns', JSON.stringify(sceneRequestPatterns))
-
-      AdminLogManager.logError(
-        `${config.sceneId} is submitting analytics actions at a consistent interval and has been restricted from submitting "${config.name}" actions.`,
-        {
-          from: 'Session Action Rate Limiter',
-          config,
-          patterns: JSON.stringify(sceneRequestPatterns),
-        }
-      )
-      return true
-    }
-
-    const usage = sceneIdUsageRecords[sceneActionKey]
-
-    if (!usage || currentTimestamp - usage.lastReset > 1000) {
-      // Set object if new sceneId or more than a second has passed
-      sceneIdUsageRecords[sceneActionKey] = {
-        count: 1,
-        lastReset: currentTimestamp,
-      }
-    } else if (usage.count <= 100) {
-      // Increment count
-      usage.count++
-    } else if (usage.count > 100) {
-      // Rate limit exceeded
-      AdminLogManager.logError(`${config.sceneId} has been rate limited on "${config.name}" actions.`, {
-        from: 'Session Action Rate Limiter',
-      })
-      analyticsRestrictedScenes.push(sceneActionKey)
-      return true
-    }
-    return false
     //// END RATE LIMITING LOGIC ////
   } catch (error) {
     AdminLogManager.logError('Failed to check for consistent interval', {
       from: 'Session Action Rate Limiter - Main Try/Catch',
       error: JSON.stringify(error),
       sessionAction: JSON.stringify(config),
-      patterns: JSON.stringify(sceneRequestPatterns),
     })
     return false
   }
@@ -249,14 +204,13 @@ export abstract class SessionManager {
 
   static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
     try {
-      return // temporarily disabled analytics logging
-      // const action = new Analytics.Session.Action(config)
-      // const rateLimited = await rateLimitAnalyticsAction(action)
-      // if (rateLimited) {
-      //   return false
-      // }
+      const action = new Analytics.Session.Action(config)
+      const rateLimited = await rateLimitAnalyticsAction(action)
+      if (rateLimited) {
+        return
+      }
 
-      // var logResponse = await SessionDbManager.logAnalyticsAction(action)
+      var logResponse = await SessionDbManager.logAnalyticsAction(action)
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',

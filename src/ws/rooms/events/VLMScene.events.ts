@@ -318,7 +318,7 @@ async function handleSessionAction(
       timestamp,
     })
     if (!response) {
-      console.log('Failed to log analytics action', { action, metadata, pathPoint, displayName, timestamp })
+      AdminLogManager.logError('Failed to log analytics action', { action, metadata, pathPoint, displayName, timestamp })
     } else {
       const hosts = room.clients.filter((c) => c?.auth?.session?.pk === User.Session.Config.pk)
       hosts.forEach((host) => {
