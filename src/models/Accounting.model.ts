@@ -16,7 +16,7 @@ export namespace Accounting {
     giveawayId?: string // The ID of the giveaway, if applicable
     claimId?: string // The ID of the claim, if applicable
     userId?: string // The ID of the user, if applicable
-    status?: TransactionStatus // The status of the transaction
+    status?: TransactionStatus = TransactionStatus.PENDING// The status of the transaction
     ts?: number = DateTime.now().toMillis()
 
     constructor(config?: Transaction) {
@@ -29,6 +29,7 @@ export namespace Accounting {
       this.promoId = config?.promoId
       this.claimId = config?.claimId
       this.userId = config?.userId
+      this.status = config?.status
       this.ts = config?.ts || this.ts
     }
   }
