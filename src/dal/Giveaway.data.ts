@@ -123,6 +123,10 @@ export abstract class GiveawayDbManager {
         })
       })
 
+      if (params.TransactItems.length === 0) {
+        return []
+      }
+
       const giveaways = await docClient.transactGet(params).promise()
       return giveaways.Responses.map((item) => item.Item)
     } catch (error) {

@@ -211,10 +211,12 @@ export abstract class SessionManager {
       }
 
       var logResponse = await SessionDbManager.logAnalyticsAction(action)
+      return logResponse
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
         config: JSON.stringify(config),
+        error,
       })
       return
     }
