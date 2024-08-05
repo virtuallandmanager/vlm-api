@@ -318,7 +318,7 @@ export abstract class SceneManager {
       }
       const userState = await SceneDbManager.getSceneUserState(sceneId)
       if (!userState) {
-        return await SceneDbManager.createSceneUserState(new Scene.UserState({ sk: sceneId, [key]: [value] }))
+        return await SceneDbManager.createSceneUserState(new Scene.UserState({ sk: sceneId, state: { [key]: [value] } }))
       } else {
         return await SceneDbManager.setSceneUserState(userState, key, value)
       }

@@ -150,7 +150,6 @@ export abstract class SceneDbManager {
         sk: state.sk,
       },
       UpdateExpression: 'set #prop = :prop, #ts = :ts',
-      ConditionExpression: '#ts <= :stateTs',
       ExpressionAttributeNames: { '#prop': 'state', '#ts': 'ts' },
       ExpressionAttributeValues: {
         ':prop': newState,
