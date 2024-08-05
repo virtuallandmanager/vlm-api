@@ -293,15 +293,20 @@ export abstract class SceneManager {
   //
 
   // Scene User State Operations //
-  static getUserStateByScene: CallableFunction = async (sceneId: string, key: string) => {
+  static obtainUserStateByScene: CallableFunction = async (sceneId: string, key: string) => {
     try {
       if (key == 'pk' || key == 'sk') {
         return false
       }
       const userState = await SceneDbManager.getSceneUserState(sceneId)
+
+      if (!userState) {
+        return await SceneDbManager.createSceneUserState(new Scene.UserState({ sk: sceneId, [key]: [null] }))
+      }
+
       return userState ? userState[key] : null
     } catch (error) {
-      AdminLogManager.logError(error, { from: 'SceneManager.getUserStateByScene' })
+      AdminLogManager.logError(error, { from: 'SceneManager.obtainUserStateByScene' })
       return
     }
   }
@@ -313,7 +318,7 @@ export abstract class SceneManager {
       }
       const userState = await SceneDbManager.getSceneUserState(sceneId)
       if (!userState) {
-        return await SceneDbManager.createSceneUserState(new Scene.UserState({ [key]: [value] }))
+        return await SceneDbManager.createSceneUserState(new Scene.UserState({ sk: sceneId, [key]: [value] }))
       } else {
         return await SceneDbManager.setSceneUserState(userState, key, value)
       }

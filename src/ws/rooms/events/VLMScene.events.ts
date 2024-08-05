@@ -473,7 +473,7 @@ export async function handleGetUserState(client: Client, message: any, room: VLM
     }
     console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-      const userState = await SceneManager.getUserStateByScene(sceneId, message.id)
+      const userState = await SceneManager.obtainUserStateByScene(sceneId, message.id)
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('get_user_state_response', userState)
       })
