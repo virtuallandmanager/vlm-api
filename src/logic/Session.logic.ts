@@ -204,12 +204,13 @@ export abstract class SessionManager {
 
   static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
     try {
+      return
       const action = new Analytics.Session.Action(config)
       const rateLimited = await rateLimitAnalyticsAction(action)
       if (rateLimited) {
         return
       }
-      SessionDbManager.logAnalyticsAction(action)
+      // SessionDbManager.logAnalyticsAction(action)
       return
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
