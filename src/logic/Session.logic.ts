@@ -209,9 +209,8 @@ export abstract class SessionManager {
       if (rateLimited) {
         return
       }
-
-      var logResponse = await SessionDbManager.logAnalyticsAction(action)
-      return logResponse
+      SessionDbManager.logAnalyticsAction(action)
+      return
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
