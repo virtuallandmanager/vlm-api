@@ -77,7 +77,7 @@ const hasConsistentInterval: CallableFunction = async (sessionAction: Analytics.
   }
 }
 
-const rateLimitAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
+const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Action) => {
   try {
     //// BEGIN RATE LIMITING LOGIC ////
     if (rollingAnalyticsLimits[config.sceneId] > hourlyActionLimit) {
@@ -204,14 +204,20 @@ export abstract class SessionManager {
 
   static logAnalyticsAction: CallableFunction = async (config: Analytics.Session.Action) => {
     try {
-      return
       const action = new Analytics.Session.Action(config)
-      const rateLimited = await rateLimitAnalyticsAction(action)
+      const rateLimited = rateLimitAnalyticsAction(action)
       if (rateLimited) {
         return
       }
-      // SessionDbManager.logAnalyticsAction(action)
-      return
+      const response = await SessionDbManager.logAnalyticsAction(action)
+      if (!response || response.error) {
+        AdminLogManager.logError('Failed to log analytics action', {
+          from: 'Session.logic/logAnalyticsAction',
+          config: JSON.stringify(config),
+          response,
+        })
+      }
+      return response
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
