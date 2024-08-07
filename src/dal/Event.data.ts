@@ -123,7 +123,7 @@ export abstract class EventDbManager {
     }
 
     try {
-      const linkRecords = await largeQuery(params)
+      const linkRecords = await largeQuery(params, { cache: true })
       const fullLinks = await Promise.all(linkRecords.map((link: Event.SceneLink) => GenericDbManager.get({ pk: Event.SceneLink.pk, sk: link.sk })))
       const linkedEvents = await Promise.all(
         fullLinks.map((link: Event.SceneLink) => GenericDbManager.get({ pk: Event.Config.pk, sk: link.eventId }))
@@ -154,7 +154,7 @@ export abstract class EventDbManager {
     }
 
     try {
-      const linkRecords = await largeQuery(params)
+      const linkRecords = await largeQuery(params, { cache: true })
       const linkedScenes = await Promise.all(
         linkRecords.map((link: Event.SceneLink) => GenericDbManager.get({ pk: Event.SceneLink.pk, sk: link.sk }))
       )
@@ -197,7 +197,7 @@ export abstract class EventDbManager {
     }
 
     try {
-      const linkRecords = await largeQuery(params)
+      const linkRecords = await largeQuery(params, { cache: true })
       const linkedGiveaways = await Promise.all(
         linkRecords.map((link: Event.GiveawayLink) => GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk }))
       )
@@ -273,7 +273,7 @@ export abstract class EventDbManager {
     }
 
     try {
-      const eventRecords = await largeQuery(params),
+      const eventRecords = await largeQuery(params, { cache: true }),
         eventIds = eventRecords.map((event: Event.Config) => event.sk),
         events = await EventDbManager.getByIds(eventIds)
       return events
@@ -302,7 +302,7 @@ export abstract class EventDbManager {
     }
 
     try {
-      const eventRecords = await largeQuery(params),
+      const eventRecords = await largeQuery(params, { cache: true }),
         giveawayIds = eventRecords.map((link: Event.GiveawayLink) => link.giveawayId),
         giveaways = await EventDbManager.getGiveawaysByIds(giveawayIds)
       return giveaways

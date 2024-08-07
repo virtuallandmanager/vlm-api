@@ -1,4 +1,4 @@
-import { docClient, vlmUpdatesTable } from "./common.data";
+import { daxClient, docClient, vlmUpdatesTable } from "./common.data";
 import { AdminLogManager } from "../logic/ErrorLogging.logic";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { History } from "../models/History.model";
@@ -17,7 +17,7 @@ export abstract class HistoryDbManager {
     };
 
     try {
-      const historyRecord = await docClient.get(params).promise();
+      const historyRecord = await daxClient.get(params).promise();
       return historyRecord.Item;
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -38,7 +38,7 @@ export abstract class HistoryDbManager {
     };
 
     try {
-      const historyRecord = await docClient.get(params).promise();
+      const historyRecord = await daxClient.get(params).promise();
       return historyRecord.Item;
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -71,7 +71,7 @@ export abstract class HistoryDbManager {
     });
 
     try {
-      const response = await docClient.transactGet(params).promise(),
+      const response = await daxClient.transactGet(params).promise(),
         historys = response.Responses.map(
           (item) => item.Item as History.Config
         );
@@ -128,7 +128,7 @@ export abstract class HistoryDbManager {
     };
 
     try {
-      await docClient.transactWrite(params).promise();
+      await daxClient.transactWrite(params).promise();
       return config;
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -177,7 +177,7 @@ export abstract class HistoryDbManager {
     };
 
     try {
-      await docClient.transactWrite(params).promise();
+      await daxClient.transactWrite(params).promise();
       return { history, update };
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -197,7 +197,7 @@ export abstract class HistoryDbManager {
     };
 
     try {
-      await docClient.put(params).promise();
+      await daxClient.put(params).promise();
       return await HistoryDbManager.get(history);
     } catch (error) {
       AdminLogManager.logError(error, {

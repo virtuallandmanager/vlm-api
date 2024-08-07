@@ -135,7 +135,7 @@ export abstract class SessionDbManager {
     }
 
     try {
-      const sessionRecords = await largeQuery(params),
+      const sessionRecords = await largeQuery(params, { cache: true }),
         expandedRecords: User.Session.Config[] = []
       for (let i = 0; i < sessionRecords.length; i++) {
         const expanded: User.Session.Config = await this.get(sessionRecords[i])
@@ -170,7 +170,7 @@ export abstract class SessionDbManager {
     }
 
     try {
-      const sessionRecords = await largeQuery(params)
+      const sessionRecords = await largeQuery(params, { cache: true })
       for (let i = 0; i < sessionRecords.length; i++) {
         const expanded: Analytics.Session.Config = await this.get(sessionRecords[i])
         if (expanded && expanded.sessionStart >= sessionStartBuffer) {

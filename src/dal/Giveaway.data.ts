@@ -400,7 +400,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const linkRecords = await largeQuery(params)
+      const linkRecords = await largeQuery(params, { cache: true })
       const linkedGiveaways = await Promise.all(
         linkRecords.map((link: Event.GiveawayLink) => GenericDbManager.get({ pk: Event.GiveawayLink.pk, sk: link.sk }))
       )
@@ -430,7 +430,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const giveawayRecords = await largeQuery(params),
+      const giveawayRecords = await largeQuery(params, { cache: true }),
         giveawayIds = giveawayRecords.map((giveaway: Giveaway.Config) => giveaway.sk),
         giveaways = await GiveawayDbManager.getByIds(giveawayIds)
       return giveaways || []
@@ -533,7 +533,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const claimRecords = await largeQuery(params)
+      const claimRecords = await largeQuery(params, { cache: true })
       return claimRecords
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -564,7 +564,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const claimRecords = await largeQuery(params)
+      const claimRecords = await largeQuery(params, { cache: true })
       if (claimRecords?.length > 0) {
         return claimRecords.filter((claim: Giveaway.Claim) => claim.to === user.connectedWallet)
       } else {
@@ -599,7 +599,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const claimRecords = await largeQuery(params)
+      const claimRecords = await largeQuery(params, { cache: true })
       return claimRecords
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -665,7 +665,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const claimRecords = await largeQuery(params)
+      const claimRecords = await largeQuery(params, { cache: true })
       return claimRecords
     } catch (error) {
       AdminLogManager.logError(error, {
@@ -713,7 +713,7 @@ export abstract class GiveawayDbManager {
     }
 
     try {
-      const wallets = await largeQuery(params)
+      const wallets = await largeQuery(params, { cache: true })
       return wallets
     } catch (error) {
       AdminLogManager.logError(error, {
