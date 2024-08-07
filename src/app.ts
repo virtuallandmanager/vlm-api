@@ -1,6 +1,7 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import requestIp from 'request-ip'
+import rateLimit from 'express-rate-limit';
 import cors, { CorsOptions } from 'cors'
 import { monitor } from '@colyseus/monitor'
 import basicAuth from 'express-basic-auth'
@@ -56,6 +57,16 @@ const corsOptions: CorsOptions = {
   ],
   credentials: true,
 }
+
+// Rate limiter configuration
+const limiter = rateLimit({
+  windowMs: 5 * 1000, // 5 seconds
+  max: 50, // Limit each IP to 50 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+});
+
+// Apply the rate limiter to all requests
+app.use(limiter);
 
 app.use(cors(corsOptions))
 
