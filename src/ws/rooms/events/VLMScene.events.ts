@@ -911,13 +911,24 @@ export async function handleGiveawayClaim(
         return false
       }
 
-      const { responseType, reason } = await GiveawayManager.claimGiveawayItem({
+      const claimResponse = await GiveawayManager.claimGiveawayItem({
         session,
         user,
         sceneId: client.auth.session.sceneId,
         giveawayId: message.giveawayId,
       })
-      client.send('giveaway_claim_response', { responseType, reason, giveawayId: message.giveawayId, sk: message.sk })
+      if (claimResponse) {
+        const responseType = claimResponse.responseType,
+          reason = claimResponse.reason
+
+        client.send('giveaway_claim_response', { responseType, reason, giveawayId: message.giveawayId, sk: message.sk })
+      } else {
+        client.send('giveaway_claim_response', {
+          responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR,
+          giveawayId: message.giveawayId,
+          sk: message.sk,
+        })
+      }
     })
     return false
   } catch (error) {
