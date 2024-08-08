@@ -528,56 +528,61 @@ export abstract class GiveawayManager {
     giveaway: Giveaway.Config
     giveawayId: string
   }) => {
-    const now = DateTime.now().toMillis()
-    const pastEvents = events.filter((e: Event.Config) => e?.eventEnd > now)
-    const futureEvents = events.filter((e: Event.Config) => e?.eventStart > now)
-    const onlyPastEvents = pastEvents.length > 0 && futureEvents.length == 0
-    const onlyFutureEvents = futureEvents.length > 0 && pastEvents.length == 0
-    const noValidEvents = futureEvents.length > 0 && pastEvents.length > 0
+    try {
+      const now = DateTime.now().toMillis()
+      const pastEvents = events.filter((e: Event.Config) => e?.eventEnd > now)
+      const futureEvents = events.filter((e: Event.Config) => e?.eventStart > now)
+      const onlyPastEvents = pastEvents.length > 0 && futureEvents.length == 0
+      const onlyFutureEvents = futureEvents.length > 0 && pastEvents.length == 0
+      const noValidEvents = futureEvents.length > 0 && pastEvents.length > 0
 
-    // check if event has not yet started
-    if (onlyFutureEvents) {
-      AdminLogManager.logGiveawayInfo('DENIED - BEFORE EVENT START', {
-        userName: user.displayName,
-        userId: user.sk,
-        sceneId,
-        to: session.connectedWallet.toLowerCase(),
-        giveawayId,
-        event,
-        giveaway,
-        eventStart: DateTime.fromMillis(futureEvents[0].eventStart).toISO(),
-        time: DateTime.now().toISO(),
-      })
-      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START }
-    }
-    // check if event is over
-    if (onlyPastEvents) {
-      AdminLogManager.logGiveawayInfo('DENIED - AFTER EVENT END', {
-        userName: user.displayName,
-        userId: user.sk,
-        sceneId,
-        to: session.connectedWallet.toLowerCase(),
-        giveawayId,
-        giveaway,
-        eventEnd: DateTime.fromMillis(pastEvents[0].eventEnd).toISO(),
-        time: DateTime.now().toISO(),
-      })
-      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.AFTER_EVENT_END }
-    }
+      // check if event has not yet started
+      if (onlyFutureEvents) {
+        AdminLogManager.logGiveawayInfo('DENIED - BEFORE EVENT START', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+          event,
+          giveaway,
+          eventStart: DateTime.fromMillis(futureEvents[0].eventStart).toISO(),
+          time: DateTime.now().toISO(),
+        })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BEFORE_EVENT_START }
+      }
+      // check if event is over
+      if (onlyPastEvents) {
+        AdminLogManager.logGiveawayInfo('DENIED - AFTER EVENT END', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+          giveaway,
+          eventEnd: DateTime.fromMillis(pastEvents[0].eventEnd).toISO(),
+          time: DateTime.now().toISO(),
+        })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.AFTER_EVENT_END }
+      }
 
-    if (noValidEvents) {
-      AdminLogManager.logGiveawayInfo('DENIED - BETWEEN VALID EVENTS', {
-        userName: user.displayName,
-        userId: user.sk,
-        sceneId,
-        to: session.connectedWallet.toLowerCase(),
-        giveawayId,
-        giveaway,
-        futureEventStart: DateTime.fromMillis(futureEvents[0].eventEnd).toISO(),
-        pastEventEnd: DateTime.fromMillis(pastEvents[0].eventEnd).toISO(),
-        time: DateTime.now().toISO(),
-      })
-      return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BETWEEN_VALID_EVENTS }
+      if (noValidEvents) {
+        AdminLogManager.logGiveawayInfo('DENIED - BETWEEN VALID EVENTS', {
+          userName: user.displayName,
+          userId: user.sk,
+          sceneId,
+          to: session.connectedWallet.toLowerCase(),
+          giveawayId,
+          giveaway,
+          futureEventStart: DateTime.fromMillis(futureEvents[0].eventEnd).toISO(),
+          pastEventEnd: DateTime.fromMillis(pastEvents[0].eventEnd).toISO(),
+          time: DateTime.now().toISO(),
+        })
+        return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.BETWEEN_VALID_EVENTS }
+      }
+    } catch (error) {
+      AdminLogManager.logError('CLAIM ERROR', { error })
+      return { responseType: Giveaway.ClaimResponseType.CLAIM_SERVER_ERROR, reason: error }
     }
   }
 }
