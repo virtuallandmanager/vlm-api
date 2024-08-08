@@ -320,7 +320,7 @@ export abstract class SceneManager {
       if (!userState) {
         return await SceneDbManager.createSceneUserState(new Scene.UserState({ sk: sceneId, state: { [key]: [value] } }))
       } else {
-        return await SceneDbManager.setSceneUserState(userState, key, value)
+        return await SceneDbManager.setSceneUserState(userState.state, key, value)
       }
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.setUserStateByScene' })
