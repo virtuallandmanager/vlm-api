@@ -448,7 +448,7 @@ export async function handleUserMessage(client: Client, message: any, room: VLMS
     if (!user) {
       user = await UserManager.getById(client.auth.session.userId)
     }
-    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${JSON.stringify(message.data)}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async ({ session, user }) => {
       message.from = session.connectedWallet
       message.fromDisplayName = user?.displayName
