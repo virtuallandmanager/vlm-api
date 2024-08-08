@@ -471,7 +471,7 @@ export async function handleGetUserState(client: Client, message: any, room: VLM
     if (!user) {
       user = await UserManager.getById(client.auth.session.userId)
     }
-    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${JSON.stringify(message.data)}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
       const userState = await SceneManager.obtainUserStateByScene(sceneId, message.id)
       room.clients.forEach((c) => {
@@ -492,9 +492,9 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
     if (!user) {
       user = await UserManager.getById(client.auth.session.userId)
     }
-    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${message.data}`)
+    console.log(`Received message from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${JSON.stringify(message.data)}`)
     await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
-      const userState = await SceneManager.setUserStateByScene(sceneId, message.id, message.value)
+      const userState = await SceneManager.setUserStateByScene(sceneId, message.id, message.data)
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('set_user_state_response', userState)
       })
