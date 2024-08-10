@@ -118,6 +118,10 @@ export abstract class GiveawayManager {
     return filteredLink.sk
   }
 
+  static completeGiveawayClaim: CallableFunction = async (claim: Giveaway.Claim) => {
+    return await GiveawayDbManager.completeClaim(claim)
+  }
+
   static getGiveawaysForUser: CallableFunction = async (user: User.Account[]) => {
     const giveaways = await GiveawayDbManager.getAllForUser(user)
     if (giveaways.length === 0) {

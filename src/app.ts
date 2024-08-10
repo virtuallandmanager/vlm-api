@@ -19,6 +19,7 @@ import balanceController from './http/controllers/Balance.controller'
 import promotionController from './http/controllers/Promotion.controller'
 import analyticsController from './http/controllers/Analytics.controller'
 import collectionController from './http/controllers/Collection.controller'
+import transactionController from './http/controllers/Transaction.controller'
 
 // Create Express server
 const app = express()
@@ -82,6 +83,7 @@ app.use('/media', mediaController) // No body-parser middleware applied to this 
 app.use('/promotion', jsonParser, urlencodedParser, promotionController)
 app.use('/scene', jsonParser, urlencodedParser, sceneController)
 app.use('/session', jsonParser, urlencodedParser, sessionController)
+app.use('/transaction', jsonParser, urlencodedParser, transactionController)
 app.use('/user', jsonParser, urlencodedParser, userController)
 app.use(
   '/_status',

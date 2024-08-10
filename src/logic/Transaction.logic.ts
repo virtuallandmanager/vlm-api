@@ -5,6 +5,9 @@ import { User } from '../models/User.model'
 import { ethers, Interface, AlchemyProvider, TransactionRequest, TransactionReceipt, Network } from 'ethers'
 import { AdminLogManager } from './ErrorLogging.logic'
 import dclAbi from '../abi/dclCollectable.json'
+import { GiveawayManager } from './Giveaway.logic'
+import { GenericDbManager } from '../dal/Generic.data'
+import { GiveawayDbManager } from '../dal/Giveaway.data'
 
 const dclAbiInterface: Interface = new Interface(dclAbi)
 const network = process.env.NODE_ENV === 'production' ? 137 : 80001
@@ -28,6 +31,59 @@ export abstract class TransactionManager {
   static getMinter: CallableFunction = async () => {
     const minter = TransactionDbManager.getMinter()
     return minter
+  }
+
+  static drop: CallableFunction = async (transaction?: string) => {
+    try {
+      const dbTransactions = await TransactionDbManager.getTransactionByBlockchainTxId(transaction)
+      if (dbTransactions.length < 1) {
+        await AdminLogManager.logError('Tried to fail a dropped transaction, but no transaction not found.', {
+          from: 'TransactionManager.drop',
+          transaction,
+        })
+        return { success: false }
+      }
+
+      await Promise.all(
+        dbTransactions.map(async (dbTransaction: Accounting.Transaction) => {
+          return await TransactionDbManager.updateTransactionStatus(dbTransaction, Accounting.TransactionStatus.FAILED)
+        })
+      )
+
+      return { success: true }
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'TransactionManager.drop',
+        transaction,
+      })
+      return { success: false }
+    }
+  }
+
+  static complete: CallableFunction = async (transaction?: string) => {
+    try {
+      const dbTransaction = await TransactionDbManager.getTransactionByBlockchainTxId(transaction)
+      const dbClaim = await GenericDbManager.get({ pk: Giveaway.Claim.pk, sk: transaction })
+
+      if (!dbTransaction || !dbClaim) {
+        await AdminLogManager.logError('Tried to complete a dropped transaction, but no transaction not found.', {
+          from: 'TransactionManager.complete',
+          transaction,
+        })
+        return { success: false }
+      } else {
+        await TransactionDbManager.updateTransactionStatus(dbTransaction, Accounting.TransactionStatus.COMPLETED)
+        await GiveawayDbManager.updateClaimStatus({ dbClaim, status: Giveaway.ClaimStatus.COMPLETE })
+      }
+
+      return { success: true }
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'TransactionManager.complete',
+        transaction,
+      })
+      return { success: false }
+    }
   }
 
   private static async broadcastTransaction(signedTx: string): Promise<TransactionReceipt> {
@@ -67,7 +123,7 @@ export abstract class TransactionManager {
         }
       } catch (error) {
         console.log(error)
-        // AdminLogManager.logError(error, { from: 'TransactionManager.createMinterRightsTransactions' })
+        AdminLogManager.logError(error, { from: 'TransactionManager.createMinterRightsTransactions' })
       }
     }
 

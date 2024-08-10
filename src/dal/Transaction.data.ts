@@ -1,9 +1,10 @@
-import { docClient, vlmMainTable } from './common.data'
+import { docClient, largeQuery, vlmMainTable, vlmTransactionsTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
 import { WalletConfig } from '../models/Wallet.model'
 import { GenericDbManager } from './Generic.data'
 import { Accounting } from '../models/Accounting.model'
 import { DateTime } from 'luxon'
+import { QueryCommandInput } from '@aws-sdk/client-dynamodb'
 
 export abstract class TransactionDbManager {
   static get: CallableFunction = async (wallet: WalletConfig) => {
@@ -61,6 +62,34 @@ export abstract class TransactionDbManager {
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Transaction.data/getMinter',
+      })
+    }
+  }
+
+  static getTransactionByBlockchainTxId: CallableFunction = async (blockchainTxId: string) => {
+    try {
+      const params = {
+        TableName: vlmTransactionsTable,
+        KeyConditionExpression: '#pk = :pkValue',
+        FilterExpression: 'contains(blockchainTxIds, :blockchainTxId)',
+        ExpressionAttributeNames: {
+          '#pk': 'pk',
+        },
+        ExpressionAttributeValues: {
+          ':pk': Accounting.Transaction.pk,
+          ':blockchainTxId': blockchainTxId,
+        },
+      }
+
+      const transactionRecord = await largeQuery(params)
+      if (!transactionRecord || transactionRecord.length < 1) {
+        return null
+      }
+      return transactionRecord[0] as Accounting.Transaction
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Transaction.data/getTransactionByBlockchainTxId',
+        blockchainTxId,
       })
     }
   }

@@ -132,6 +132,10 @@ export async function userAuthMiddleware(
 }
 
 export async function alchemyWebhook(req: Request, res: Response, next: NextFunction) {
+  const token = extractToken(req)
+  if (token !== process.env.ALCHEMY_WEBHOOK_AUTH) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid Token' })
+  }
   if (req.clientIp !== process.env.ALCHEMY_IP_A && req.clientIp !== process.env.ALCHEMY_IP_B) {
     return res.status(401).json({ error: 'Unauthorized: Invalid Origin' })
   }

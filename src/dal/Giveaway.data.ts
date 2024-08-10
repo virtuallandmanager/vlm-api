@@ -2,7 +2,7 @@ import { Event } from '../models/Event.model'
 import { daxClient, docClient, largeQuery, largeScan, vlmAnalyticsTable, vlmClaimsTable, vlmMainTable, vlmTransactionsTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
 import { Accounting } from '../models/Accounting.model'
-import { DocumentClient } from 'aws-sdk/clients/dynamodb'
+import DynamoDB, { DocumentClient } from 'aws-sdk/clients/dynamodb'
 import { Analytics } from '../models/Analytics.model'
 import { User } from '../models/User.model'
 import { Giveaway } from '../models/Giveaway.model'
@@ -750,6 +750,133 @@ export abstract class GiveawayDbManager {
         minterObj,
       })
       return
+    }
+  }
+
+  static completeClaim: CallableFunction = async (claim: Giveaway.Claim) => {
+    try {
+      await this.increaseClaimCountOfGiveaway(claim.giveawayId, 1)
+      const allocation = await this.getCreditAllocationByGiveawayId(claim.giveawayId)
+      if (!allocation) {
+        throw new Error('No allocation found for giveaway')
+      }
+      await this.decreaseCreditAllocationOfGiveaway(allocation.sk, 1)
+      await this.updateClaimStatus({ ...claim, status: Giveaway.ClaimStatus.COMPLETE })
+      const updatedClaim = await this.get({ pk: Giveaway.Claim.pk, sk: claim.sk })
+      return updatedClaim
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Giveaway.data/completeClaim',
+        claim,
+      })
+      return
+    }
+  }
+
+  // Increase Claim Count Of Giveaway
+  static increaseClaimCountOfGiveaway: CallableFunction = async (giveawayId: string, claimCount: number) => {
+    const params: DynamoDB.DocumentClient.UpdateItemInput = {
+      TableName: vlmMainTable,
+      Key: {
+        pk: Giveaway.Config.pk,
+        sk: giveawayId,
+      },
+      UpdateExpression: 'ADD #claims :claimCount',
+      ExpressionAttributeNames: {
+        '#claims': 'claimCount',
+      },
+      ExpressionAttributeValues: {
+        ':claimCount': claimCount,
+      },
+    }
+
+    try {
+      await docClient.update(params).promise()
+      return { success: true }
+    } catch (err) {
+      console.error('Error updating DynamoDB - increaseClaimCountOfGiveaway', err)
+      throw err
+    }
+  }
+
+  // Increase Allocated Credits for Giveaway
+  static decreaseCreditAllocationOfGiveaway: CallableFunction = async (allocationId: string, claimCount: number) => {
+    const params: DynamoDB.DocumentClient.UpdateItemInput = {
+      TableName: vlmMainTable,
+      Key: {
+        pk: Accounting.CreditAllocation.pk,
+        sk: allocationId,
+      },
+      UpdateExpression: 'ADD #allocatedCredits :claimCount',
+      ExpressionAttributeNames: {
+        '#allocatedCredits': 'allocatedCredits',
+      },
+      ExpressionAttributeValues: {
+        ':claimCount': -claimCount,
+      },
+    }
+
+    try {
+      await docClient.update(params).promise()
+      return { success: true }
+    } catch (err) {
+      console.error('Error updating DynamoDB - decreaseCreditAllocationOfGiveaway', err)
+      throw err
+    }
+  }
+
+  static getCreditAllocationByGiveawayId: CallableFunction = async (giveawayId: string): Promise<Accounting.CreditAllocation | undefined> => {
+    const params: DynamoDB.DocumentClient.QueryInput = {
+      TableName: vlmMainTable,
+      IndexName: 'giveawayId-index',
+      KeyConditionExpression: '#pk = :pk',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#giveawayId': 'giveawayId',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Accounting.CreditAllocation.pk,
+        ':giveawayId': giveawayId,
+      },
+    }
+
+    try {
+      const data = await largeQuery(params)
+
+      if (!data.length) {
+        return
+      }
+
+      return data[0] as Accounting.CreditAllocation
+    } catch (err) {
+      console.error('Error querying DynamoDB - getCreditAllocationByGiveawayId', err)
+      throw err
+    }
+  }
+
+  // Update Claim Status
+  static updateClaimStatus: CallableFunction = async (claim: Giveaway.Claim) => {
+    const params: DynamoDB.DocumentClient.UpdateItemInput = {
+      TableName: vlmClaimsTable,
+      Key: {
+        pk: Giveaway.Claim.pk,
+        sk: claim.sk,
+      },
+      UpdateExpression: 'SET #status = :status',
+      ExpressionAttributeNames: {
+        '#status': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':status': claim.status,
+      },
+    }
+
+    try {
+      await docClient.update(params).promise()
+      return { success: true }
+    } catch (err) {
+      console.error('Error updating DynamoDB - updateClaimStatus', err)
+      throw err
     }
   }
 }
