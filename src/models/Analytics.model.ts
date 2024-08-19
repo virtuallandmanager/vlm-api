@@ -93,7 +93,7 @@ export namespace Analytics {
       sceneId?: string
       origin?: Metaverse.Location
       pathPoint?: PathPoint
-      metadata?: unknown = {}
+      metadata?: any = {}
       ts?: EpochTimeStamp = DateTime.now().toMillis()
 
       constructor(config: Action) {

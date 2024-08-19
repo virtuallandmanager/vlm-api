@@ -50,7 +50,7 @@ export abstract class EventDbManager {
     }
   }
 
-  static getById: CallableFunction = async (sk: string) => {
+  static getById: CallableFunction = async (sk: string): Promise<Event.Config> => {
     if (!sk) {
       return
     }
@@ -64,7 +64,7 @@ export abstract class EventDbManager {
 
     try {
       const event = await docClient.get(params).promise()
-      return event.Item
+      return event.Item as Event.Config
     } catch (error) {
       AdminLogManager.logError(error, {
         from: 'Event.data/getByIds',
@@ -211,7 +211,7 @@ export abstract class EventDbManager {
     }
   }
 
-  static getLinkedGiveawaysByIds: CallableFunction = async (sks: string[]) => {
+  static getLinkedGiveawaysByIds: CallableFunction = async (sks: string[]): Promise<Event.GiveawayLink[]> => {
     try {
       const giveawayLinks = await Promise.all(sks.map(async (sk) => await this.getLinkedGiveawaysById(sk)))
 

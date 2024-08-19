@@ -84,7 +84,7 @@ export abstract class EventManager {
     return filteredLink.sk
   }
 
-  static getById: CallableFunction = async (eventId: string) => {
+  static getById: CallableFunction = async (eventId: string): Promise<Event.Config> => {
     return await EventDbManager.getById(eventId)
   }
 
@@ -98,6 +98,8 @@ export abstract class EventManager {
     sks.forEach((event: Event.Config | string, index: number) => {
       if (typeof event !== 'string') {
         eventIds.push(event.sk)
+      } else {
+        eventIds.push(event)
       }
     })
     return await EventDbManager.getLinkedScenesByIds(eventIds)
@@ -120,7 +122,7 @@ export abstract class EventManager {
     return ongoingEvents
   }
 
-  static getLinkedGiveaways: CallableFunction = async (sks: string[] | Event.Config[]) => {
+  static getLinkedGiveaways: CallableFunction = async (sks: string[] | Event.Config[]): Promise<Event.GiveawayLink[]> => {
     const eventIds: string[] = []
     //convert full event objects into sks
     sks.forEach((event: Event.Config | string, index: number) => {

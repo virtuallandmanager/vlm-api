@@ -8,6 +8,7 @@ import { Analytics } from '../models/Analytics.model'
 import { User } from '../models/User.model'
 import { Session as BaseSession } from '../models/Session.model'
 import { UserManager } from './User.logic'
+import { vlmAnalyticsTable } from '../dal/common.data'
 
 const hourlyActionLimit = 10000
 const rollingAnalyticsLimits: { [id: string]: number } = {}
@@ -176,6 +177,26 @@ export abstract class SessionManager {
     }
   }
 
+  static getAnalyticsSessionById: CallableFunction = async (sessionId: string) => {
+    try {
+      return await SessionDbManager.get({ pk: Analytics.Session.Config.pk, sk: sessionId })
+    } catch (error) {
+      AdminLogManager.logError('Failed to get analytics session', sessionId)
+      console.log(error)
+      return
+    }
+  }
+
+  static getVLMSessionById: CallableFunction = async (sessionId: string) => {
+    try {
+      return await SessionDbManager.get({ pk: User.Session.Config.pk, sk: sessionId })
+    } catch (error) {
+      AdminLogManager.logError('Failed to get analytics session', sessionId)
+      console.log(error)
+      return
+    }
+  }
+
   static getAnalyticsSessionForUserId: CallableFunction = async (userId: string) => {
     try {
       return await SessionDbManager.getRecentAnalyticsSession(userId)
@@ -209,15 +230,15 @@ export abstract class SessionManager {
       if (rateLimited) {
         return
       }
-      const response = await SessionDbManager.logAnalyticsAction(action)
-      if (!response || response.error) {
+      const logResponse = await SessionDbManager.logAnalyticsAction(action)
+      if (!logResponse || logResponse.error) {
         AdminLogManager.logError('Failed to log analytics action', {
           from: 'Session.logic/logAnalyticsAction',
           config: JSON.stringify(config),
-          response,
+          logResponse,
         })
       }
-      return response
+      return logResponse
     } catch (error) {
       AdminLogManager.logError('Failed to log analytics action', {
         from: 'Session.logic/logAnalyticsAction',
@@ -226,24 +247,6 @@ export abstract class SessionManager {
       })
       return
     }
-
-    // if (logResponse && !logResponse?.error && !logResponse.sceneActionKey) {
-    //   return logResponse
-    // }
-
-    // if an error exists and the sceneActionKey is returned, an error occurred that should rate limit the scene
-    // try {
-    //   const analyticsRestrictedScenes = (await SessionDbManager.getRedisData('analyticsRestrictedScenes')) || []
-    //   analyticsRestrictedScenes.push(logResponse.sceneActionKey)
-    //   await SessionDbManager.setRedisData('analyticsRestrictedScenes', JSON.stringify(analyticsRestrictedScenes))
-    // } catch (error) {
-    //   AdminLogManager.logError(
-    //     `${config.sceneId} has caused a Throttling Exception and has been restricted from submitting "${config.name}" actions.`,
-    //     {
-    //       from: 'Session.logic/logAnalyticsAction',
-    //     }
-    //   )
-    // }
   }
 
   static storePreSession: CallableFunction = async (session: Analytics.Session.Config | User.Session.Config) => {
@@ -634,5 +637,9 @@ export abstract class SessionManager {
 
   static getSessionPath: CallableFunction = async (userSessionPath?: Analytics.Path) => {
     return await SessionDbManager.getPath(userSessionPath)
+  }
+
+  static getSessionsInTimeRangeBySceneId: CallableFunction = async (sceneId: string, start: number, end: number) => {
+    return await SessionDbManager.getSessionsInTimeRangeBySceneId(sceneId, start, end)
   }
 }

@@ -357,6 +357,7 @@ export namespace Scene {
         this.density = config.density
         this.parent = config.parent
         this.enabled = config.enabled
+        this.isTransparent = config.isTransparent
         this.withCollisions = config.withCollisions
         this.castShadows = config.castShadows
         this.createdAt = config.createdAt
