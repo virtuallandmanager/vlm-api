@@ -825,5 +825,5 @@ export namespace Scene {
       this.value = message.value
     }
   }
-  export const DemoSceneId = '00000000-0000-0000-0000-000000000000'
+  export const DemoSceneId = 'demo'
 }

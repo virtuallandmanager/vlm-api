@@ -85,7 +85,31 @@ export abstract class AnalyticsManager {
     end: EpochTimeStamp
     scale: Analytics.AggregateScale
   }) => {
-    const { sceneId, start, end, scale } = queryOptions
-    return await AnalyticsDbManager.getHistoricalSceneMetrics({ sceneId, start, end, scale })
+    const aggregates = await AnalyticsDbManager.getHistoricalSceneMetrics(queryOptions)
+    const actionAggregates: { [actionName: string]: { [isoDateTime: string]: number } } = {}
+    aggregates.forEach((aggregate: Analytics.Session.Aggregate) => {
+      const { actionCounts } = aggregate
+      Object.entries(actionCounts).forEach(([actionName, actionCount]: [string, { [isoDateTime: string]: number }]) => {
+        if (!actionAggregates[actionName]) {
+          actionAggregates[actionName] = {}
+        } else {
+          actionAggregates[actionName] = { ...actionAggregates[actionName], ...actionCount }
+        }
+      })
+    })
+    return actionAggregates
+  }
+
+  static getCustomSceneMetrics: CallableFunction = async (queryOptions: {
+    sceneId: string
+    start: EpochTimeStamp
+    end: EpochTimeStamp
+    action: string
+  }) => {
+    return await AnalyticsDbManager.getCustomSceneMetrics(queryOptions)
+  }
+
+  static exportAnalyticsData: CallableFunction = async (sceneId: string, startDate: string, endDate: string) => {
+    return AnalyticsDbManager.exportAnalyticsData(sceneId, startDate, endDate)
   }
 }

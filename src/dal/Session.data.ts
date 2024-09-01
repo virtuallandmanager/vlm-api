@@ -591,4 +591,41 @@ export abstract class SessionDbManager {
       })
     }
   }
+
+  static getSessionsInTimeRangeBySceneId: CallableFunction = async (sceneId: string, start: number, end: number) => {
+    const params = {
+      TableName: vlmAnalyticsTable,
+      IndexName: 'sceneId-index',
+      KeyConditionExpression: '#pk = :pk and #sceneId = :sceneId',
+      FilterExpression: '#sessionStart >= :sessionStart and #sessionEnd <= :sessionEnd',
+      ExpressionAttributeNames: {
+        '#pk': 'pk',
+        '#sceneId': 'sceneId',
+        '#sessionStart': 'sessionStart',
+        '#sessionEnd': 'sessionEnd',
+      },
+      ExpressionAttributeValues: {
+        ':pk': Analytics.Session.Config.pk,
+        ':sceneId': sceneId,
+        ':sessionStart': Number(start) - 86400000,
+        ':sessionEnd': Number(end) + 86400000,
+      },
+    }
+
+    try {
+      const sessionRecords = await largeQuery(params, { cache: true })
+      const filteredSessions = sessionRecords?.filter((session: Analytics.Session.Config) => {
+        const sessionStartTime = session.sessionStart
+        const sessionEndTime = session.sessionEnd
+        return (sessionStartTime >= start && sessionStartTime <= end) || (sessionEndTime <= end && sessionEndTime >= start)
+      })
+      return filteredSessions as Analytics.Session.Config[]
+    } catch (error) {
+      AdminLogManager.logError(error, {
+        from: 'Session.data/getSessionsInTimeRangeBySceneId',
+        sceneId,
+      })
+      return
+    }
+  }
 }

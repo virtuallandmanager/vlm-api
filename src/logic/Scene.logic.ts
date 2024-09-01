@@ -354,8 +354,8 @@ export abstract class SceneManager {
           return new Scene.Sound.Instance(element)
         case 'vlm:scene:claimpoint':
           return new Scene.ClaimPoint.Config(element)
-        case 'vlm:scene:claimpoint':
-          return new Scene.ClaimPoint.Config(element)
+        case 'vlm:scene:claimpoint:instance':
+          return new Scene.ClaimPoint.Instance(element)
         case 'vlm:scene:widget':
           return new Scene.Widget.Config(element)
         default:

@@ -190,7 +190,7 @@ router.post('/invite/user', authMiddleware, async (req: Request, res: Response) 
 
 router.get('/demo', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const scene = await SceneManager.getSceneById('00000000-0000-0000-0000-000000000000')
+    const scene = await SceneManager.getSceneById(Scene.DemoSceneId)
     await SceneManager.buildScene(scene)
     return res.status(200).json({
       text: 'Successfully authenticated.',
