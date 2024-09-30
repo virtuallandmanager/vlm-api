@@ -181,11 +181,10 @@ router.post(
         })
       }
 
-      await runChecks(req, parcelArr, sceneId)
-      serverAuthenticated = true
+      serverAuthenticated = await runChecks(req, parcelArr, sceneId)
     } catch (error: unknown) {
       AdminLogManager.logError(error, {
-        from: 'Authentication.controller/decentraland',
+        from: 'Authentication.controller/decentraland: line 188',
         request: req.body,
       })
       serverAuthenticated = false
@@ -214,20 +213,21 @@ router.post(
       const existingSession = await SessionManager.getAnalyticsSessionForUserId(dbUser.sk)
 
       const session =
-        existingSession && existingSession.sceneId == sceneId ? existingSession : // if the user is already in the scene, keep the session
-        new Analytics.Session.Config({
-          userId: dbUser.sk,
-          connectedWallet: dbUser.connectedWallet.toLowerCase(),
-          location,
-          sceneId,
-          clientIp,
-          sessionRole,
-          device: subPlatform,
-          serverAuthenticated,
-          sessionStart: DateTime.now().toMillis(),
-          hasConnectedWeb3: user.hasConnectedWeb3,
-          ttl: environment === 'prod' ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
-        })
+        existingSession && existingSession.sceneId == sceneId
+          ? existingSession // if the user is already in the scene, keep the session
+          : new Analytics.Session.Config({
+              userId: dbUser.sk,
+              connectedWallet: dbUser.connectedWallet.toLowerCase(),
+              location,
+              sceneId,
+              clientIp,
+              sessionRole,
+              device: subPlatform,
+              serverAuthenticated,
+              sessionStart: DateTime.now().toMillis(),
+              hasConnectedWeb3: user.hasConnectedWeb3,
+              ttl: environment === 'prod' ? undefined : DateTime.now().plus({ hours: 24 }).toMillis(),
+            })
       await SessionManager.getIpData(session)
       SessionManager.issueAnalyticsSessionToken(session)
       await SessionManager.storePreSession(session)

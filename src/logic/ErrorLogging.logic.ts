@@ -51,6 +51,8 @@ export abstract class AdminLogManager {
         this.logErrorToDiscord(`<@&1041552453918801973>\n
       ${JSON.stringify(log)}\n
       -\n
+      Environment: ${config.environment.toUpperCase()}\n
+      Triggered By: ${metadata.from || 'Unknown Method'}\n
       Metadata: ${JSON.stringify(metadata)}}`)
       }
     } catch (error: any) {

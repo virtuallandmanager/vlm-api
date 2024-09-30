@@ -41,6 +41,7 @@ if (process.env.NODE_ENV !== 'production') {
     transport: new WebSocketTransport({
       server,
       maxPayload: 100 * 1024 * 1024, // 10 MB
+      pingMaxRetries: 10,
     }),
     presence: new RedisPresence(presenceServer),
     driver: new RedisDriver(presenceServer),
@@ -50,6 +51,7 @@ if (process.env.NODE_ENV !== 'production') {
     transport: new WebSocketTransport({
       server,
       maxPayload: 100 * 1024 * 1024, // 100 MB
+      pingMaxRetries: 10,
     }),
     presence: new RedisPresence(presenceServer),
     driver: new RedisDriver(presenceServer),

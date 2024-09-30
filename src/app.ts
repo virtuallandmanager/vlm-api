@@ -10,6 +10,7 @@ import userController from './http/controllers/User.controller'
 import authController from './http/controllers/Authentication.controller'
 import adminController from './http/controllers/Admin.controller'
 import sceneController from './http/controllers/Scene.controller'
+import streamController from './http/controllers/Stream.controller'
 import sessionController from './http/controllers/Session.controller'
 import eventController from './http/controllers/Event.controller'
 import mediaController from './http/controllers/Media.controller'
@@ -82,6 +83,7 @@ app.use('/giveaway', jsonParser, urlencodedParser, giveawayController)
 app.use('/media', mediaController) // No body-parser middleware applied to this route
 app.use('/promotion', jsonParser, urlencodedParser, promotionController)
 app.use('/scene', jsonParser, urlencodedParser, sceneController)
+app.use('/stream', jsonParser, urlencodedParser, streamController)
 app.use('/session', jsonParser, urlencodedParser, sessionController)
 app.use('/transaction', jsonParser, urlencodedParser, transactionController)
 app.use('/user', jsonParser, urlencodedParser, userController)

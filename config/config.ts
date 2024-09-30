@@ -32,4 +32,5 @@ export default {
     port: Number(process.env.PRESENCE_SERVER_PORT),
   },
   s3_bucket: process.env.S3_BUCKET,
+  s3_data_backups: process.env.S3_DATA_BACKUPS_BUCKET,
 };

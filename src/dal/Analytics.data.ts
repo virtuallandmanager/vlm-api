@@ -1,7 +1,7 @@
 import { largeQuery, s3, vlmAnalyticsTable } from './common.data'
 import { AdminLogManager } from '../logic/ErrorLogging.logic'
 import { Analytics } from '../models/Analytics.model'
-import { DateTime } from 'luxon'
+import { DateTime, DurationLikeObject } from 'luxon'
 import { S3 } from 'aws-sdk'
 import config from '../../config/config'
 
@@ -39,14 +39,14 @@ export abstract class AnalyticsDbManager {
     }
   }
 
-  static getRecentSessions: CallableFunction = async (sceneId: string) => {
-    const twentyFourHoursAgo = DateTime.now().minus({ hours: 24 }).toMillis()
+  static getRecentSessions: CallableFunction = async (sceneId: string, timeRange: DurationLikeObject) => {
+    const timeAgo = DateTime.now().minus(timeRange).toMillis()
 
     const params = {
       TableName: vlmAnalyticsTable,
       IndexName: 'sceneId-index',
       KeyConditionExpression: '#pk = :pk and #sceneId = :sceneId',
-      FilterExpression: '#ts >= :twentyFourHoursAgo',
+      FilterExpression: '#ts >= :timeAgo',
       ExpressionAttributeNames: {
         '#pk': 'pk',
         '#sceneId': 'sceneId',
@@ -55,7 +55,7 @@ export abstract class AnalyticsDbManager {
       ExpressionAttributeValues: {
         ':pk': Analytics.Session.Config.pk,
         ':sceneId': sceneId,
-        ':twentyFourHoursAgo': twentyFourHoursAgo,
+        ':timeAgo': timeAgo,
       },
     }
 
@@ -67,7 +67,7 @@ export abstract class AnalyticsDbManager {
         from: 'AnalyticsUser.data/getRecentSessions',
         sceneId,
       })
-      console.log(error)
+      console.error(error)
       return
     }
   }

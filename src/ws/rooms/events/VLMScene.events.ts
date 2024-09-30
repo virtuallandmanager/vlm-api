@@ -19,6 +19,7 @@ import { Giveaway } from '../../../models/Giveaway.model'
 import { DateTime } from 'luxon'
 import { Session } from '../../../models/Session.model'
 import { UserManager } from '../../../logic/User.logic'
+import { MediaManager } from '../../../logic/Media.logic'
 
 type ElementName = 'image' | 'video' | 'nft' | 'model' | 'sound' | 'widget' | 'claimpoint'
 type Action = 'init' | 'create' | 'update' | 'updateAll' | 'delete' | 'trigger'
@@ -268,6 +269,8 @@ export async function handleSessionStart(client: Client, sessionConfig: Analytic
 
       scenePreset = await ScenePresetManager.getScenePresetById(scene.scenePreset)
       scenePreset = await ScenePresetManager.buildScenePreset(scenePreset)
+
+      const communityChannels = await MediaManager.getCommunityChannels()
 
       for (let i = 0; i < scenePreset.videos.length; i++) {
         const video = scenePreset.videos[i]

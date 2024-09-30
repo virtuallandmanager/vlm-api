@@ -12,7 +12,7 @@ export namespace User {
     pk?: string = Account.pk
     sk?: string = uuidv4()
     displayName?: string
-    avatar?: string = `https://vlm.gg/media/avatar/default.png`
+    avatar?: string = `https://api.vlm.gg/media/avatar/default.png`
     smsPhoneNumber?: SMSPhoneNumber
     emailAddress?: string
     aggregates?: Aggregates
@@ -38,6 +38,11 @@ export namespace User {
       this.roles = config.roles
       this.lastIp = config.clientIp || config.lastIp
       this.hasConnectedWeb3 = config.hasConnectedWeb3
+
+      if (config?.avatar && config.avatar === 'https://vlm.gg/media/avatar/default.png') {
+        console.log('avatar is default')
+        this.avatar ='https://api.vlm.gg/media/avatar/default.png'
+      }
     }
   }
 

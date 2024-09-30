@@ -5,32 +5,52 @@ import { Analytics } from '../models/Analytics.model'
 export abstract class AnalyticsManager {
   static getRecentSessionMetrics: CallableFunction = async (sceneId: string) => {
     try {
-      const recentSceneSessionsFull = await AnalyticsDbManager.getRecentSessions(sceneId)
+      // Fetch sessions for the last 7 days
+      const sessionsLastWeek = await AnalyticsDbManager.getRecentSessions(sceneId, { days: 7 })
 
-      const totalSessions = recentSceneSessionsFull.length,
-        uniqueUsers = recentSceneSessionsFull.reduce((acc: any, session: Analytics.Session.Config) => {
-          if (!acc[session.userId]) {
-            acc[session.userId] = true
-          }
-          return acc
-        }, {}),
-        totalUniqueUsers = Object.keys(uniqueUsers).length,
-        averageSessionLength =
-          recentSceneSessionsFull.reduce((acc: number, session: Analytics.Session.Config) => {
-            if (session.sessionStart && session.sessionEnd) {
-              acc += session.sessionEnd - session.sessionStart
-            }
-            return acc
-          }, 0) / totalSessions
-            ? 0 / totalSessions
-            : 0
+      // Get timestamp for 24 hours ago
+      const twentyFourHoursAgo = DateTime.now().minus({ hours: 24 }).toMillis()
 
-      return { totalSessions, totalUniqueUsers, averageSessionLength }
+      // Filter sessions for the last 24 hours
+      const sessionsLast24h = sessionsLastWeek.filter((session: Analytics.Session.Config) => session.ts >= twentyFourHoursAgo)
+
+      // Compute metrics for last 24 hours and last week
+      const metricsLast24h = this.computeMetrics(sessionsLast24h)
+      const metricsLastWeek = this.computeMetrics(sessionsLastWeek)
+
+      return { last24h: metricsLast24h, lastWeek: metricsLastWeek }
     } catch (error) {
-      console.log(error)
+      console.error(error)
       return
     }
   }
+
+  static computeMetrics = (sessions: Analytics.Session.Config[]) => {
+    const totalSessions = sessions.length
+
+    // Calculate unique users
+    const uniqueUsers = sessions.reduce((acc, session) => {
+      if (session.userId && !acc.has(session.userId)) {
+        acc.add(session.userId)
+      }
+      return acc
+    }, new Set())
+    const totalUniqueUsers = uniqueUsers.size
+
+    // Calculate total session length
+    const sessionLengthTotal = sessions.reduce((acc, session) => {
+      if (session.sessionStart && session.sessionEnd) {
+        acc += session.sessionEnd - session.sessionStart
+      }
+      return acc
+    }, 0)
+
+    // Calculate average session length in milliseconds
+    const averageSessionLength = totalSessions > 0 ? Math.round(sessionLengthTotal / totalSessions) : 0
+
+    return { totalSessions, totalUniqueUsers, averageSessionLength }
+  }
+
   static getRecentSceneMetrics: CallableFunction = async (sceneId: string) => {
     try {
       const recentSceneMetricsFull = await AnalyticsDbManager.getRecentSceneMetrics(sceneId)
