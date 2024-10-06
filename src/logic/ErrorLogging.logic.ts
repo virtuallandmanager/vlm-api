@@ -118,7 +118,38 @@ export abstract class AdminLogManager {
   static logErrorToDiscord = async (content: string, wat: boolean = false): Promise<void> => {
     try {
       //
-      const webhook = wat ? process.env.DISCORD_WAT_WEBHOOK : process.env.DISCORD_ERROR_WEBHOOK
+      const webhook = wat ? process.env.DISCORD_BUG_REPORT_WEBHOOK : process.env.DISCORD_ERROR_WEBHOOK
+      await axios.post(webhook, {
+        content,
+      })
+    } catch (error: any) {
+      console.log(error)
+      return
+    }
+  }
+
+  static logInternalUpdate = async (channel: string, content: string): Promise<void> => {
+    try {
+      let webhook
+
+      switch (channel) {
+        case 'analytics':
+          webhook = process.env.DISCORD_ANALYTICS_WEBHOOK
+          break
+        case 'giveaway':
+          webhook = process.env.DISCORD_GIVEAWAY_WEBHOOK
+          break
+        case 'transactions':
+          webhook = process.env.DISCORD_TRANSACITONS_WEBHOOK
+          break
+        case 'tier-limit':
+          webhook = process.env.DISCORD_TIER_LIMITING_WEBHOOK
+          break
+        default:
+          webhook = process.env.DISCORD_ERROR_WEBHOOK
+          break
+      }
+
       await axios.post(webhook, {
         content,
       })

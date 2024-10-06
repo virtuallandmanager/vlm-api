@@ -303,9 +303,6 @@ async function handleSessionAction(
   room: VLMScene
 ) {
   try {
-    if (message.pathPoint && message.pathPoint[0]) {
-      message.pathPoint[0] = message.pathPoint[0].toString().length >= 13 ? Number(message.pathPoint[0]) / 1000 : message.pathPoint[0]
-    }
     const timestamp = DateTime.now().toMillis(),
       { action, metadata, pathPoint } = message,
       { session, user } = client.auth,
@@ -321,7 +318,7 @@ async function handleSessionAction(
       timestamp,
     })
     if (!response) {
-      AdminLogManager.logError('Failed to log analytics action', { action, metadata, pathPoint, displayName, timestamp })
+      return false
     } else {
       const hosts = room.clients.filter((c) => c?.auth?.session?.pk === User.Session.Config.pk)
       hosts.forEach((host) => {

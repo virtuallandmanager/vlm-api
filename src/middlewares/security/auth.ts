@@ -90,11 +90,7 @@ export async function analyticsAuthMiddleware(
   }
 
   if (session?.sessionToken && session?.sessionToken !== sessionToken) {
-    const WAT = true
-    AdminLogManager.logErrorToDiscord(
-      JSON.stringify({ error: 'Client tokens were mismatched over WebSocket connection', client, message, session }),
-      WAT
-    )
+    AdminLogManager.logErrorToDiscord(JSON.stringify({ error: 'Client tokens were mismatched over WebSocket connection', client, message, session }))
   }
 
   if (session) {

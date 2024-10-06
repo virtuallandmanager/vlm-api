@@ -8,10 +8,11 @@ import { Analytics } from '../models/Analytics.model'
 import { User } from '../models/User.model'
 import { Session as BaseSession } from '../models/Session.model'
 import { UserManager } from './User.logic'
-import { vlmAnalyticsTable } from '../dal/common.data'
 
-const hourlyActionLimit = 10000
+const hourlyActionLimit = 1000
 const rollingAnalyticsLimits: { [id: string]: number } = {}
+const lastRateLimitWarning: { [id: string]: number } = {}
+const lastRateLimitHit: { [id: string]: number } = {}
 // stores the number of claims that have occurred in the last hour
 
 setInterval(() => {
@@ -27,6 +28,14 @@ setInterval(() => {
       rollingAnalyticsLimits[id] = rollingAnalyticsLimits[id] - limitPerSecond
     } else if (rollingAnalyticsLimits[id] - limitPerSecond <= 0) {
       delete rollingAnalyticsLimits[id]
+    }
+
+    // remove the warning flag if the rate of analytics actions has decreased
+    if (DateTime.now().toMillis() - lastRateLimitHit[id] > 60000) {
+      delete lastRateLimitHit[id]
+    }
+    if (DateTime.now().toMillis() - lastRateLimitWarning[id] > 60000) {
+      delete lastRateLimitWarning[id]
     }
   })
 }, 1000)
@@ -79,9 +88,24 @@ const hasConsistentInterval: CallableFunction = async (sessionAction: Analytics.
 }
 
 const rateLimitAnalyticsAction: CallableFunction = (config: Analytics.Session.Action) => {
+  const warningThreshold = hourlyActionLimit * 0.9,
+    aboveWarningThreshold = rollingAnalyticsLimits[config.sceneId] > warningThreshold,
+    alreadyWarned = lastRateLimitWarning[config.sceneId],
+    alreadyHit = lastRateLimitHit[config.sceneId]
+
   try {
+    if (aboveWarningThreshold && !alreadyWarned) {
+      AdminLogManager.logInternalUpdate('tier-limit', `Scene ${config.sceneId} has reached 90% of its hourly rate limit for analytics.`)
+      lastRateLimitHit[config.sceneId] = DateTime.now().toMillis()
+    }
+
     //// BEGIN RATE LIMITING LOGIC ////
-    if (rollingAnalyticsLimits[config.sceneId] > hourlyActionLimit) {
+    if (alreadyHit) {
+      lastRateLimitHit[config.sceneId] = DateTime.now().toMillis()
+      return true
+    } else if (rollingAnalyticsLimits[config.sceneId] > hourlyActionLimit) {
+      AdminLogManager.logInternalUpdate('tier-limit', `Scene ${config.sceneId} has reached its hourly rate limit for analytics.`)
+      lastRateLimitHit[config.sceneId] = DateTime.now().toMillis()
       return true
     } else if (rollingAnalyticsLimits[config.sceneId]) {
       rollingAnalyticsLimits[config.sceneId]++
