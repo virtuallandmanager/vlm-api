@@ -17,7 +17,7 @@ export function checkOrigin(req: Request) {
 
     return regexes.some((regex) => regex.test(origin))
   } catch (error) {
-    AdminLogManager.logExternalError('NOTICED MISSING ORIGIN!', req.body)
+    AdminLogManager.logError('NOTICED MISSING ORIGIN!', req.body)
     return false
   }
 }
@@ -32,7 +32,7 @@ export function ensureHttps(url: string) {
     }
     return newUrl
   } catch (error) {
-    AdminLogManager.logExternalError('NOTICED MISSING HTTPS!', { url })
+    AdminLogManager.logError('NOTICED MISSING HTTPS!', { url })
     return url
   }
 }
@@ -52,7 +52,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     let base = metadata.realm.domain || metadata.realm.hostname || ''
 
     if (!base) {
-      AdminLogManager.logExternalError('NOTICED MISSING DCL METADATA!', req.body)
+      AdminLogManager.logError('NOTICED MISSING DCL METADATA!', req.body)
       return
     } else if (TESTS_ENABLED) {
       // return;
@@ -72,7 +72,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     // filter against a denylist of malicious ips
     const validIP = checkBannedIPs(req)
     if (validIP) {
-      AdminLogManager.logExternalError('NOTICED BANNED IP!', req.body)
+      AdminLogManager.logError('NOTICED BANNED IP!', req.body)
       throw new Error('INVALID IP')
     }
 
@@ -80,7 +80,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     // validate that the player is in the catalyst & location from the signature
     const validCatalystPos: boolean = TESTS_ENABLED || req.body.environment == 'dev' ? true : await checkPlayer(userAddress, base, coordinates)
     if (!validCatalystPos) {
-      AdminLogManager.logExternalError('NOTICED INVALID CATALYST POSITION!', req.body)
+      AdminLogManager.logError('NOTICED INVALID CATALYST POSITION!', req.body)
       throw new Error('INVALID PLAYER POSITION')
     }
 
@@ -88,7 +88,7 @@ export async function runChecks(req: Request & dcl.DecentralandSignatureData<Met
     const validPos: boolean = parcel?.length ? checkCoords(coordinates, parcel) && checkSceneParcels(locationParcels, coordinates, parcel) : true
 
     if (!validPos) {
-      AdminLogManager.logExternalError('NOTICED INVALID PARCEL POSITION!', req.body)
+      AdminLogManager.logError('NOTICED INVALID PARCEL POSITION!', req.body)
       throw new Error('INVALID PARCEL POSITION')
     }
 

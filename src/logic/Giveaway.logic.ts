@@ -286,7 +286,7 @@ export abstract class GiveawayManager {
       ///// GENERAL DENIALS /////
       // check if giveaway is paused or over the total limit
       if (giveaway.paused) {
-        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY PAUSED', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - GIVEAWAY PAUSED', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
@@ -298,7 +298,7 @@ export abstract class GiveawayManager {
       }
 
       if (giveaway?.claimLimits?.total && giveaway.claimCount > giveaway.claimLimits.total) {
-        AdminLogManager.logGiveawayInfo('DENIED - OVER CLAIM LIMITS', { sceneId, giveawayId })
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - OVER CLAIM LIMITS', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_LIMIT }
       }
       ///// END GENERAL DENIALS /////
@@ -309,10 +309,10 @@ export abstract class GiveawayManager {
       const ipClaims = await GiveawayDbManager.getIpClaimsForGiveaway({ user, sceneId, giveawayId })
 
       if (giveaway?.claimLimits?.perUser && userClaims.length >= giveaway.claimLimits.perUser) {
-        AdminLogManager.logGiveawayInfo(`DENIED - OVER USER'S CLAIM LIMIT`, { sceneId, giveawayId, giveaway, userClaims })
+        AdminLogManager.logInternalUpdate('giveaway', `DENIED - OVER USER'S CLAIM LIMIT`, { sceneId, giveawayId, giveaway, userClaims })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.CLAIM_COMPLETE }
       } else if (ipClaims.length >= giveaway.claimLimits?.perIp) {
-        AdminLogManager.logGiveawayInfo('DENIED - OVER IP LIMIT', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - OVER IP LIMIT', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
@@ -348,16 +348,16 @@ export abstract class GiveawayManager {
       }
 
       if (limitType === 'DAILY') {
-        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER DAILY CLAIM LIMITS', { sceneId, giveawayId })
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - GIVEAWAY IS OVER DAILY CLAIM LIMITS', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_DAILY_LIMIT }
       } else if (limitType === 'WEEKLY') {
-        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER WEEKLY CLAIM LIMITS', { sceneId, giveawayId })
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - GIVEAWAY IS OVER WEEKLY CLAIM LIMITS', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_WEEKLY_LIMIT }
       } else if (limitType === 'MONTHLY') {
-        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER MONTHLY CLAIM LIMITS', { sceneId, giveawayId })
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - GIVEAWAY IS OVER MONTHLY CLAIM LIMITS', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_MONTHLY_LIMIT }
       } else if (limitType === 'YEARLY') {
-        AdminLogManager.logGiveawayInfo('DENIED - GIVEAWAY IS OVER YEARLY CLAIM LIMITS', { sceneId, giveawayId })
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - GIVEAWAY IS OVER YEARLY CLAIM LIMITS', { sceneId, giveawayId })
         return { responseType: Giveaway.ClaimResponseType.CLAIM_DENIED, reason: Giveaway.ClaimRejection.OVER_YEARLY_LIMIT }
       }
       /////// END CLAIM LIMITING ///////
@@ -367,7 +367,7 @@ export abstract class GiveawayManager {
       const events = await EventDbManager.getLinkedEventsBySceneId(sceneId)
 
       if (events.length === 0) {
-        AdminLogManager.logGiveawayInfo('DENIED - NO LINKED EVENTS', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - NO LINKED EVENTS', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
@@ -394,7 +394,7 @@ export abstract class GiveawayManager {
       const linkedGiveawaysFiltered = linkedGiveawaysFlat.filter((link: Event.GiveawayLink) => link.giveawayId === giveawayId)
 
       if (linkedGiveawaysFiltered.length === 0) {
-        AdminLogManager.logGiveawayInfo('DENIED - NO LINKED GIVEAWAYS', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - NO LINKED GIVEAWAYS', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
@@ -445,7 +445,7 @@ export abstract class GiveawayManager {
 
       await this.addClaim(analyticsAction, claim, transaction)
 
-      AdminLogManager.logGiveawayInfo(`CLAIM ACCEPTED! - ${user.displayName}`, {
+      AdminLogManager.logInternalUpdate('giveaway', `CLAIM ACCEPTED! - ${user.displayName}`, {
         eventName: event.displayName,
         eventId: event.sk,
         userName: user.displayName,
@@ -542,7 +542,7 @@ export abstract class GiveawayManager {
 
       // check if event has not yet started
       if (onlyFutureEvents) {
-        AdminLogManager.logGiveawayInfo('DENIED - BEFORE EVENT START', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - BEFORE EVENT START', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
@@ -557,7 +557,7 @@ export abstract class GiveawayManager {
       }
       // check if event is over
       if (onlyPastEvents) {
-        AdminLogManager.logGiveawayInfo('DENIED - AFTER EVENT END', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - AFTER EVENT END', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
@@ -571,7 +571,7 @@ export abstract class GiveawayManager {
       }
 
       if (noValidEvents) {
-        AdminLogManager.logGiveawayInfo('DENIED - BETWEEN VALID EVENTS', {
+        AdminLogManager.logInternalUpdate('giveaway', 'DENIED - BETWEEN VALID EVENTS', {
           userName: user.displayName,
           userId: user.sk,
           sceneId,
