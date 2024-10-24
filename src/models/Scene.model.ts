@@ -108,6 +108,22 @@ export namespace Scene {
     }
   }
 
+  export class PlayerState {
+    static basePk: string = 'vlm:scene:setting:state:'
+    pk?: string = PlayerState.basePk;
+    sk?: string // should be the user's id
+    sceneId?: string
+    state?: { [id: string]: unknown }
+    ts?: EpochTimeStamp = DateTime.now().toMillis()
+
+    constructor(config: PlayerState) {
+      this.pk += config.sceneId
+      this.sk = config.sk
+      this.state = config.state
+      this.ts = config.ts || this.ts
+    }
+  }
+
   export class WorldLink {
     static pk: string = 'vlm:scene:world:link'
     pk: string = WorldLink.pk

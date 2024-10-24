@@ -317,6 +317,7 @@ export abstract class SceneManager {
         return false
       }
       const userState = await SceneDbManager.getSceneUserState(sceneId)
+
       if (!userState) {
         return await SceneDbManager.createSceneUserState(new Scene.UserState({ sk: sceneId, state: { [key]: [value] } }))
       } else {
@@ -324,6 +325,45 @@ export abstract class SceneManager {
       }
     } catch (error) {
       AdminLogManager.logError(error, { from: 'SceneManager.setUserStateByScene' })
+      return
+    }
+  }
+  //
+
+  // Scene Player State Operations //
+  static obtainPlayerStateByScene: CallableFunction = async (sceneId: string, userId: string, key: string) => {
+    try {
+      if (key == 'pk' || key == 'sk') {
+        return false
+      }
+      const playerState = await SceneDbManager.getScenePlayerState(sceneId, userId)
+
+      if (!playerState) {
+        return await SceneDbManager.createScenePlayerState(new Scene.PlayerState({ sceneId, sk: userId, [key]: [null] }))
+      }
+
+      return playerState ? playerState[key] : null
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'SceneManager.obtainPlayerStateByScene' })
+      return
+    }
+  }
+
+  static setPlayerStateByScene: CallableFunction = async (sceneId: string, userId: string, key: string, value: unknown) => {
+    try {
+      if (key == 'pk' || 'sk') {
+        return false
+      }
+
+      const playerState = await SceneDbManager.getScenePlayerState(Scene.PlayerState.basePk + sceneId, userId)
+      
+      if (!playerState) {
+        return await SceneDbManager.createScenePlayerState(new Scene.PlayerState({ sceneId, sk: userId, state: { [key]: [value] } }))
+      } else {
+        return await SceneDbManager.setScenePlayerState(playerState.state, key, value)
+      }
+    } catch (error) {
+      AdminLogManager.logError(error, { from: 'SceneManager.setPlayerStateByScene' })
       return
     }
   }

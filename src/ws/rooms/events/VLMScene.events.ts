@@ -100,6 +100,8 @@ export function bindEvents(room: VLMScene) {
     user_message: handleUserMessage,
     get_user_state: handleGetUserState,
     set_user_state: handleSetUserState,
+    get_player_state: handleGetPlayerState,
+    set_player_state: handleSetPlayerState,
 
     path_start: handlePathStart,
     path_segments_add: handlePathAddSegments,
@@ -497,6 +499,48 @@ export async function handleSetUserState(client: Client, message: any, room: VLM
       const userState = await SceneManager.setUserStateByScene(sceneId, message.id, message.data)
       room.clients.forEach((c) => {
         if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('set_user_state_response', userState)
+      })
+      return false
+    })
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleGetPlayerState(client: Client, message: any, room: VLMScene) {
+  try {
+    const { sessionToken } = message
+    const { sceneId } = client.auth.session
+    let { user } = client.auth.user
+    if (!user) {
+      user = await UserManager.getById(client.auth.session.userId)
+    }
+    console.log(`Received state from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${JSON.stringify(message.data)}`)
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+      const userState = await SceneManager.obtainPlayerStateByScene(session.session.sceneId, session.user.sk, message.id)
+      room.clients.forEach((c) => {
+        if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('get_player_state_response', userState)
+      })
+      return false
+    })
+  } catch (error) {
+    return false
+  }
+}
+
+export async function handleSetPlayerState(client: Client, message: any, room: VLMScene) {
+  try {
+    const { sessionToken } = message
+    const { sceneId } = client.auth.session
+    let { user } = client.auth.user
+    if (!user) {
+      user = await UserManager.getById(client.auth.session.userId)
+    }
+    console.log(`Received state from ${JSON.stringify(user?.displayName)} in ${sceneId} - ${message.id} - ${JSON.stringify(message.data)}`)
+    await analyticsAuthMiddleware(client, { sessionToken, sceneId }, async (session) => {
+      const userState = await SceneManager.setPlayerStateByScene(session.session.sceneId, session.user.sk, message.id, message.data)
+      room.clients.forEach((c) => {
+        if (c.auth.sceneId === sceneId || client.auth.session.sceneId === sceneId) c.send('set_player_state_response', userState)
       })
       return false
     })
